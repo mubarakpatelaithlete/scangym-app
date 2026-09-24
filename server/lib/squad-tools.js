@@ -203,7 +203,7 @@ const tools = {
         lifetimeFreePremium: !!membership.is_lifetime_free,
         joinedAt: membership.joined_at,
         nextTier: nextTier(referrals),
-        referralLink: handle ? `https://scangym.com/r/${handle}` : null,
+        referralLink: handle ? `https://www.scangym.com/r/${handle}` : null,
       };
     },
   },
@@ -606,7 +606,7 @@ const tools = {
         `INSERT INTO creator_giveaways (creator_handle, claim_code, funded_withdrawal_id) VALUES ($1,$2,$3)`,
         [handle, code, holdId]
       );
-      const url = `https://scangym.com/r/${handle}?giveaway=${code}`;
+      const url = `https://www.scangym.com/r/${handle}?giveaway=${code}`;
       return { ok: true, claimUrl: url, message: `Giveaway is live — share ${url}. First follower to claim gets a free pass.` };
     },
   },
@@ -737,7 +737,7 @@ const tools = {
       const { rows } = await pool.query(
         `INSERT INTO scheduled_shares (creator_handle, platform, caption, share_url, scheduled_at)
          VALUES ($1,$2,$3,$4,$5) RETURNING id, scheduled_at`,
-        [handle, plat, caption, `https://scangym.com/r/${handle}?src=${plat}`, when.toISOString()]
+        [handle, plat, caption, `https://www.scangym.com/r/${handle}?src=${plat}`, when.toISOString()]
       );
       return { ok: true, id: rows[0].id, message: `Scheduled for ${when.toUTCString()}. I'll keep it on your calendar.` };
     },

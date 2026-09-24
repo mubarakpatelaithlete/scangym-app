@@ -12,7 +12,7 @@
  *   cancel_booking    — Cancel an existing booking
  * 
  * Usage:
- *   SCANGYM_API_URL=https://scangym.com node scangym-mcp-server.js
+ *   SCANGYM_API_URL=https://www.scangym.com node scangym-mcp-server.js
  * 
  * Claude Desktop config (~/.claude/claude_desktop_config.json):
  *   {
@@ -20,13 +20,13 @@
  *       "scangym": {
  *         "command": "node",
  *         "args": ["/path/to/scangym-mcp-server.js"],
- *         "env": { "SCANGYM_API_URL": "https://scangym.com" }
+ *         "env": { "SCANGYM_API_URL": "https://www.scangym.com" }
  *       }
  *     }
  *   }
  */
 
-const SCANGYM_API = (process.env.SCANGYM_API_URL || 'https://scangym.com').replace(/\/+$/, '');
+const SCANGYM_API = (process.env.SCANGYM_API_URL || 'https://www.scangym.com').replace(/\/+$/, '');
 
 // ─── MCP Protocol over stdio (JSON-RPC 2.0) ─────────────────
 // The MCP spec uses JSON-RPC messages over stdin/stdout.

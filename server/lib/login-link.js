@@ -64,7 +64,7 @@ function hashToken(token) {
 }
 
 function linkUrl(origin, token) {
-  const base = String(origin || 'https://scangym.com').replace(/\/+$/, '');
+  const base = String(origin || 'https://www.scangym.com').replace(/\/+$/, '');
   return `${base}/login/link?t=${token}`;
 }
 

@@ -187,6 +187,45 @@
     return true;
   }
 
+
+  /* 1-tap wallets (Apple Pay / Google Pay / Link) above the card field.
+     Journey test ZUVP-3DEF: typing card + postcode was the slowest step.
+     Wallet methods are card payments, so the existing intent works as-is. */
+  function mountWallet(booking, email, onPaid) {
+    try {
+      if (!_stripe || !el('sg-guest-wallet')) return;
+      var pence = Math.round(Number(booking.amount || 0) * 100);
+      if (!pence) return;
+      var pr = _stripe.paymentRequest({
+        country: 'GB', currency: String(booking.currency || 'GBP').toLowerCase(),
+        total: { label: 'ScanGym \u00b7 ' + (booking.gymName || 'Day pass'), amount: pence },
+        requestPayerEmail: !email,
+      });
+      pr.canMakePayment().then(function (ok) {
+        if (!ok) return;
+        var btn = _stripe.elements().create('paymentRequestButton', {
+          paymentRequest: pr, style: { paymentRequestButton: { type: 'buy', theme: 'dark', height: '52px' } },
+        });
+        btn.mount('#sg-guest-wallet');
+        el('sg-guest-wallet').style.display = 'block';
+      });
+      pr.on('paymentmethod', async function (ev) {
+        var payer = email || ev.payerEmail || '';
+        var res = await payExisting(booking.bookingId, payer, async function (clientSecret) {
+          var first = await _stripe.confirmCardPayment(clientSecret, { payment_method: ev.paymentMethod.id }, { handleActions: false });
+          if (first.error) { ev.complete('fail'); return first; }
+          ev.complete('success');
+          if (first.paymentIntent && first.paymentIntent.status === 'requires_action') {
+            return _stripe.confirmCardPayment(clientSecret);
+          }
+          return first;
+        });
+        if (!res.ok) { say(res.message); return; }
+        onPaid(res, payer);
+      });
+    } catch (e) { /* wallets are optional; the card field still works */ }
+  }
+
   function confirmWithStripe(clientSecret, email) {
     if (!_stripe || !_card) return Promise.resolve({ error: { message: 'Card form not ready — reload and try again.' } });
     return _stripe.confirmCardPayment(clientSecret, {
@@ -224,6 +263,7 @@
       '<div style="text-align:center;margin-bottom:14px">' +
       '<div style="color:#fff;font-size:21px;font-weight:800">' + amount + ' \u00b7 ' + (b.gymName || 'Your gym') + '</div>' +
       '<div style="color:rgba(255,255,255,.45);font-size:13px;margin-top:4px">Pass for ' + email + '</div></div>' +
+      '<div id="sg-guest-wallet" style="display:none;margin-bottom:10px"></div>' +
       '<div id="sg-guest-card" style="padding:14px 16px;background:rgba(255,255,255,.06);' +
       'border:1px solid rgba(255,255,255,.12);border-radius:12px;margin-bottom:10px;min-height:20px"></div>' +
       '<div id="sg-guest-err" style="display:none;color:#f87171;font-size:13px;text-align:center;margin-bottom:8px"></div>' +
@@ -272,6 +312,7 @@
     }
     var btn = el('sg-guest-pay');
     if (btn) btn.onclick = onPay;
+    if (booking.bookingId) mountWallet(booking, email, wireDone);
     return true;
   }
 

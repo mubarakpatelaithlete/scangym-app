@@ -3,7 +3,7 @@
   "name": "io.github.mubarakpatelaithlete/scangym",
   "title": "ScanGym — Book Any Gym",
   "description": "Search, compare prices, and book gym day passes worldwide. No membership required.",
-  "websiteUrl": "https://scangym.com",
+  "websiteUrl": "https://www.scangym.com",
   "repository": {
     "url": "https://github.com/mubarakpatelaithlete/scangym-app",
     "source": "github"
@@ -12,7 +12,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://scangym.com/mcp"
+      "url": "https://www.scangym.com/mcp"
     }
   ]
 }

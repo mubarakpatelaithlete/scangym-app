@@ -70,7 +70,7 @@ async function sendOwnerEmail(ownerEmail, gymName, userMessage, conversationId) 
           ${safeMessage}
         </blockquote>
         <p>Our AI couldn't fully answer this question. Please reply at:</p>
-        <p><a href="https://scangym.com/owner/messages/${safeConvoId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
+        <p><a href="https://www.scangym.com/owner/messages/${safeConvoId}" style="background:#FF6B35;color:white;padding:10px 20px;text-decoration:none;display:inline-block;">Reply to Customer</a></p>
         <p style="color:#666;font-size:12px;">— ScanGym Team</p>
       `,
     });

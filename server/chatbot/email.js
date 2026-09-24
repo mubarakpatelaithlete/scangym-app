@@ -16,7 +16,7 @@
  * Setup:
  *   1. In SendGrid: Settings → Inbound Parse → Add Host & URL
  *      - Domain: scangym.com (or subdomain)
- *      - URL: https://scangym.com/api/chatbot/email/webhook
+ *      - URL: https://www.scangym.com/api/chatbot/email/webhook
  *   2. Add MX record: book.scangym.com → mx.sendgrid.net
  *   3. Env vars: SENDGRID_API_KEY, SMTP_FROM (already set)
  */
@@ -30,7 +30,7 @@ const pool = require('../middleware/db');
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'book@scangym.com';
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 
 // Message ID tracking for threading
 const messageThreads = new Map();

@@ -23,7 +23,7 @@ const { handleMessage } = require('./message-handler');
 // Slack credentials (env only - never hardcode)
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 const SLACK_API = 'https://slack.com/api';
 
 // Event deduplication

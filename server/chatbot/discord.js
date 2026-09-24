@@ -35,7 +35,7 @@ if (!WS) {
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID;
 const DISCORD_API = 'https://discord.com/api/v10';
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 
 // Gateway state
 let ws = null;

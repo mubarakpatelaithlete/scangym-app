@@ -47,7 +47,7 @@ User Message → Channel Adapter → Message Handler → ScanGym API → Reply
 ```bash
 curl -X POST "https://api.telegram.org/bot{TOKEN}/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://scangym.com/api/chatbot/telegram/webhook"}'
+  -d '{"url": "https://www.scangym.com/api/chatbot/telegram/webhook"}'
 ```
 
 4. Nothing else to do by hand: on boot `index.js` calls `ensureWebhook()`,
@@ -57,13 +57,13 @@ curl -X POST "https://api.telegram.org/bot{TOKEN}/setWebhook" \
 ### WhatsApp + SMS (Twilio)
 1. Already have Twilio account (used for OTP)
 2. Set webhook in Twilio Console → Phone Number → Messaging:
-   `https://scangym.com/api/chatbot/twilio/webhook`
+   `https://www.scangym.com/api/chatbot/twilio/webhook`
 3. For WhatsApp: Enable WhatsApp Sandbox or Business API in Twilio
 
 ## Test Endpoint
 
 ```bash
-curl -X POST https://scangym.com/api/chatbot/test \
+curl -X POST https://www.scangym.com/api/chatbot/test \
   -H "Content-Type: application/json" \
   -d '{"message": "Find gyms in Bolton", "userId": "test123"}'
 ```

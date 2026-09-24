@@ -25,7 +25,7 @@
   "author": {
     "name": "Mubarak Ibrahim Patel",
     "email": "hello@scangym.com",
-    "url": "https://scangym.com"
+    "url": "https://www.scangym.com"
   },
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "url": "https://github.com/mubarakpatelaithlete/scangym-app.git",
     "directory": "server/mcp"
   },
-  "homepage": "https://scangym.com",
+  "homepage": "https://www.scangym.com",
   "bugs": {
     "url": "https://github.com/mubarakpatelaithlete/scangym-app/issues"
   },

@@ -31,7 +31,7 @@
  *   2. Set env: MANYCHAT_API_KEY (from ManyChat Settings → API)
  *   3. Create a Flow → trigger "New Message" (per channel)
  *   4. Add "External Request" action → POST to:
- *      https://scangym.com/api/chatbot/manychat/webhook
+ *      https://www.scangym.com/api/chatbot/manychat/webhook
  *   5. Map the JSON response back to ManyChat reply actions
  *   6. Set Custom Field "scangym_session" to store pagination state
  *   7. For WhatsApp: connect WhatsApp Business number in ManyChat → Channels
@@ -41,7 +41,7 @@ const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
 
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 const MANYCHAT_API_KEY = process.env.MANYCHAT_API_KEY || '';
 const BOT_CHECKOUT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
 const SCANGYM_API = (

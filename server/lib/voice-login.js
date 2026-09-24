@@ -159,7 +159,7 @@ async function sendLoginLink({ contact, origin, deps = {} } = {}) {
     return { ok: false, message: 'I never take passwords out loud. Give me your mobile or email and I will send you a link to tap.' };
   }
   const { issueLink } = deps.loginLink || require('./login-link');
-  return issueLink({ contact: value, origin: origin || process.env.PUBLIC_BASE_URL || 'https://scangym.com', deps });
+  return issueLink({ contact: value, origin: origin || process.env.PUBLIC_BASE_URL || 'https://www.scangym.com', deps });
 }
 
 /**
@@ -170,9 +170,9 @@ async function sendLoginLink({ contact, origin, deps = {} } = {}) {
 function handoffFor(provider) {
   const p = String(provider || '').toLowerCase();
   const known = {
-    google: { label: 'Continue with Google', url: 'https://scangym.com/login?provider=google' },
-    apple: { label: 'Continue with Apple', url: 'https://scangym.com/login?provider=apple' },
-    sso: { label: 'your company SSO', url: 'https://scangym.com/login?provider=sso' },
+    google: { label: 'Continue with Google', url: 'https://www.scangym.com/login?provider=google' },
+    apple: { label: 'Continue with Apple', url: 'https://www.scangym.com/login?provider=apple' },
+    sso: { label: 'your company SSO', url: 'https://www.scangym.com/login?provider=sso' },
   };
   const choice = known[p];
   if (!choice) return null;

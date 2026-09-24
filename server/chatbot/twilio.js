@@ -24,7 +24,7 @@
  * Setup:
  *   1. Twilio account + WhatsApp Business API or Sandbox
  *   2. Set env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
- *   3. Webhook: POST https://scangym.com/api/chatbot/twilio/webhook
+ *   3. Webhook: POST https://www.scangym.com/api/chatbot/twilio/webhook
  */
 
 const express = require('express');
@@ -36,7 +36,7 @@ const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER;
 const TWILIO_WA_PHONE = process.env.TWILIO_WHATSAPP_NUMBER || (TWILIO_PHONE ? `whatsapp:${TWILIO_PHONE}` : null);
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 
 // Opted-out phone numbers (STOP compliance)
 const optedOut = new Set();

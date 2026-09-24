@@ -76,7 +76,7 @@ async function bookAndPay({ userId, gymId, date, time, referralCode = null, deps
       ok: false,
       code: 'no_saved_card',
       message: 'You have no card saved yet. Add one once and every booking after this is just your voice.',
-      addCardUrl: 'https://scangym.com/checkout?add_card=1',
+      addCardUrl: 'https://www.scangym.com/checkout?add_card=1',
     };
   }
 
@@ -86,7 +86,7 @@ async function bookAndPay({ userId, gymId, date, time, referralCode = null, deps
       ok: false,
       code: 'no_saved_card',
       message: 'You have no card saved yet. Add one once and every booking after this is just your voice.',
-      addCardUrl: 'https://scangym.com/checkout?add_card=1',
+      addCardUrl: 'https://www.scangym.com/checkout?add_card=1',
     };
   }
 
