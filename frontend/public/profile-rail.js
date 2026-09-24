@@ -108,6 +108,7 @@
     slack: '<svg viewBox="0 0 24 24"><path d="M5.1 15.1a2.1 2.1 0 11-2.1-2.1h2.1v2.1zm1.05 0a2.1 2.1 0 014.2 0v5.25a2.1 2.1 0 11-4.2 0V15.1z" fill="#fff"/><path d="M8.25 5.1A2.1 2.1 0 116.15 3v2.1H8.25zm0 1.05a2.1 2.1 0 010 4.2H3A2.1 2.1 0 013 6.15h5.25z" fill="#fff"/><path d="M18.9 8.25A2.1 2.1 0 1121 6.15v2.1h-2.1zm-1.05 0a2.1 2.1 0 01-4.2 0V3a2.1 2.1 0 014.2 0v5.25z" fill="#fff"/><path d="M15.75 18.9A2.1 2.1 0 1117.85 21h-2.1v-2.1zm0-1.05a2.1 2.1 0 010-4.2H21a2.1 2.1 0 010 4.2h-5.25z" fill="#fff"/></svg>',
     msteams: '<svg viewBox="0 0 24 24"><path d="M13 6.2h7.2c.44 0 .8.36.8.8v9.9a2.4 2.4 0 01-2.4 2.4h-3A4.8 4.8 0 0013 15V6.2z" fill="#fff" fill-opacity=".55"/><circle cx="17.4" cy="4.6" r="2.2" fill="#fff" fill-opacity=".55"/><rect x="1.5" y="7.5" width="11.5" height="10.5" rx="1" fill="#fff"/><text x="7.2" y="15.2" font-size="8" fill="#0b1424" text-anchor="middle" font-family="Arial" font-weight="700">T</text></svg>',
     claude: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5l1.6 3.7L17.5 12l-3.9 1.6L12 17.5l-1.6-3.9L6.5 12l3.9-1.8z" fill="#fff" stroke="none"/></svg>',
+    grok: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M6 18L18 6"/><path d="M9 7.2a6 6 0 018.4 8.4"/><path d="M15 16.8a6 6 0 01-8.4-8.4"/></svg>',
     chatgpt: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.2l6.5 3.7v7.4L12 20.8 5.5 17V9.6z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 3.4v17M5.7 7.1l12.6 7.3M18.3 7.1L5.7 14.4" stroke="#fff" stroke-width="1.3" opacity=".9"/></svg>',
     googlechat: '<svg viewBox="0 0 24 24" fill="none"><path d="M3.6 5.1A1.9 1.9 0 015.5 3.2h13a1.9 1.9 0 011.9 1.9v9a1.9 1.9 0 01-1.9 1.9H9.3L5 20.5V16h.5A1.9 1.9 0 013.6 14z" fill="#fff"/><path d="M8 8.4h8M8 11.4h5" stroke="#0b1424" stroke-width="1.8" stroke-linecap="round"/></svg>',
     msstore: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#fff"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#fff" fill-opacity=".75"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#fff" fill-opacity=".75"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#fff" fill-opacity=".5"/></svg>',
@@ -229,6 +230,11 @@
       // (/claude) which copies the link for them and deep-links Claude settings.
       window.open('/claude', '_blank');
     },
+    grok: function () {
+      // Same guided MCP setup as Claude: /grok copies the link and explains
+      // where Grok's Connectors page is (needs SuperGrok Lite or higher).
+      window.open('/grok', '_blank');
+    },
     msstore: function () {
       window.open(MS_STORE_URL, '_blank');
     },
@@ -333,7 +339,7 @@
      already shows every button in a group, the header goes too. */
   var GROUPS = [
     { title: 'Chatbots', items: [['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
-    { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT']] },
+    { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
     { title: 'Apps', items: [['msstore', 'MS Store'], ['install', 'Install']] },
     { title: 'Social', items: [['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['facebook', 'Facebook']] },
     // The rail can only hold the handful of channels that fit. Everything else

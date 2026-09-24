@@ -835,6 +835,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'claude', 'index.html'));
   });
 
+  // "Use ScanGym in Grok" — same guided MCP connector flow as /claude.
+  app.get('/grok', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'grok', 'index.html'));
+  });
+
   // "Use ScanGym in ChatGPT" — same guided connector flow as /claude.
   app.get('/chatgpt', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');

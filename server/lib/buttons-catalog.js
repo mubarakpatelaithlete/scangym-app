@@ -128,7 +128,7 @@ const catalog = [
   { id: 'ai-chatgpt-gpt', card: 'Scangym is now in chatgpt custom gpt clickable button', label: 'ChatGPT custom GPT', group: 'AI assistants', type: 'url', needsUrl: 'chatgptGpt', soon: 'Custom GPT not published yet.' },
   { id: 'ai-gemini', card: 'Scangym is now in Gemini clickable button', label: 'Gemini', group: 'AI assistants', type: 'url', needsUrl: 'gemini', soon: 'Gemini extension not published yet.' },
   { id: 'ai-kimi', card: 'Scangym is now in Kimi clickable button', label: 'Kimi', group: 'AI assistants', type: 'url', needsUrl: 'kimi', soon: 'Coming soon.' },
-  { id: 'ai-grok', card: 'Scangym is now in Grok clickable button', label: 'Grok', group: 'AI assistants', type: 'url', needsUrl: 'grok', soon: 'Coming soon.' },
+  { id: 'ai-grok', card: 'Scangym is now in Grok clickable button', label: 'Grok', group: 'AI assistants', type: 'route', href: '/grok' },
   { id: 'ai-bing', card: 'Scangym is now in bing clickable button', label: 'Bing / Copilot', group: 'AI assistants', type: 'url', needsUrl: 'bing', soon: 'Coming soon.' },
 
   // ── Get the app ─────────────────────────────────────────────────────────
