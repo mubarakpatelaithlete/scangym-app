@@ -845,6 +845,23 @@ async function handleBook(session, text, entities, meta) {
     targetGym = session.lastResults.find((g) => g.name && norm(g.name).length > 3 && said.includes(norm(g.name))) || null;
   }
 
+  /* "Book PureGym Hereford tomorrow at 3pm" with no list on screen (new chat,
+     email, restarted server): search the named gym itself and only take a
+     result whose name the customer actually said. Before this, the town
+     search's first hit was booked instead (email test 2026-09-24 booked
+     "24 Hour Fitness" for a PureGym Hereford request). */
+  if (!targetGym) {
+    const normN = (x) => (x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const said = normN(text);
+    const m = text.match(/\bbook\s+(?:me\s+)?(?:in\s+)?(?:at\s+)?(.+?)\s+(?:for|on|at|tomorrow|today|tonight|this|next|please)\b/i);
+    const phrase = m && m[1] ? m[1].trim() : '';
+    if (phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase)) {
+      const data = await callApi(`/api/live/search?${new URLSearchParams({ q: phrase })}`);
+      const hit = (data.gyms || []).find((g) => g.name && normN(g.name).length > 3 && said.includes(normN(g.name)));
+      if (hit) { targetGym = hit; session.lastResults = data.gyms; }
+    }
+  }
+
   if (!targetGym && entities.location) {
     const params = new URLSearchParams({ q: `gym in ${entities.location}` });
     const data = await callApi(`/api/live/search?${params}`);
