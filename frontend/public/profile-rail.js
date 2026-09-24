@@ -45,7 +45,7 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true };
+  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true };
   // Social: tiktok.com/@scangym verified live (real profile page renders).
   // instagram.com/scangym + facebook.com/scangym sit behind login walls we
   // can't verify through, so they render amber until confirmed. x.com/scangym
@@ -54,6 +54,8 @@
   // App stores: only ones that actually resolve get a button. Google Play is on a
   // closed testing track (public 404) and the Apple listing does not exist yet —
   // same policy as the Apps page: no dead links, they appear here once live.
+  // Facebook Messenger bot (SendPulse, page "ScanGym" id 1380733691780608).
+  var MESSENGER_URL = 'https://m.me/1380733691780608';
   var MS_STORE_URL = 'https://apps.microsoft.com/detail/9nh8vrn834dv';
 
   // ── Styles (injected once) ─────────────────────────────────────────────
@@ -102,6 +104,7 @@
   // weight as the shared icon table. Recognition survives; the row stops
   // shouting ten different colours at once.
   var ICONS = {
+    messenger: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2.5C6.6 2.5 2.5 6.4 2.5 11.3c0 2.6 1.1 4.8 3 6.4v3.3l3.1-1.7c1 .3 2.2.4 3.4.4 5.4 0 9.5-3.9 9.5-8.8S17.4 2.5 12 2.5z" fill="#fff"/><path d="M6.8 14.2l3-4.7 2.4 1.9 2.9-1.9-3 4.7-2.4-1.9z" fill="#0f172a"/></svg>',
     everything: '<svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.2" fill="#fff"/><circle cx="12" cy="6" r="2.2" fill="#fff"/><circle cx="18" cy="6" r="2.2" fill="#fff"/><circle cx="6" cy="12" r="2.2" fill="#fff"/><circle cx="12" cy="12" r="2.2" fill="#fff"/><circle cx="18" cy="12" r="2.2" fill="#fff"/><circle cx="6" cy="18" r="2.2" fill="#fff"/><circle cx="12" cy="18" r="2.2" fill="#fff"/><circle cx="18" cy="18" r="2.2" fill="#fff"/></svg>',
     telegram: '<svg viewBox="0 0 24 24" fill="none"><path d="M21.5 4.3L2.8 11.4c-.9.35-.9 1.6.02 1.9l4.7 1.5 1.8 5.5c.25.75 1.2.95 1.7.35l2.5-2.9 4.7 3.5c.6.45 1.5.1 1.65-.65L23.9 5.1c.2-1-.75-1.8-1.7-1.4z" fill="#fff"/></svg>',
     discord: '<svg viewBox="0 0 24 24" fill="none"><path d="M19.5 5.3A17 17 0 0015.3 4l-.25.5a15.7 15.7 0 014 1.3c-2-1-4.2-1.4-6.4-1.4-2.2 0-4.4.4-6.4 1.4a15.7 15.7 0 014-1.3L9.7 4A17 17 0 005.5 5.3C2.9 9 2.2 12.6 2.5 16.2A16 16 0 007.3 19l.6-1a11 11 0 01-1.9-.9l.4-.35c3.6 1.7 7.6 1.7 11.2 0l.4.35c-.6.35-1.2.65-1.9.9l.6 1a16 16 0 004.8-2.8c.4-4.2-.55-7.8-2.6-11zM9.3 14c-.8 0-1.5-.75-1.5-1.7s.65-1.7 1.5-1.7c.85 0 1.55.8 1.5 1.7 0 .95-.65 1.7-1.5 1.7zm5.4 0c-.8 0-1.5-.75-1.5-1.7s.65-1.7 1.5-1.7c.85 0 1.55.8 1.5 1.7 0 .95-.65 1.7-1.5 1.7z" fill="#fff"/></svg>',
@@ -183,6 +186,11 @@
 
   // ── Actions ────────────────────────────────────────────────────────────
   var ACTIONS = {
+    messenger: function () {
+      // Open synchronously (popup blockers), then record the channel without a second open.
+      window.open(MESSENGER_URL, '_blank');
+      if (typeof window._sgConnectChannel === 'function') window._sgConnectChannel('messenger');
+    },
     telegram: function () {
       /* Deep-link the signed-in member. Without ?start=<id> the bot opens on a
          blank hello and the customer has to tap "Connect account" by hand
@@ -338,7 +346,7 @@
   /* Groups, so a section header never survives on its own: if the host rail
      already shows every button in a group, the header goes too. */
   var GROUPS = [
-    { title: 'Chatbots', items: [['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
+    { title: 'Chatbots', items: [['messenger', 'Messenger'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
     { title: 'Apps', items: [['msstore', 'MS Store'], ['install', 'Install']] },
     { title: 'Social', items: [['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['facebook', 'Facebook']] },
