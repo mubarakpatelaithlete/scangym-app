@@ -32,7 +32,7 @@ const TEAMS_APP_ID = process.env.TEAMS_APP_ID;
 const TEAMS_APP_PASSWORD = process.env.TEAMS_APP_PASSWORD;
 const TEAMS_APP_TENANT_ID = process.env.TEAMS_APP_TENANT_ID;
 const TEAMS_BOT_TYPE = process.env.TEAMS_BOT_TYPE || 'MultiTenant';
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 // Absolute host for images/links fetched by Microsoft (scangym.com 301s to www).
 const PUBLIC_URL = BASE_URL.replace('://scangym.com', '://www.scangym.com').replace(/\/+$/, '');
 

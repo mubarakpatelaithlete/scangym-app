@@ -388,7 +388,7 @@ router.post('/guest-create', async (req, res) => {
         price: parseFloat(booking.total_amount),
         currency: pricing.getCurrencyForCountry(g.country || 'GB').currency.toUpperCase(),
         bookingCode: booking.booking_code,
-        paymentUrl: `https://scangym.com/checkout?booking=${booking.id}&code=${booking.booking_code}`,
+        paymentUrl: `https://www.scangym.com/checkout?booking=${booking.id}&code=${booking.booking_code}`,
         qrCodeUrl: null, // available after payment
         status: booking.status,
       },

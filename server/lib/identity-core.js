@@ -16,7 +16,7 @@ async function startVerification(userId, deps = {}) {
   const db = deps.pool || pool;
   const u = await db.query('SELECT identity_verified FROM users WHERE id = $1', [userId]);
   if (u.rows[0]?.identity_verified) return { ok: true, alreadyVerified: true };
-  const BASE = process.env.BASE_URL || 'https://scangym.com';
+  const BASE = process.env.BASE_URL || 'https://www.scangym.com';
   const stripe = deps.stripe || stripeClient();
   const session = await stripe.identity.verificationSessions.create({
     type: 'document',

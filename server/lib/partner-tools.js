@@ -696,7 +696,7 @@ const tools = {
             .catch(() => {});
         }
         const origin =
-          (req && (req.headers.origin || 'https://' + req.headers.host)) || 'https://scangym.com';
+          (req && (req.headers.origin || 'https://' + req.headers.host)) || 'https://www.scangym.com';
         const link = await stripe.accountLinks.create({
           account: connectId,
           refresh_url: origin + '/partner',

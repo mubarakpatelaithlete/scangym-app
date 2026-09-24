@@ -13,6 +13,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const { checkoutLink } = require('../lib/checkout-link');
 const router = express.Router();
 
 const SERVER_INFO = { name: 'scangym', version: '1.1.1' };
@@ -108,6 +109,7 @@ const TOOLS = [
         latitude: { type: 'number', description: 'User latitude for nearby search' },
         longitude: { type: 'number', description: 'User longitude for nearby search' },
         radius: { type: 'number', description: 'Search radius in meters (default 5000, max 50000)' },
+        date: { type: 'string', description: 'Optional visit date YYYY-MM-DD or "today"/"tomorrow". Day-pass prices returned are valid for this date.' },
       },
       required: [],
     },
@@ -192,17 +194,24 @@ const TOOLS = [
 
 // ─── Tool implementations ────────────────────────────────────
 
-async function searchGyms({ query, latitude, longitude, radius }) {
+async function searchGyms({ query, latitude, longitude, radius, date }) {
+  let visitDate = null;
+  if (date) {
+    const r = resolveDate(date);
+    if (r.error) return { error: r.error, today: todayISO() };
+    visitDate = r.date;
+  }
+  const dated = (out) => (visitDate ? { ...out, date: visitDate, priceNote: `Day-pass prices are valid for ${visitDate}. Pay only when you book.` } : out);
   if (latitude && longitude) {
     const params = new URLSearchParams({ lat: String(latitude), lng: String(longitude), radius: String(radius || 5000) });
     const data = await callApi(`/api/live/nearby?${params}`);
     if (data.error) return { error: data.error };
-    return { today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
+    return dated({ today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) });
   }
   if (!query) return { error: 'Provide a search query (e.g. "gym in Bolton") or latitude/longitude.' };
   const data = await callApi(`/api/live/search?${new URLSearchParams({ q: query })}`);
   if (data.error) return { error: data.error };
-  return { today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) };
+  return dated({ today: todayISO(), total: data.total || (data.gyms || []).length, gyms: (data.gyms || []).slice(0, 10).map(formatGym) });
 }
 
 async function getGymDetails({ placeId }) {
@@ -284,8 +293,11 @@ async function bookGymSession({ placeId, date, time, email, name, confirmed }) {
     time: b.time,
     price: `${b.currency === 'GBP' ? '£' : ''}${b.price}`,
     status: b.status,
-    paymentLink: b.paymentUrl,
-    message: 'Booking created! Finish the reservation at the link to receive the QR entry code. Free cancellation up to 2 hours before the session.',
+    paymentLink: checkoutLink(b.id, b.bookingCode),
+    timeAssigned: (!time || String(time).toLowerCase() === 'anytime') ? b.time : undefined,
+    message: ((!time || String(time).toLowerCase() === 'anytime')
+      ? `No time was requested, so ${b.time} was assigned — tell the user this time. The pass works any time that day the gym is open. `
+      : '') + 'Booking created! Finish the reservation at the link to receive the QR entry code. Free cancellation up to 2 hours before the session.',
   };
 }
 

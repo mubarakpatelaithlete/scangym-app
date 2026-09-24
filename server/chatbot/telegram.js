@@ -16,7 +16,7 @@
  *   1. Create bot with @BotFather on Telegram → get TELEGRAM_BOT_TOKEN
  *   2. Set env: TELEGRAM_BOT_TOKEN=xxx
  *   3. Set webhook: POST https://api.telegram.org/bot{TOKEN}/setWebhook
- *      Body: { "url": "https://scangym.com/api/chatbot/telegram/webhook" }
+ *      Body: { "url": "https://www.scangym.com/api/chatbot/telegram/webhook" }
  */
 
 const { checkoutLink } = require('../lib/checkout-link');

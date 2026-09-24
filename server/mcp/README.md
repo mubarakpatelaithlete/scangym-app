@@ -35,7 +35,7 @@ Add to `~/.claude/claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "@scangym/mcp-server"],
       "env": {
-        "SCANGYM_API_URL": "https://scangym.com"
+        "SCANGYM_API_URL": "https://www.scangym.com"
       }
     }
   }
@@ -45,7 +45,7 @@ Add to `~/.claude/claude_desktop_config.json`:
 ### Run directly
 
 ```bash
-SCANGYM_API_URL=https://scangym.com npx @scangym/mcp-server
+SCANGYM_API_URL=https://www.scangym.com npx @scangym/mcp-server
 ```
 
 ## Example Usage
@@ -88,11 +88,11 @@ Gyms are ranked by:
 
 ## Links
 
-- 🌐 Website: [scangym.com](https://scangym.com)
+- 🌐 Website: [scangym.com](https://www.scangym.com)
 - 💬 ChatGPT GPT: [ScanGym on ChatGPT](https://chatgpt.com/g/g-6a2d42cd13e08191a65eebd2426bbe60-scangym)
 - 📱 Telegram: [@ScanGymBot](https://t.me/ScanGymBot)
 - 📞 WhatsApp: [+1 (318) 616-8331](https://wa.me/13186168331)
 
 ## License
 
-MIT © [Mubarak Ibrahim Patel](https://scangym.com)
+MIT © [Mubarak Ibrahim Patel](https://www.scangym.com)

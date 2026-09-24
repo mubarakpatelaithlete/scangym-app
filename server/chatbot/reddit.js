@@ -33,7 +33,7 @@ const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET || '';
 const REDDIT_USERNAME = process.env.REDDIT_USERNAME || '';
 const REDDIT_PASSWORD = process.env.REDDIT_PASSWORD || '';
 const REDDIT_USER_AGENT = 'ScanGym:v1.0 (by /u/ScanGymBot)';
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 
 let accessToken = null;
 let tokenExpiry = 0;

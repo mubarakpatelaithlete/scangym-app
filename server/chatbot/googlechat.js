@@ -22,7 +22,7 @@ const router = express.Router();
 const { handleMessage } = require('./message-handler');
 
 const AUDIENCE = process.env.GOOGLE_CHAT_AUDIENCE || process.env.GOOGLE_CHAT_PROJECT_NUMBER;
-const BASE_URL = process.env.BASE_URL || 'https://scangym.com';
+const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 const GOOGLE_CHAT_ISSUER = 'chat@system.gserviceaccount.com';
 const ADDON_ISSUER = 'service-' + AUDIENCE + '@gcp-sa-gsuiteaddons.iam.gserviceaccount.com';
 const EVENTS_URL = BASE_URL + '/api/chatbot/googlechat/events';
