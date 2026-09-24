@@ -186,7 +186,10 @@ router.get('/guest-lookup', async (req, res) => {
         status: b.status,
         email: b.user_email,
         name: b.user_name,
-        isPaid: !!b.stripe_payment_intent_id,
+        // A payment intent exists as soon as someone taps Pay — even when the
+        // card is then declined (booking 241, 2026-09-24: "insufficient funds"
+        // still read isPaid:true). Paid means the booking was confirmed too.
+        isPaid: !!b.stripe_payment_intent_id && ['confirmed', 'completed', 'checked_in', 'attended', 'used'].includes(String(b.status || '').toLowerCase()),
       },
     });
   } catch (err) {
