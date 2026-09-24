@@ -118,8 +118,11 @@ router.post('/webhook', parseInbound, express.urlencoded({ extended: true, limit
     await sendEmailReply(senderEmail, senderName, subject, response.text + attachmentInfo, messageId);
 
     // If booking was confirmed, send a separate QR confirmation email
-    if (response.data && response.data.booking) {
-      await sendBookingConfirmation(senderEmail, senderName, response.data.booking);
+    // Only once it is actually paid — an unpaid hold already got the pay link
+    // above, and a "✅ Booking Confirmed" email for it was misleading.
+    const bk = response.data && response.data.booking;
+    if (bk && (bk.isPaid === true || bk.paid === true || bk.paymentStatus === 'paid')) {
+      await sendBookingConfirmation(senderEmail, senderName, bk);
     }
 
   } catch (err) {
