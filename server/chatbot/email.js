@@ -36,7 +36,13 @@ const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 const messageThreads = new Map();
 
 // ─── Inbound Email Webhook ──────────────────────────────────
-router.post('/webhook', express.urlencoded({ extended: true, limit: '10mb' }), async (req, res) => {
+/* SendGrid Inbound Parse posts multipart/form-data. express.urlencoded alone
+   left req.body empty, so every real email logged "no usable content" and the
+   customer got no reply (found in the 2026-09-24 email journey test). */
+const multer = require('multer');
+const parseInbound = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 10 } }).any();
+
+router.post('/webhook', parseInbound, express.urlencoded({ extended: true, limit: '10mb' }), async (req, res) => {
   res.sendStatus(200);
 
   try {
