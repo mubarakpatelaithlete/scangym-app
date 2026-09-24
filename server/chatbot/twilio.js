@@ -36,6 +36,13 @@ const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER;
 const TWILIO_WA_PHONE = process.env.TWILIO_WHATSAPP_NUMBER || (TWILIO_PHONE ? `whatsapp:${TWILIO_PHONE}` : null);
+// Reply from the same sender the customer wrote to (SMS number, WhatsApp
+// number or Facebook Messenger page "messenger:<pageId>").
+const replyFrom = new Map();
+function fromFor(to) {
+  if (replyFrom.has(to)) return replyFrom.get(to);
+  return to.startsWith('whatsapp:') ? TWILIO_WA_PHONE : TWILIO_PHONE;
+}
 const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 
 // Opted-out phone numbers (STOP compliance)
@@ -85,9 +92,11 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
       return res.type('text/xml').send('<Response></Response>');
     }
 
+    if (To) { replyFrom.set(From, To); if (replyFrom.size > 20000) replyFrom.clear(); }
     const isWhatsApp = From.startsWith('whatsapp:');
-    const platform = isWhatsApp ? 'whatsapp' : 'sms';
-    const userPhone = From.replace('whatsapp:', '');
+    const isMessenger = From.startsWith('messenger:');
+    const platform = isWhatsApp ? 'whatsapp' : isMessenger ? 'messenger' : 'sms';
+    const userPhone = From.replace(/^(whatsapp|messenger):/, '');
     const userId = `${platform}:${userPhone}`;
 
     // ─── Handle location messages (NEW in v3.0 — matching Telegram) ──
@@ -356,7 +365,7 @@ async function sendWhatsAppInteractive(to, interactive) {
 
   // Twilio's Content API or direct WhatsApp Business API
   // Using Twilio's messaging approach with interactive content
-  const from = TWILIO_WA_PHONE;
+  const from = fromFor(to);
   
   try {
     // Twilio supports interactive messages through the Content Template Builder
@@ -403,8 +412,7 @@ async function sendWhatsAppWithSuggestions(to, text) {
 async function sendTwilioMessage(to, body) {
   if (!TWILIO_SID || !TWILIO_AUTH || !TWILIO_PHONE) return;
 
-  const isWhatsApp = to.startsWith('whatsapp:');
-  const from = isWhatsApp ? TWILIO_WA_PHONE : TWILIO_PHONE;
+  const from = fromFor(to);
 
   try {
     await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
@@ -424,8 +432,7 @@ async function sendTwilioMessage(to, body) {
 async function sendQrImage(to, qrUrl, caption) {
   if (!TWILIO_SID || !TWILIO_AUTH || !TWILIO_PHONE) return;
 
-  const isWhatsApp = to.startsWith('whatsapp:');
-  const from = isWhatsApp ? TWILIO_WA_PHONE : TWILIO_PHONE;
+  const from = fromFor(to);
 
   try {
     const params = new URLSearchParams({ To: to, From: from });
