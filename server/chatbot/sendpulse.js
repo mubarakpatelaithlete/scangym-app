@@ -2,13 +2,15 @@
  * SendPulse chatbot bridge (Facebook Messenger / Instagram via SendPulse Free).
  * SendPulse bot webhook "incoming_message" → POST /api/chatbot/sendpulse/webhook
  * → shared message-handler → reply via SendPulse API (sendText).
- * Env: SENDPULSE_ID, SENDPULSE_SECRET
+ * Env: SENDPULSE_ID / SENDPULSE_SECRET (or SENDPULSE_API_ID / SENDPULSE_API_SECRET)
  */
 const express = require('express');
 const router = express.Router();
 const { handleMessage } = require('./message-handler');
 
 const API = 'https://api.sendpulse.com';
+const SP_ID = () => process.env.SENDPULSE_ID || process.env.SENDPULSE_API_ID;
+const SP_SECRET = () => process.env.SENDPULSE_SECRET || process.env.SENDPULSE_API_SECRET;
 let token = null, tokenExp = 0;
 const recent = [];
 function log(e) { recent.unshift({ at: new Date().toISOString(), ...e }); recent.length = Math.min(recent.length, 20); }
@@ -17,7 +19,7 @@ async function getToken() {
   if (token && Date.now() < tokenExp) return token;
   const r = await fetch(`${API}/oauth/access_token`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grant_type: 'client_credentials', client_id: process.env.SENDPULSE_ID, client_secret: process.env.SENDPULSE_SECRET }),
+    body: JSON.stringify({ grant_type: 'client_credentials', client_id: SP_ID(), client_secret: SP_SECRET() }),
   });
   const j = await r.json();
   if (!j.access_token) throw new Error('SendPulse token failed: ' + JSON.stringify(j).slice(0, 200));
@@ -71,6 +73,6 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
-router.get('/debug', (req, res) => res.json({ configured: !!(process.env.SENDPULSE_ID && process.env.SENDPULSE_SECRET), recent }));
+router.get('/debug', (req, res) => res.json({ configured: !!(SP_ID() && SP_SECRET()), recent }));
 
 module.exports = router;
