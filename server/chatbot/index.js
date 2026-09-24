@@ -38,6 +38,7 @@ if (typeof telegramRouter.ensureProfileText === 'function') telegramRouter.ensur
 // Twilio: WhatsApp + SMS (uses existing Twilio account)
 const twilioRouter = require('./twilio');
 router.use('/twilio', twilioRouter);
+router.use('/sendpulse', require('./sendpulse'));
 
 // Discord (free, connects via WebSocket Gateway)
 const { router: discordRouter, startDiscordBot, gatewayStatus: discordGatewayStatus } = require('./discord');
