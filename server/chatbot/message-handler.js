@@ -605,6 +605,11 @@ async function handleMessage(userId, text, meta = {}) {
   if (!entities.email && meta.linkedUser && meta.linkedUser.email) {
     entities.email = meta.linkedUser.email;
   }
+  // Email channel: the sender's address is already known, so never ask
+  // "Share your email" (found in the 2026-09-24 email journey test).
+  if (!entities.email && meta.platform === 'email' && meta.email) {
+    entities.email = meta.email;
+  }
   
   // Dedup
   const normalised = text.toLowerCase().trim();
