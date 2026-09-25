@@ -56,6 +56,8 @@
   // same policy as the Apps page: no dead links, they appear here once live.
   // Facebook Messenger bot (SendPulse, page "ScanGym" id 1380733691780608).
   var MESSENGER_URL = 'https://m.me/1380733691780608';
+  // Instagram DM chatbot (SendPulse bot 6ab6693dd2d53ef0f407142f → /api/chatbot/sendpulse/webhook)
+  var INSTAGRAM_DM_URL = 'https://ig.me/m/mubsy_014';
   var MS_STORE_URL = 'https://apps.microsoft.com/detail/9nh8vrn834dv';
 
   // ── Styles (injected once) ─────────────────────────────────────────────
@@ -248,8 +250,8 @@
     },
     everything: function () { window.location.href = '/everything'; },
     tiktok: function () { window.open('https://www.tiktok.com/@scangym', '_blank'); },
-    instagram: function () { window.open('https://instagram.com/scangym', '_blank'); },
-    facebook: function () { window.open('https://facebook.com/scangym', '_blank'); },
+    instagram: function () { window.open(INSTAGRAM_DM_URL, '_blank'); },
+    facebook: function () { window.open(MESSENGER_URL, '_blank'); },
     install: function () {
       if (deferredInstall) {
         deferredInstall.prompt();
@@ -346,10 +348,10 @@
   /* Groups, so a section header never survives on its own: if the host rail
      already shows every button in a group, the header goes too. */
   var GROUPS = [
-    { title: 'Chatbots', items: [['messenger', 'Messenger'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
+    { title: 'Chatbots', items: [['messenger', 'Messenger'], ['instagram', 'Instagram'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
     { title: 'Apps', items: [['msstore', 'MS Store'], ['install', 'Install']] },
-    { title: 'Social', items: [['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['facebook', 'Facebook']] },
+    { title: 'Social', items: [['tiktok', 'TikTok'], ['facebook', 'Facebook']] },
     // The rail can only hold the handful of channels that fit. Everything else
     // ScanGym does lives on /everything, one tap from here, so nothing on the
     // Buttons board is unreachable just because it did not fit in a column.
