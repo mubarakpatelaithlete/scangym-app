@@ -45,7 +45,7 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true, instagram: true };
+  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true, instagram: true, sms: true };
   // instagram: DM bot @mubsy_014 verified end-to-end with a real paid booking (PZ9T-Z72R, 2026-09-25).
   // Social: tiktok.com/@scangym verified live (real profile page renders).
   // instagram.com/scangym + facebook.com/scangym sit behind login walls we
@@ -109,6 +109,7 @@
   var ICONS = {
     messenger: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2.5C6.6 2.5 2.5 6.4 2.5 11.3c0 2.6 1.1 4.8 3 6.4v3.3l3.1-1.7c1 .3 2.2.4 3.4.4 5.4 0 9.5-3.9 9.5-8.8S17.4 2.5 12 2.5z" fill="#fff"/><path d="M6.8 14.2l3-4.7 2.4 1.9 2.9-1.9-3 4.7-2.4-1.9z" fill="#0f172a"/></svg>',
     everything: '<svg viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="2.2" fill="#fff"/><circle cx="12" cy="6" r="2.2" fill="#fff"/><circle cx="18" cy="6" r="2.2" fill="#fff"/><circle cx="6" cy="12" r="2.2" fill="#fff"/><circle cx="12" cy="12" r="2.2" fill="#fff"/><circle cx="18" cy="12" r="2.2" fill="#fff"/><circle cx="6" cy="18" r="2.2" fill="#fff"/><circle cx="12" cy="18" r="2.2" fill="#fff"/><circle cx="18" cy="18" r="2.2" fill="#fff"/></svg>',
+    sms: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z" fill="#fff"/><circle cx="8" cy="11" r="1.3" fill="#22c55e"/><circle cx="12" cy="11" r="1.3" fill="#22c55e"/><circle cx="16" cy="11" r="1.3" fill="#22c55e"/></svg>',
     telegram: '<svg viewBox="0 0 24 24" fill="none"><path d="M21.5 4.3L2.8 11.4c-.9.35-.9 1.6.02 1.9l4.7 1.5 1.8 5.5c.25.75 1.2.95 1.7.35l2.5-2.9 4.7 3.5c.6.45 1.5.1 1.65-.65L23.9 5.1c.2-1-.75-1.8-1.7-1.4z" fill="#fff"/></svg>',
     discord: '<svg viewBox="0 0 24 24" fill="none"><path d="M19.5 5.3A17 17 0 0015.3 4l-.25.5a15.7 15.7 0 014 1.3c-2-1-4.2-1.4-6.4-1.4-2.2 0-4.4.4-6.4 1.4a15.7 15.7 0 014-1.3L9.7 4A17 17 0 005.5 5.3C2.9 9 2.2 12.6 2.5 16.2A16 16 0 007.3 19l.6-1a11 11 0 01-1.9-.9l.4-.35c3.6 1.7 7.6 1.7 11.2 0l.4.35c-.6.35-1.2.65-1.9.9l.6 1a16 16 0 004.8-2.8c.4-4.2-.55-7.8-2.6-11zM9.3 14c-.8 0-1.5-.75-1.5-1.7s.65-1.7 1.5-1.7c.85 0 1.55.8 1.5 1.7 0 .95-.65 1.7-1.5 1.7zm5.4 0c-.8 0-1.5-.75-1.5-1.7s.65-1.7 1.5-1.7c.85 0 1.55.8 1.5 1.7 0 .95-.65 1.7-1.5 1.7z" fill="#fff"/></svg>',
     slack: '<svg viewBox="0 0 24 24"><path d="M5.1 15.1a2.1 2.1 0 11-2.1-2.1h2.1v2.1zm1.05 0a2.1 2.1 0 014.2 0v5.25a2.1 2.1 0 11-4.2 0V15.1z" fill="#fff"/><path d="M8.25 5.1A2.1 2.1 0 116.15 3v2.1H8.25zm0 1.05a2.1 2.1 0 010 4.2H3A2.1 2.1 0 013 6.15h5.25z" fill="#fff"/><path d="M18.9 8.25A2.1 2.1 0 1121 6.15v2.1h-2.1zm-1.05 0a2.1 2.1 0 01-4.2 0V3a2.1 2.1 0 014.2 0v5.25z" fill="#fff"/><path d="M15.75 18.9A2.1 2.1 0 1117.85 21h-2.1v-2.1zm0-1.05a2.1 2.1 0 010-4.2H21a2.1 2.1 0 010 4.2h-5.25z" fill="#fff"/></svg>',
@@ -185,6 +186,7 @@
     return id ? base + '?start=' + encodeURIComponent(String(id)) : base;
   }
 
+  var SMS_NUMBER = '+447366265044';
   var SCANGYM_GPT_URL = 'https://chatgpt.com/g/g-6a445a2958e48191bc28d9f14374b8ea';
 
   // ── Actions ────────────────────────────────────────────────────────────
@@ -252,6 +254,11 @@
     everything: function () { window.location.href = '/everything'; },
     tiktok: function () { window.open('https://www.tiktok.com/@scangym', '_blank'); },
     instagram: function () { window.open(INSTAGRAM_DM_URL, '_blank'); },
+    sms: function () {
+      // UK mobile number wired to /api/chatbot/twilio/webhook. '?&body=' works on iOS and Android.
+      if (typeof window._sgConnectChannel === 'function') { try { window._sgConnectChannel('sms'); } catch (e) {} }
+      window.location.href = 'sms:' + SMS_NUMBER + '?&body=' + encodeURIComponent('Hi ScanGym, I want to book a gym');
+    },
     facebook: function () { window.open(MESSENGER_URL, '_blank'); },
     install: function () {
       if (deferredInstall) {
@@ -359,7 +366,7 @@
   var GROUPS = [
     // One Facebook chatbot button (it opens the ScanGym Messenger bot). The old
     // Social "Facebook" button opened the same chat, so it looked doubled.
-    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
+    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
     // Apps group dropped: the host row's "Apps" button already opens MS Store
     // and Install (owner saw double buttons, 2026-09-25).
