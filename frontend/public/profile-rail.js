@@ -45,7 +45,8 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true };
+  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true, instagram: true };
+  // instagram: DM bot @mubsy_014 verified end-to-end with a real paid booking (PZ9T-Z72R, 2026-09-25).
   // Social: tiktok.com/@scangym verified live (real profile page renders).
   // instagram.com/scangym + facebook.com/scangym sit behind login walls we
   // can't verify through, so they render amber until confirmed. x.com/scangym
