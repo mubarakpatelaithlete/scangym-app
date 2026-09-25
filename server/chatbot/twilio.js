@@ -274,7 +274,7 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
       // Send additional chunks via REST
       if (chunks.length > 1) {
         for (let i = 1; i < chunks.length; i++) {
-          await sendTwilioMessage(From, chunks[i]);
+          await sendTwilioMessage(From, chunks[i], To); // reply from the number the customer texted
         }
       }
 
@@ -365,7 +365,7 @@ async function sendWhatsAppInteractive(to, interactive) {
 
   // Twilio's Content API or direct WhatsApp Business API
   // Using Twilio's messaging approach with interactive content
-  const from = fromFor(to);
+  const from = fromOverride || fromFor(to);
   
   try {
     // Twilio supports interactive messages through the Content Template Builder
@@ -409,7 +409,7 @@ async function sendWhatsAppWithSuggestions(to, text) {
 }
 
 // ─── Send message via Twilio REST API ────────────────────────
-async function sendTwilioMessage(to, body) {
+async function sendTwilioMessage(to, body, fromOverride) {
   if (!TWILIO_SID || !TWILIO_AUTH || !TWILIO_PHONE) return;
 
   const from = fromFor(to);
