@@ -296,6 +296,7 @@
     var live = isLive(key);
     var el = document.createElement('div');
     el.className = 'sg-pr-btn' + (live ? '' : ' pending');
+    el.setAttribute('data-sgx', '1');
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', 'Open ScanGym on ' + label + (live ? '' : ' (verifying)'));
     el.innerHTML =
@@ -313,6 +314,7 @@
   function sec(text) {
     var el = document.createElement('div');
     el.className = 'sg-pr-sec';
+    el.setAttribute('data-sgx', '1');
     el.textContent = text;
     return el;
   }
@@ -405,7 +407,18 @@
       if (floatEl) floatEl.remove();
       if (extEl && extEl.parentNode !== host) { extEl.remove(); extEl = null; }
       if (extEl && extEl.getAttribute('data-health') !== String(!!health)) { extEl.remove(); extEl = null; }
+      /* Something re-parents our buttons out of the wrapper, so the wrapper id
+         vanishes while the buttons stay; the next poll then added a second
+         full set (owner saw every button twice, 2026-09-25). Our own buttons
+         carry data-sgx: if they are already in the host, do nothing, and on a
+         health change clear them all before rebuilding. */
+      var mine = host.querySelectorAll('[data-sgx]');
+      if (!extEl && mine.length) {
+        if (host.getAttribute('data-sgx-health') === String(!!health)) return;
+        for (var m = 0; m < mine.length; m++) mine[m].remove();
+      }
       if (!extEl) {
+        host.setAttribute('data-sgx-health', String(!!health));
         var wrap = document.createElement('div');
         wrap.id = EXT_ID;
         wrap.setAttribute('data-health', String(!!health));
