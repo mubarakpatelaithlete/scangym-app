@@ -396,7 +396,11 @@ function extractEntities(text) {
   }
   
   // Time
-  const timeMatch = text.match(/\bat?\s*(\d{1,2})[:\.]?(\d{2})?\s*(am|pm)?\b/i);
+  // "3pm" / "15:30" without "at" used to be dropped, so bookings fell back
+  // to 09:00 (Messenger test 2026-09-25: "Tomorrow 3pm" booked 09:00).
+  const timeMatch = text.match(/\bat?\s*(\d{1,2})[:\.]?(\d{2})?\s*(am|pm)?\b/i)
+    || text.match(/\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)\b/i)
+    || text.match(/\b(\d{1,2})[:.](\d{2})\b()/);
   if (timeMatch) {
     let hours = parseInt(timeMatch[1]);
     const mins = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
@@ -661,6 +665,8 @@ async function handleMessage(userId, text, meta = {}) {
     // ── Clear search intent ──
     else if (intent === INTENTS.SEARCH && entities.location) {
       result = await handleSearch(session, text, entities, meta);
+      // "JD gym Bolton tomorrow 3pm" then "1" should not ask the date again.
+      if (entities.date) session.pendingPick = { date: entities.date, time: entities.time };
     } else if (intent === INTENTS.SEARCH && !entities.location) {
       const location = text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in|around|some)\b/gi, '').trim();
       if (location.length > 1) {
