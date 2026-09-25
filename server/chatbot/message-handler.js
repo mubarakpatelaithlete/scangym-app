@@ -884,8 +884,16 @@ async function handleBook(session, text, entities, meta) {
     const phrase = m && m[1] ? m[1].trim() : '';
     if (phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase)) {
       const data = await callApi(`/api/live/search?${new URLSearchParams({ q: phrase })}`);
-      const hit = (data.gyms || []).find((g) => g.name && normN(g.name).length > 3 && said.includes(normN(g.name)));
-      if (hit) { targetGym = hit; session.lastResults = data.gyms; }
+      /* Loose match too: "JD gym Bolton" must find "JD Gyms Bolton" (SMS test
+         2026-09-25) — compare word sets with plurals folded. */
+      const words = (x) => normN(x).split(' ').filter(Boolean).map((w) => w.length > 3 ? w.replace(/s$/, '') : w);
+      const saidW = new Set(words(text));
+      const loose = (g) => { const w = words(g.name); return w.length > 0 && w.every((x) => saidW.has(x)); };
+      const gyms = data.gyms || [];
+      const hit = gyms.find((g) => g.name && normN(g.name).length > 3 && said.includes(normN(g.name)))
+        || gyms.find((g) => g.name && loose(g))
+        || (gyms.length === 1 ? gyms[0] : null);
+      if (hit) { targetGym = hit; session.lastResults = gyms; }
     }
   }
 
