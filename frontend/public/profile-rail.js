@@ -349,10 +349,13 @@
   /* Groups, so a section header never survives on its own: if the host rail
      already shows every button in a group, the header goes too. */
   var GROUPS = [
-    { title: 'Chatbots', items: [['messenger', 'Messenger'], ['instagram', 'Instagram'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
+    // One Facebook chatbot button (it opens the ScanGym Messenger bot). The old
+    // Social "Facebook" button opened the same chat, so it looked doubled.
+    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
-    { title: 'Apps', items: [['msstore', 'MS Store'], ['install', 'Install']] },
-    { title: 'Social', items: [['tiktok', 'TikTok'], ['facebook', 'Facebook']] },
+    // Apps group dropped: the host row's "Apps" button already opens MS Store
+    // and Install (owner saw double buttons, 2026-09-25).
+    { title: 'Social', items: [['tiktok', 'TikTok']] },
     // The rail can only hold the handful of channels that fit. Everything else
     // ScanGym does lives on /everything, one tap from here, so nothing on the
     // Buttons board is unreachable just because it did not fit in a column.
