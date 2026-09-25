@@ -321,6 +321,12 @@
 
   // The app bundle's own rail: right:10px + top:50% + column flex, not ours.
   function nativeRail() {
+    /* Once we have claimed the host it may turn position:fixed (rails.css),
+       and a fixed element has no offsetParent, so the search below lost it and
+       a second, floating set of buttons was built (every button showed twice,
+       2026-09-25). A host we already claimed stays the host. */
+    var claimed = document.querySelector('.sg-pr-host-capped');
+    if (claimed && claimed.isConnected && claimed.getClientRects().length) return claimed;
     var els = document.querySelectorAll('div[style*="flex-direction:column"]');
     for (var i = 0; i < els.length; i++) {
       var st = els[i].getAttribute('style') || '';
@@ -392,7 +398,21 @@
   // ── Visibility (the app routes without firing popstate; poll like
   //    chat-agent.js does) ─────────────────────────────────────────────────
   var EXT_ID = 'sg-profile-rail-ext';
+  /* Last line of defence against doubles: whatever re-parents or re-renders
+     the rail, only one of each of our buttons and headers may exist. */
+  function dedupe() {
+    var seen = {};
+    var els = document.querySelectorAll('[data-sgx]');
+    for (var i = 0; i < els.length; i++) {
+      var k = (els[i].className.indexOf('sg-pr-sec') !== -1 ? 'sec:' : 'btn:') +
+        (els[i].getAttribute('aria-label') || els[i].textContent || '').trim();
+      if (seen[k]) els[i].remove(); else seen[k] = true;
+    }
+  }
   function sync() {
+    try { syncInner(); } finally { dedupe(); }
+  }
+  function syncInner() {
     var onProfile = ROUTE.test(location.pathname);
     var floatEl = document.getElementById(RAIL_ID);
     var extEl = document.getElementById(EXT_ID);
