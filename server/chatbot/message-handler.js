@@ -533,7 +533,7 @@ function formatGymList(gyms, platform, offset = 0, query = '') {
   }
   
   text += `━━━━━━━━━━━━━━━━\n`;
-  text += `💡 To book: "Book gym 1 for tomorrow"\n`;
+  text += `💡 To book: reply with the gym number, e.g. "1" — or "Book gym 1 tomorrow 6pm"\n`;
   if (offset + count < gyms.length) text += `📋 More results: "Show more gyms"\n`;
   text += `💳 Or book online: scangym.com/explore\n`;
   text += `🌐 scangym.com — maps, photos & reviews`;
@@ -563,8 +563,9 @@ function formatBookingConfirmation(booking, gymName, passType) {
       `📲 Your QR gym pass: https://www.scangym.com/bookings\n` +
       `Scan at the gym entrance — no reception needed! 🔑\n\n` + footer;
   }
-  return `━━━━━━━━━━━━━━━━\n🕐 *Almost done — pay to confirm*\n━━━━━━━━━━━━━━━━\n\n` + details +
-    `💳 *Pay here to confirm:* ${checkoutLink(bookingId, booking.bookingCode)}\n\n` +
+  // Pay link first and on its own line so it is the one thing to tap
+  // (Instagram journey test 2026-09-25: link was buried under the details).
+  return `🕐 *Almost done — tap to pay ${price}:*\n👉 ${checkoutLink(bookingId, booking.bookingCode)}\n\n` + details +
     `📲 Your QR gym pass appears straight after payment.\n` + footer;
 }
 
@@ -600,6 +601,11 @@ async function handleMessage(userId, text, meta = {}) {
   if (session.pendingPick && /^\s*#?\d{1,2}\s*$/.test(text)) {
     text = `book gym ${text.replace(/\D/g, '')}`;
   }
+  /* Instagram test 2026-09-25: after a plain gym list, a bare "1" should
+     pick gym 1 too (fewer words to type). */
+  else if (!session.pendingBooking && session.lastResults && session.lastResults.length && /^\s*#?\d{1,2}\s*$/.test(text)) {
+    text = `book gym ${text.replace(/\D/g, '')}`;
+  }
   const intent = detectIntent(text, session);
   const entities = extractEntities(text);
   if (session.pendingPick && intent === INTENTS.BOOK && !entities.date) {
@@ -618,6 +624,11 @@ async function handleMessage(userId, text, meta = {}) {
   // "Share your email" (found in the 2026-09-24 email journey test).
   if (!entities.email && meta.platform === 'email' && meta.email) {
     entities.email = meta.email;
+  }
+  // Returning chat customers: reuse the email they gave last time so the
+  // bot never asks twice (Instagram journey test 2026-09-25).
+  if (!entities.email && session.savedEmail) {
+    entities.email = session.savedEmail;
   }
   
   // Dedup
@@ -725,6 +736,7 @@ async function handleMessage(userId, text, meta = {}) {
 async function handleFollowUp(session, text, entities, meta) {
   const pending = session.pendingBooking;
   if (!pending) return { text: getFallbackText() };
+  if (!pending.email && session.savedEmail) pending.email = session.savedEmail;
   
   // Pass type selection
   if (!pending.passType && entities.passType) {
@@ -881,7 +893,7 @@ async function handleBook(session, text, entities, meta) {
       session.lastResults = data.gyms; session.lastResultsOffset = 0; session.lastQuery = entities.location;
       session.pendingPick = entities.date ? { date: entities.date, time: entities.time } : null;
       let list = formatGymList(data.gyms, meta.platform, 0, entities.location);
-      if (entities.date) list = list.replace(/💡 To book: "Book gym 1 for tomorrow"/, '💡 To book: reply with the gym number, e.g. "1"');
+      if (entities.date) list = list.replace(/💡 To book: reply with the gym number, e\.g\. "1" — or "Book gym 1 tomorrow 6pm"/, '💡 To book: reply with the gym number, e.g. "1"');
       return { text: list, data: { gyms: data.gyms } };
     }
   }
@@ -895,12 +907,12 @@ async function handleBook(session, text, entities, meta) {
   if (!entities.date) {
     session.pendingBooking = { gym: targetGym, passType: entities.passType };
     const price = `${targetGym.currencySymbol || '£'}${targetGym.dayPassPrice}`;
-    return { text: `📅 When would you like to visit *${targetGym.name}*?\n💰 Day pass: ${price}\n\nSay "today", "tomorrow", a day like "Monday", or a date like "15 Jan".` };
+    return { text: `📅 When would you like to visit *${targetGym.name}*?\n💰 Day pass: ${price}\n\nSay "today", "tomorrow", a day like "Monday", or a date like "15 Jan".\n⏰ Add a time if you like: "tomorrow 6pm"` };
   }
   
   if (!entities.email) {
     session.pendingBooking = { gym: targetGym, date: entities.date, time: entities.time, passType: entities.passType };
-    return { text: `📧 Last step! Share your email to book at *${targetGym.name}*.\n\nWe'll send your QR code and booking confirmation there. 📲` };
+    return { text: `📧 Last step! Share your email to book at *${targetGym.name}*.\n\nWe'll send your QR code and booking confirmation there. 📲${entities.time ? '' : '\n⏰ Want a set time? Add it, e.g. "me@mail.com 6pm"'}` };
   }
   
   return await completeBooking(session, targetGym, entities, meta, entities.passType);
@@ -930,6 +942,7 @@ async function completeBooking(session, targetGym, entities, meta, passType) {
   }
   
   session.pendingBooking = null; session.pendingPick = null;
+  if (entities.email) session.savedEmail = entities.email;
   return { text: formatBookingConfirmation(bookingResult.booking, targetGym.name, passType), data: { booking: bookingResult.booking } };
 }
 
