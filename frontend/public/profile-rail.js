@@ -371,10 +371,7 @@
     // Apps group dropped: the host row's "Apps" button already opens MS Store
     // and Install (owner saw double buttons, 2026-09-25).
     { title: 'Social', items: [['tiktok', 'TikTok']] },
-    // The rail can only hold the handful of channels that fit. Everything else
-    // ScanGym does lives on /everything, one tap from here, so nothing on the
-    // Buttons board is unreachable just because it did not fit in a column.
-    { title: 'More', items: [['everything', 'All']] },
+    // 'All' (/everything) button removed at the owner's request, 2026-09-25.
   ];
 
   function buttonList(skip) {
