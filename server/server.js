@@ -599,6 +599,11 @@ app.use('/api/playlists', playlistsRouter);
    collides with routes/stats.js. */
 app.use('/api/stats', adminDashboardRouter);
 
+/* "Sign in with ScanGym" for the signed-in connector /mcp/account (library,
+   memory, create in chat). Registered BEFORE the 404 below, and only on
+   /mcp/account and /oauth paths, so the open /mcp connector stays sign-in free. */
+app.use(require('./routes/mcp-oauth'));
+
 // OpenAI ChatGPT Apps domain verification challenge
 /* The MCP connector (/mcp) needs no sign-in. But the SPA catch-all answered
    /.well-known/oauth-protected-resource and oauth-authorization-server with
