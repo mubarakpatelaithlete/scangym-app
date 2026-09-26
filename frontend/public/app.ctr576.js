@@ -16064,7 +16064,7 @@ function ChannelsFullPage(){
   var connMap=window._sgChannelStatus||{};
   var channels=[
     {name:'Telegram',key:'telegram',icon:'\u2708\ufe0f',desc:'Chat with our gym bot',color:'#0088cc',action:"_sgConnectChannel('telegram','https://t.me/ScanGymBot')"},
-    {name:'TikTok',key:'tiktok',icon:'\ud83c\udfb5',desc:'Message our TikTok bot',color:'#000000',action:"_sgConnectChannel('tiktok');window.open('https://www.tiktok.com/@digitalovesh','_blank')"},
+    {name:'TikTok',key:'tiktok',icon:'\ud83c\udfb5',desc:'Message our TikTok bot',color:'#000000',action:"window.open('https://tiktok.me/digitalovesh','_blank');_sgConnectChannel('tiktok')"},
     {name:'WhatsApp',key:'whatsapp',icon:'\ud83d\udcac',desc:'Chat with us instantly',color:'#25D366',action:"_sgConnectChannel('whatsapp');_sgOpenWhatsApp()"},
     {name:'Discord',key:'discord',icon:'\ud83c\udfae',desc:'Add our bot to your server',color:'#5865F2',action:"_sgConnectChannel('discord');_sgOpenDiscord()"},
     {name:'Slack',key:'slack',icon:'\ud83d\udcbc',desc:'Add ScanGym to Slack',color:'#4A154B',action:"_sgConnectChannel('slack');_sgOpenSlack()"},
