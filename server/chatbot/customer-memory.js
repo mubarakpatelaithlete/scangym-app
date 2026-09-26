@@ -5,7 +5,7 @@
  * Owner request 2026-09-26: customers create lots of things with lots of models
  * from lots of chatbots, so every chatbot must know the same customer.
  *
- *  - WHO: a chat is tied to a ScanGym account only through a link the customer
+ *  - WHO (only when meta.verified): a chat is tied to a ScanGym account only through a link the customer
  *    made while signed in (user_channels, Profile → Chatbots), or the verified
  *    sender address on the email channel. Never by an email typed into a chat:
  *    that would let anyone read anyone's library.
@@ -54,6 +54,12 @@ function prefixOf(chatId) {
 
 /** ScanGym account behind this chat, or null. */
 async function resolveCustomer(chatId, meta = {}, deps) {
+  /* Only chats whose sender is proven by the platform (Telegram secret token,
+     Twilio signature, Slack signature, Discord gateway) may act as an account.
+     Anyone can POST a fake webhook body naming someone else's chat id, and the
+     public /api/chatbot/test endpoint takes a linkedUser straight from the
+     body — neither may read a library or spend a card. */
+  if (!meta.verified) return null;
   const lu = meta.linkedUser;
   if (lu && (lu.userId || lu.user_id)) {
     return { userId: String(lu.userId || lu.user_id), email: lu.email || null, firstName: lu.firstName || lu.first_name || null };

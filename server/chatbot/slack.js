@@ -128,6 +128,7 @@ router.post('/events', express.json({ verify: (req, res, buf) => { req.rawBody =
       userName,
       platform: 'slack',
       channelId,
+      verified: !!SLACK_SIGNING_SECRET, // request signature checked above
     });
 
     // Send rich response

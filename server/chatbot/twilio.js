@@ -229,6 +229,8 @@ router.post('/webhook', express.urlencoded({ extended: true }), async (req, res)
       userName: userPhone,
       platform,
       phone: userPhone,
+      // Signed by Twilio = the phone number is real (library, shared memory, in-chat create).
+      verified: !!TWILIO_AUTH && verifyTwilioSignature(req),
     });
 
     // ─── Store session for pagination (NEW in v3.0) ──
