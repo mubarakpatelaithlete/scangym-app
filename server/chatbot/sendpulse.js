@@ -1,5 +1,5 @@
 /**
- * SendPulse chatbot bridge (Facebook Messenger / Instagram via SendPulse Free).
+ * SendPulse chatbot bridge (Facebook Messenger / Instagram / TikTok via SendPulse Free).
  * SendPulse bot webhook "incoming_message" → POST /api/chatbot/sendpulse/webhook
  * → shared message-handler → reply via SendPulse API (sendText).
  * Env: SENDPULSE_ID / SENDPULSE_SECRET (or SENDPULSE_API_ID / SENDPULSE_API_SECRET)
@@ -36,12 +36,14 @@ function chunks(text, max = 1900) {
 
 async function sendText(service, contactId, text) {
   const tk = await getToken();
-  const svc = service === 'instagram' ? 'instagram' : 'messenger';
+  const svc = service === 'instagram' ? 'instagram' : service === 'tiktok' ? 'tiktok' : 'messenger';
   for (const part of chunks(text)) {
     const body = svc === 'messenger'
       ? { contact_id: contactId, message_type: 'RESPONSE', message_tag: 'ACCOUNT_UPDATE', text: part }
-      : { contact_id: contactId, messages: [{ type: 'text', message: { text: part } }] };
-    const path = svc === 'messenger' ? '/messenger/contacts/sendText' : '/instagram/contacts/send';
+      : svc === 'tiktok'
+        ? { contact_id: contactId, messages: [{ type: 'text', text: { text: part } }] }
+        : { contact_id: contactId, messages: [{ type: 'text', message: { text: part } }] };
+    const path = svc === 'messenger' ? '/messenger/contacts/sendText' : `/${svc}/contacts/send`;
     const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk}` }, body: JSON.stringify(body) });
     const j = await r.text();
     log({ type: 'send', status: r.status, resp: j.slice(0, 300) });
@@ -66,7 +68,7 @@ router.post('/webhook', async (req, res) => {
       log({ type: 'in', title, service, contactId, text: String(text).slice(0, 100), keys: Object.keys(ev || {}) });
       if (!contactId || !text || (title && !/incoming/i.test(title))) continue;
       const response = await handleMessage(`${service}:${contactId}`, String(text).trim(), {
-        userName: ev?.contact?.name || 'Messenger user', platform: service,
+        userName: ev?.contact?.name || (service === 'tiktok' ? 'TikTok user' : 'Messenger user'), platform: service,
       });
       if (response?.text) await sendText(service, contactId, response.text);
     } catch (e) { log({ type: 'error', msg: e.message }); console.error('[sendpulse]', e); }
