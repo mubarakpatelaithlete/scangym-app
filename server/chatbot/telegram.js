@@ -35,6 +35,18 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 const { canonicalBase } = require('./canonical-host');
 const BASE_URL = canonicalBase(process.env.BASE_URL || 'https://www.scangym.com');
 const WEBHOOK_PATH = '/api/chatbot/telegram/webhook';
+/* Telegram sends this back in X-Telegram-Bot-Api-Secret-Token on every update,
+   which is the only proof an update really came from Telegram. Derived from the
+   bot token so there is no new variable to set. */
+const WEBHOOK_SECRET = TELEGRAM_TOKEN_FOR_SECRET();
+function TELEGRAM_TOKEN_FOR_SECRET() {
+  const t = process.env.TELEGRAM_BOT_TOKEN;
+  return t ? require('crypto').createHmac('sha256', t).update('scangym-webhook').digest('hex').slice(0, 48) : null;
+}
+function fromTelegram(req) {
+  const got = req && req.headers && req.headers['x-telegram-bot-api-secret-token'];
+  return !!(WEBHOOK_SECRET && got && got === WEBHOOK_SECRET);
+}
 
 const BOT_SECRET = process.env.BOT_CHECKOUT_SECRET || process.env.ADMIN_IMPORT_SECRET || '';
 
@@ -261,6 +273,9 @@ router.post('/webhook', async (req, res) => {
       platform: 'telegram',
       chatId,
       linkedUser, // Pass linked user context to message handler
+      verified: fromTelegram(req), // library, shared memory, in-chat create
+      // In-chat creations that take minutes are sent here when ready.
+      push: (t) => sendTelegramMessage(chatId, t),
     });
 
     // If response has gym data, store for pagination and add buttons
@@ -655,12 +670,14 @@ async function ensureWebhook() {
     const info = await (await fetch(`${TELEGRAM_API}/getWebhookInfo`)).json();
     const current = info?.result?.url || '';
     const lastError = info?.result?.last_error_message || '';
-    if (current === want && !lastError) return { ok: true, changed: false, url: current };
+    // With a secret we always re-register: Telegram never reports whether a
+    // secret is set, and the call is idempotent.
+    if (current === want && !lastError && !WEBHOOK_SECRET) return { ok: true, changed: false, url: current };
 
     const resp = await fetch(`${TELEGRAM_API}/setWebhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: want, allowed_updates: ['message', 'callback_query'] }),
+      body: JSON.stringify({ url: want, allowed_updates: ['message', 'callback_query'], ...(WEBHOOK_SECRET ? { secret_token: WEBHOOK_SECRET } : {}) }),
     });
     const data = await resp.json();
     console.log(`[Telegram] webhook ${current ? `was ${current}` : 'was missing'}${lastError ? ` (last error: ${lastError})` : ''} → set to ${want}:`, data.ok ? 'ok' : data.description);
@@ -786,6 +803,7 @@ router.post('/setup', requireChatbotAdmin, async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        ...(WEBHOOK_SECRET ? { secret_token: WEBHOOK_SECRET } : {}),
         url: webhookUrl,
         allowed_updates: ['message', 'callback_query'],
         drop_pending_updates: true,

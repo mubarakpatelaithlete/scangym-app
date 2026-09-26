@@ -224,6 +224,7 @@ async function handleIncomingMessage(msg) {
     userName,
     platform: 'discord',
     channelId,
+    verified: true, // Discord gateway: the author id comes from Discord itself
   });
 
   // Send with rich embeds + buttons if gym results
@@ -321,7 +322,7 @@ async function handleInteraction(interaction) {
   await respondToInteraction(interaction, null, false, true);
 
   // Process
-  const response = await handleMessage(userId, text, { userName, platform: 'discord', channelId });
+  const response = await handleMessage(userId, text, { userName, platform: 'discord', channelId, verified: true });
 
   // Follow up with result — using embeds for gym results (IMPROVED in v3.0)
   if (response.data?.gyms?.length > 0) {

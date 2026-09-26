@@ -21,6 +21,9 @@
 const { checkoutLink, prettyDate } = require('../lib/checkout-link');
 const { detectCreate, createReply } = require('./create-media');
 const memory = require('./customer-memory');
+const chat = require('./chat-create');
+/* In-chat creation can be switched off with CHAT_CREATE=off without a deploy. */
+function chatCreateOn(deps) { return !(deps && deps.noChatCreate) && process.env.CHAT_CREATE !== 'off'; }
 
 const SCANGYM_API = (
   process.env.SCANGYM_API_URL ||
@@ -629,8 +632,13 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     } else if (ask === 'remix') {
       if (known.lastCreate && known.lastCreate.prompt) {
         create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
-        result = createReply(create.kind, create.prompt);
-        result.text = '🔁 Remixing your last idea:\n\n' + result.text;
+        if (customer && chatCreateOn(deps)) {
+          session.pendingCreate = { ...create, at: Date.now() };
+          result = { text: '🔁 Remixing your last idea.\n\n' + chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)) };
+        } else {
+          result = createReply(create.kind, create.prompt);
+          result.text = '🔁 Remixing your last idea:\n\n' + result.text;
+        }
       } else {
         result = { text: '🎨 Nothing to remix yet — try "make an image of a gym at sunrise".' };
       }
@@ -643,9 +651,38 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       }
     }
   }
+  // In-chat creation: answer to "Reply YES to create" (chat-create.js).
+  if (!result && session.pendingCreate) {
+    const pc = session.pendingCreate;
+    const fresh = Date.now() - pc.at < 10 * 60 * 1000;
+    if (fresh && customer && chat.YES.test(text)) {
+      session.pendingCreate = null;
+      const push = typeof meta.push === 'function' ? meta.push : null;
+      const out = await (deps.chatCreate || chat).startCreation(customer.userId, pc.kind, pc.prompt, {
+        onReady: push ? (url) => push(chat.doneReply(pc.kind, url)) : null,
+        deps: deps.createDeps || {},
+      });
+      if (out.error) result = { text: out.error };
+      else if (out.done) result = { text: chat.doneReply(pc.kind, out.url), data: { create: { kind: pc.kind, url: out.url } } };
+      else result = { text: chat.runningReply(pc.kind, out.etaSeconds, !!push), data: { create: { kind: pc.kind, jobId: out.jobId } } };
+    } else if (fresh && chat.NO.test(text)) {
+      session.pendingCreate = null;
+      result = { text: '👍 Cancelled — nothing was charged.' };
+    } else {
+      session.pendingCreate = null; // they moved on
+    }
+  }
   if (!result) {
     create = detectCreate(text);
-    result = await handleMessageCore(userId, text, meta);
+    if (create && customer && chatCreateOn(deps)) {
+      session.pendingCreate = { ...create, at: Date.now() };
+      result = { text: chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)), data: { create: { ...create, pending: true } } };
+    } else {
+      result = await handleMessageCore(userId, text, meta);
+      if (create && !customer && result && result.text) {
+        result.text += '\n\n💡 Want it made right here in the chat? ' + mem.linkPrompt(platform).replace(/^🔒 /, '');
+      }
+    }
   }
 
   if (key) {
