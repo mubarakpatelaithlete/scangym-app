@@ -253,7 +253,7 @@ test('the profile rails use the shared circle, not hand-built 46px emoji buttons
   assert.ok(!/rgba\(255,109,0,\.15\)|rgba\(34,197,94,\.12\)/.test(profileRails),
     'a profile rail button is tinted orange or green again');
   // shield left with Partner when the rail stopped repeating the tab bar.
-  for (const icon of ['film', 'grid', 'chat', 'more', 'search', 'card', 'help']) {
+  for (const icon of ['grid', 'chat', 'more', 'help']) {
     assert.ok(profileRails.includes(`sgRailCircle('${icon}'`),
       `the profile rail stopped drawing ${icon} from the shared table`);
   }

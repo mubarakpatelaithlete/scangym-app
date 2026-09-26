@@ -77,12 +77,12 @@ test('amenities PUTs compare the owner instead of fetching and ignoring it', () 
   assert.match(amenities, /router\.put\('\/:gymId\/vending', requireGymOwner,/);
 });
 
-test('Profile rail "Pricing" opens /pricing, not /login', () => {
-  const i = app.indexOf('>Pricing</span>', app.indexOf('function MoreFullPage') > 0 ? app.indexOf('function MoreFullPage') : 0);
-  assert.ok(i > 0);
-  const before = app.slice(i - 900, i);
-  assert.match(before, /navigate\('\/pricing'\)/);
-  assert.doesNotMatch(before.slice(before.lastIndexOf('<div onclick=')), /navigate\('\/login'\)/);
+test('signed-out Profile rail has no Find Gym / Pricing / Creator (owner, 2026-09-26)', () => {
+  const a = app.indexOf('RIGHT-SIDE BUTTONS \u2014 TikTok style', app.indexOf('function MoreHubPage()'));
+  const rail = app.slice(a, app.indexOf('BOTTOM \u2014 Stats + CTA', a));
+  assert.ok(a > 0 && rail.length > 0);
+  for (const lbl of ['Find Gym', 'Pricing', 'Creator']) assert.ok(!rail.includes('>' + lbl + '</span>'), lbl + ' is back');
+  assert.match(rail, />Help<\/span>/);
 });
 
 test('Photos page shows real gym photos, not stock shots with fake users', () => {

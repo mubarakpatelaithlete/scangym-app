@@ -13882,22 +13882,12 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok style ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
+        <!-- Find Gym / Pricing / Creator removed at the owner's request (2026-09-26):
+             Book already finds gyms; the row stays short. -->
         <!-- The "Sign Up" circle stood here. It opened /login, which is where the
              "Get Your QR Pass" button below and the row's own Sign in button
              already go: three doors, one room, two of them side by side on the
              same rail (owner: "double double button in profile tab"). One door. -->
-        <div onclick="switchTab('book')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('search','\ud83d\udd0d')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Find Gym</span>
-        </div>
-        <div onclick="navigate('/pricing')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('card','\ud83d\udcb3')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Pricing</span>
-        </div>
-        <div onclick="navigate('/creator')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('film','\ud83c\udfac')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Creator</span>
-        </div>
         <div onclick="navigate('/help')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           ${sgRailCircle('help','\u2753')}
           <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Help</span>
