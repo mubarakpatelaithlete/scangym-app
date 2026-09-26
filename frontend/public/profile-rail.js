@@ -45,7 +45,7 @@
 
   // Channels verified live end-to-end (deep probe, 2026-08-31). Others render
   // dimmed+amber until verified. Health check below can only demote, not promote.
-  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, everything: true, instagram: true, sms: true };
+  var VERIFIED_LIVE = { messenger: true, telegram: true, discord: true, slack: true, msstore: true, install: true, tiktok: true, tiktokbot: true, everything: true, instagram: true, sms: true };
   // instagram: DM bot @mubsy_014 verified end-to-end with a real paid booking (PZ9T-Z72R, 2026-09-25).
   // Social: tiktok.com/@scangym verified live (real profile page renders).
   // instagram.com/scangym + facebook.com/scangym sit behind login walls we
@@ -121,6 +121,7 @@
     msstore: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" fill="#fff"/><rect x="12.5" y="3" width="8.5" height="8.5" fill="#fff" fill-opacity=".75"/><rect x="3" y="12.5" width="8.5" height="8.5" fill="#fff" fill-opacity=".75"/><rect x="12.5" y="12.5" width="8.5" height="8.5" fill="#fff" fill-opacity=".5"/></svg>',
     install: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
     tiktok: '<svg viewBox="0 0 24 24"><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v3.1c-1.35.05-2.55-.35-3.85-1.15v5.85c0 4.05-3.05 6.05-5.95 5.4-2.55-.55-4.2-2.85-3.85-5.4.4-2.85 3-4.55 5.6-4.1v3.15c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05 1.25.35 2.45-.55 2.45-2.05V3h3.6z" fill="#fff"/></svg>',
+    tiktokbot: '<svg viewBox="0 0 24 24"><path d="M16.6 3c.35 1.9 1.5 3.35 3.4 3.75v3.1c-1.35.05-2.55-.35-3.85-1.15v5.85c0 4.05-3.05 6.05-5.95 5.4-2.55-.55-4.2-2.85-3.85-5.4.4-2.85 3-4.55 5.6-4.1v3.15c-.85-.25-1.75-.1-2.3.6-.9 1.05-.45 2.7.9 3.05 1.25.35 2.45-.55 2.45-2.05V3h3.6z" fill="#fff"/></svg>',
     instagram: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="5.5" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="2"/><circle cx="17.2" cy="6.8" r="1.3" fill="#fff"/></svg>',
     facebook: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.5" stroke="#fff" stroke-width="2"/><path d="M15.5 12.6h-2.4V20h-2.9v-7.4H8.3v-2.7h1.9V8.3c0-2 1.2-3.1 3-3.1.9 0 1.8.15 1.8.15v2h-1c-1 0-1.3.6-1.3 1.25v1.3h2.3l-.5 2.7z" fill="#fff"/></svg>',
   };
@@ -253,6 +254,13 @@
     },
     everything: function () { window.location.href = '/everything'; },
     tiktok: function () { window.open('https://www.tiktok.com/@scangym', '_blank'); },
+    /* TikTok CHATBOT: tiktok.me/<user> opens a DM with the business account
+       (redirects to dm-me.tiktok.com), where the SendPulse bot answers and books
+       through the shared message handler. Open first (popup blockers). */
+    tiktokbot: function () {
+      window.open('https://tiktok.me/digitalovesh', '_blank');
+      if (typeof window._sgConnectChannel === 'function') window._sgConnectChannel('tiktok');
+    },
     instagram: function () { window.open(INSTAGRAM_DM_URL, '_blank'); },
     sms: function () {
       // UK mobile number wired to /api/chatbot/twilio/webhook. '?&body=' works on iOS and Android.
@@ -366,7 +374,7 @@
   var GROUPS = [
     // One Facebook chatbot button (it opens the ScanGym Messenger bot). The old
     // Social "Facebook" button opened the same chat, so it looked doubled.
-    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
+    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['tiktokbot', 'TikTok'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] },
     // Apps group dropped: the host row's "Apps" button already opens MS Store
     // and Install (owner saw double buttons, 2026-09-25).
