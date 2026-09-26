@@ -20,6 +20,7 @@
 
 const { checkoutLink, prettyDate } = require('../lib/checkout-link');
 const { detectCreate, createReply } = require('./create-media');
+const memory = require('./customer-memory');
 
 const SCANGYM_API = (
   process.env.SCANGYM_API_URL ||
@@ -595,7 +596,73 @@ function getSession(userId) {
 }
 
 // ─── Main Handler ───────────────────────────────────────────
-async function handleMessage(userId, text, meta = {}) {
+/**
+ * Shared memory + library wrapper (owner request 2026-09-26): every chatbot
+ * knows the same customer. See customer-memory.js for the rules.
+ */
+async function handleMessage(userId, text, meta = {}, deps = {}) {
+  if (!text || !text.trim()) return handleMessageCore(userId, text, meta);
+  const mem = deps.memory || memory;
+  const platform = meta.platform || (String(userId).split(':')[0] || 'web');
+  const session = getSession(userId);
+  let customer = null;
+  let key = null;
+  try {
+    customer = await mem.resolveCustomer(userId, meta, deps);
+    key = mem.memoryKey(userId, customer);
+    if (!session.memLoaded) {
+      session.memLoaded = true;
+      session.memory = await mem.loadMemory(key, deps);
+      if ((!session.history || !session.history.length) && Array.isArray(session.memory.history)) {
+        session.history = session.memory.history.map((h) => ({ role: h.role, text: h.text }));
+      }
+    }
+  } catch (e) { console.error('[Memory] wrapper setup failed:', e.message); }
+
+  let result = null;
+  let create = null;
+  const ask = mem.detectMemoryAsk(text);
+  if (ask) {
+    const known = session.memory || {};
+    if (ask === 'memory') {
+      result = { text: mem.formatMemory(known, customer) + (customer ? '' : '\n\n' + mem.linkPrompt(platform)) };
+    } else if (ask === 'remix') {
+      if (known.lastCreate && known.lastCreate.prompt) {
+        create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
+        result = createReply(create.kind, create.prompt);
+        result.text = '🔁 Remixing your last idea:\n\n' + result.text;
+      } else {
+        result = { text: '🎨 Nothing to remix yet — try "make an image of a gym at sunrise".' };
+      }
+    } else if (ask === 'library') {
+      if (!customer) {
+        result = { text: '📚 Your library keeps everything you create, from every chatbot and every model.\n\n' + mem.linkPrompt(platform) };
+      } else {
+        const lib = await (deps.libraryFor || require('../lib/gen-jobs').libraryFor)(customer.userId, { limit: 20, kind: mem.kindFromText(text) });
+        result = { text: mem.formatLibrary((lib && lib.items) || [], platform) };
+      }
+    }
+  }
+  if (!result) {
+    create = detectCreate(text);
+    result = await handleMessageCore(userId, text, meta);
+  }
+
+  if (key) {
+    let city = null;
+    if (result && result.data && Array.isArray(result.data.gyms) && result.data.gyms.length) {
+      city = extractEntities(text).location || null;
+    }
+    const exchange = { text, reply: result && result.text, platform, create, city };
+    session.memory = mem.remember(session.memory || {}, exchange);
+    // Re-read before writing so two chatbots talking at once don't wipe each other.
+    const save = mem.loadMemory(key, deps).then((fresh) => mem.saveMemory(key, mem.remember(fresh, exchange), deps));
+    if (deps.awaitSave) await save; else save.catch(() => {});
+  }
+  return result;
+}
+
+async function handleMessageCore(userId, text, meta = {}) {
   if (!text || !text.trim()) return { text: getWelcomeText(meta.userName) };
   
   const session = getSession(userId);
@@ -1055,6 +1122,7 @@ function getWelcomeText(userName) {
     `💰 *Prices* — "How much is a day pass?"\n` +
     `💳 *Earn money* — "Creator program"\n` +
     `🎨 *Create* — "Make an image / video / song of…"\n` +
+    `📚 *My library* — everything you made, in any chatbot\n` +
     `🏢 *Gym owners* — "List my gym"\n` +
     `❌ *Cancel* — "Cancel 5WCB-8VDY"\n\n` +
     `💡 Just type any city name to find gyms!\n\n` +
@@ -1072,7 +1140,7 @@ function getFallbackText() {
     `Or visit scangym.com 🌐`;
 }
 
-module.exports = { handleMessage, detectIntent, extractEntities, INTENTS,
+module.exports = { handleMessage, handleMessageCore, detectIntent, extractEntities, INTENTS,
   pickCityLabel,
   placeLabel,
 };
