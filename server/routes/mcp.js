@@ -14,6 +14,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const { checkoutLink } = require('../lib/checkout-link');
+const { createLink, KINDS } = require('../chatbot/create-media');
 const router = express.Router();
 
 const SERVER_INFO = { name: 'scangym', version: '1.1.1' };
@@ -97,6 +98,20 @@ function resolveDate(input) {
 // ─── Tool definitions ────────────────────────────────────────
 
 const TOOLS = [
+  {
+    name: 'create_media',
+    title: 'Create Image, Video, Voiceover or Music',
+    description: 'Start creating an AI image, video, voiceover (audio) or music track with ScanSquad. Returns a link that opens ScanSquad Create with the idea typed in; the customer signs in, sees the price and confirms there. Always show the link to the user.',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['image', 'video', 'audio', 'music'], description: 'What to create' },
+        prompt: { type: 'string', description: 'The idea, e.g. "a woman deadlifting in a neon gym at night"' },
+      },
+      required: ['kind', 'prompt'],
+    },
+  },
   {
     name: 'search_gyms',
     title: 'Search Gyms',
@@ -308,7 +323,22 @@ async function cancelBooking({ bookingId, email, bookingCode }) {
   return { success: true, refunded: result.refunded, message: result.message };
 }
 
+async function createMedia({ kind, prompt }) {
+  const k = String(kind || '').toLowerCase();
+  if (!KINDS[k]) return { error: 'kind must be one of: image, video, audio, music' };
+  const idea = String(prompt || '').trim();
+  if (!idea) return { error: 'prompt is required' };
+  const link = createLink(k, idea);
+  return {
+    success: true,
+    kind: k,
+    link,
+    message: `Open this link to create the ${KINDS[k].label} in ScanSquad: ${link} — the customer signs in, sees the price and taps Create; it is charged to their saved card and saved to their ScanSquad library.`,
+  };
+}
+
 const HANDLERS = {
+  create_media: createMedia,
   search_gyms: searchGyms,
   get_gym_details: getGymDetails,
   check_availability: checkAvailability,

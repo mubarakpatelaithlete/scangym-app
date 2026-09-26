@@ -19,6 +19,7 @@
  */
 
 const { checkoutLink, prettyDate } = require('../lib/checkout-link');
+const { detectCreate, createReply } = require('./create-media');
 
 const SCANGYM_API = (
   process.env.SCANGYM_API_URL ||
@@ -610,6 +611,17 @@ async function handleMessage(userId, text, meta = {}) {
   else if (!session.pendingBooking && session.lastResults && session.lastResults.length && /^\s*#?\d{1,2}\s*$/.test(text)) {
     text = `book gym ${text.replace(/\D/g, '')}`;
   }
+  /* "Make an image / video / voiceover / song of …" — checked first because
+     the idea often mentions a gym ("a video of a gym in Leeds"), which the
+     intent detector would treat as a gym search. See create-media.js. */
+  const createAsk = detectCreate(text);
+  if (createAsk) {
+    const out = createReply(createAsk.kind, createAsk.prompt);
+    session.lastMessage = text.toLowerCase().trim();
+    session.lastResponse = out.text;
+    return out;
+  }
+
   const intent = detectIntent(text, session);
   const entities = extractEntities(text);
   if (session.pendingPick && intent === INTENTS.BOOK && !entities.date) {
@@ -1042,6 +1054,7 @@ function getWelcomeText(userName) {
     `📅 *Book a session* — "Book gym 1 for tomorrow"\n` +
     `💰 *Prices* — "How much is a day pass?"\n` +
     `💳 *Earn money* — "Creator program"\n` +
+    `🎨 *Create* — "Make an image / video / song of…"\n` +
     `🏢 *Gym owners* — "List my gym"\n` +
     `❌ *Cancel* — "Cancel 5WCB-8VDY"\n\n` +
     `💡 Just type any city name to find gyms!\n\n` +
