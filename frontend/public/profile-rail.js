@@ -391,9 +391,8 @@
         return !(skip && skip[it[1].toLowerCase()]);
       });
       if (!wanted.length) continue;
-      var header = sec(group.title);
-      if (!first) header.style.marginTop = '4px';
-      frag.appendChild(header);
+      /* No section labels (CHATBOTS / AI / SOCIAL) — owner, 2026-09-26: the
+         icons speak for themselves and the labels cluttered the row. */
       for (var i = 0; i < wanted.length; i++) frag.appendChild(btn(wanted[i][0], wanted[i][1]));
       first = false;
     }
