@@ -821,8 +821,22 @@ router.get('/nearby', async (req, res) => {
       url = `${BASE_URL}/nearbysearch/json?location=${lat},${lng}&radius=${Math.min(parseInt(radius), 50000)}&type=gym&keyword=${encodeURIComponent(searchKeyword)}&key=${GOOGLE_MAPS_API_KEY}`;
     }
 
-    const response = await fetch(url);
-    const data = await response.json();
+    /* Legacy nearbysearch is REQUEST_DENIED on this key ("legacy API not
+       enabled", 2026-09-26) and the Book tab fell back to 20 photo-less DB
+       gyms. Places API (New) works on the same key, so use it first. */
+    let data = null;
+    if (USE_PLACES_NEW_API && !pagetoken) {
+      try {
+        const results = await searchWithPlacesNewAPI(searchKeyword, lat, lng, Math.min(parseInt(radius) || 5000, 50000), 20);
+        data = { status: results.length ? 'OK' : 'ZERO_RESULTS', results };
+      } catch (e) {
+        console.error('[LiveSearch] Places New nearby failed, trying legacy:', e.message);
+      }
+    }
+    if (!data) {
+      const response = await fetch(url);
+      data = await response.json();
+    }
 
     if (data.status === 'ZERO_RESULTS') {
       return res.json({ gyms: [], total: 0, nextPageToken: null, source: 'google_places_live' });
