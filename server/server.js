@@ -433,7 +433,11 @@ try { _sharpMod = require('sharp'); } catch (e) { _sharpMod = null; console.warn
 
 app.get("/api/photo", async (req, res) => {
   try {
-    const { ref, name, maxwidth = '1200', maxheight } = req.query;
+    const { maxwidth = '1200', maxheight } = req.query;
+    let { ref, name } = req.query;
+    // Places API (New) results carry photo_reference = "places/<id>/photos/<ref>";
+    // photoUrl() sends it as ?ref=, so treat that shape as a New-API name.
+    if (!name && ref && /^places\//.test(ref)) { name = ref; ref = undefined; }
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'Maps API key not configured' });
 
