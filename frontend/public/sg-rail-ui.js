@@ -56,7 +56,9 @@ var uspStrip=(function(){
 function injectStyle(id,css){if(document.getElementById(id))return;var s=document.createElement('style');s.id=id;s.textContent=css;document.head.appendChild(s);}
 
 function initUspStrip(){
-  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}');
+  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.7);font-weight:600}'
+    /* Profile (/more): full-screen header sits at top:12px; the strip (z-index 100) covered the name + tier badge on mobile */
+    +'body[data-route^="/more"] #sg-sps{display:none!important}');
   setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
 }
 
