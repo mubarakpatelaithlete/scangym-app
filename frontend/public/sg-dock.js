@@ -170,6 +170,9 @@
        and containment all do this, and the app uses all three), measure where
        the row actually landed and correct by the difference. A rail already in
        the right place is left alone. */
+    /* Once corrected, never strip the inline value: that dropped the row back
+       to its wrong spot, the next pass fixed it again, and the Profile rail
+       jumped ~36px every 500ms ("double/shadow buttons", 2026-09-26). */
     var wantBottom = navH + safe + 4;          // --sg-band-gap
     for (i = 0; i < ROW_SELECTORS.length; i++) {
       el = $(ROW_SELECTORS[i]);
@@ -177,7 +180,8 @@
       if (getComputedStyle(el).position !== 'fixed') continue;
       var rect = el.getBoundingClientRect();
       var landed = Math.round(innerHeight - rect.bottom);
-      if (Math.abs(landed - wantBottom) <= 1) { el.style.removeProperty('bottom'); continue; }
+      // already right: keep the inline fix (removing it made the rail jump)
+      if (Math.abs(landed - wantBottom) <= 1) continue;
       var current = parseFloat(getComputedStyle(el).bottom) || 0;
       el.style.setProperty('bottom', (current + (wantBottom - landed)) + 'px', 'important');
       break;

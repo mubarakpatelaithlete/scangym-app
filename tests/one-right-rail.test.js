@@ -433,3 +433,11 @@ test('every tab gets the same three row buttons, built from the row\'s own marku
   assert.match(css, /\.sg-row-slot > #sg-continue-banner#sg-continue-banner[\s\S]{0,600}?position:\s*static/,
     'the main bar keeps its fixed position inside the row');
 });
+
+test('a rail already in the right place keeps its correction (no 500ms jump)', () => {
+  // Removing the inline bottom once the row landed correctly made the next pass
+  // see it wrong again: the Profile rail flickered between two heights.
+  const dockJs = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'sg-dock.js'), 'utf8');
+  assert.ok(!/landed - wantBottom\) <= 1\) \{ el\.style\.removeProperty\('bottom'\)/.test(dockJs),
+    'sg-dock.js must not strip the correction from a rail that is already in place');
+});
