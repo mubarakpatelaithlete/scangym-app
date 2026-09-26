@@ -15,9 +15,12 @@ const express = require('express');
 const crypto = require('crypto');
 const { checkoutLink } = require('../lib/checkout-link');
 const { createLink, KINDS } = require('../chatbot/create-media');
+const memory = require('../chatbot/customer-memory');
+const chat = require('../chatbot/chat-create');
+const { userFromAuthHeader, RESOURCE_METADATA } = require('./mcp-oauth');
 const router = express.Router();
 
-const SERVER_INFO = { name: 'scangym', version: '1.1.1' };
+const SERVER_INFO = { name: 'scangym', version: '1.2.0' };
 const PROTOCOL_VERSION = '2025-03-26';
 
 function apiBase() {
@@ -337,6 +340,144 @@ async function createMedia({ kind, prompt }) {
   };
 }
 
+// ─── Signed-in tools (/mcp/account, "Sign in with ScanGym") ──────
+/*
+ * Owner request 2026-09-26: ChatGPT and Claude share the same memory and
+ * library as every other chatbot. Signed-in, they read the account library
+ * (gen-jobs), the shared memory (chatbot_memory "user:<id>"), and create
+ * right in the chat through the same ScanSquad routes (saved card, quotas,
+ * screening, billing) after the customer confirms the price.
+ */
+function platformOf(ctx) {
+  const n = String((ctx.user && ctx.user.client) || ctx.ua || '').toLowerCase();
+  if (/claude|anthropic/.test(n)) return 'claude';
+  if (/chatgpt|openai/.test(n)) return 'chatgpt';
+  return 'ai';
+}
+
+async function rememberFor(ctx, exchange) {
+  if (!ctx.user) return;
+  const key = memory.memoryKey(null, ctx.user);
+  try {
+    const fresh = await memory.loadMemory(key);
+    await memory.saveMemory(key, memory.remember(fresh, { platform: platformOf(ctx), ...exchange }));
+  } catch (e) { console.error('[MCP] remember failed:', e.message); }
+}
+
+const ACCOUNT_TOOLS = [
+  {
+    name: 'create_media',
+    title: 'Create Image, Video, Voiceover or Music',
+    description: 'Create an AI image, video, voiceover (audio) or music track for the signed-in customer, right here in the chat. First call WITHOUT confirmed to get the price, show the price to the user and ask them to confirm; only then call again with confirmed=true. It is charged to their saved ScanSquad card and saved to their ScanGym library (shared with every ScanGym chatbot). Show the returned url. If it is still running, call check_creation later.',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['image', 'video', 'audio', 'music'], description: 'What to create' },
+        prompt: { type: 'string', description: 'The idea, e.g. "a woman deadlifting in a neon gym at night"' },
+        confirmed: { type: 'boolean', description: 'true only after the user saw the price and said yes' },
+      },
+      required: ['kind', 'prompt'],
+    },
+  },
+  {
+    name: 'check_creation',
+    title: 'Check a Creation',
+    description: 'Check a video/voiceover/music creation that was still being made. Returns the url when ready.',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['image', 'video', 'audio', 'music'] },
+        jobId: { type: 'string', description: 'jobId returned by create_media' },
+      },
+      required: ['kind', 'jobId'],
+    },
+  },
+  {
+    name: 'my_library',
+    title: 'My Library',
+    description: "The signed-in customer's ScanGym library: everything they created in any ScanGym chatbot (Telegram, WhatsApp, Messenger, Instagram, SMS, Discord, Slack, email, ChatGPT, Claude) or on scangym.com, newest first, with links.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: {
+      type: 'object',
+      properties: { kind: { type: 'string', enum: ['image', 'video', 'audio', 'music'], description: 'Optional filter' } },
+      required: [],
+    },
+  },
+  {
+    name: 'my_memory',
+    title: 'My Memory',
+    description: 'What ScanGym remembers about the signed-in customer across every chatbot: name, last city searched, last creation idea, recent messages and which chatbots they use. Use it to continue where they left off in another chatbot.',
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+];
+
+async function accountCreate({ kind, prompt, confirmed }, ctx) {
+  const k = String(kind || '').toLowerCase();
+  if (!KINDS[k]) return { error: 'kind must be one of: image, video, audio, music' };
+  const idea = String(prompt || '').trim();
+  if (!idea) return { error: 'prompt is required' };
+  if (confirmed !== true) {
+    const q = chat.quoteFor(k, idea);
+    return {
+      confirmationRequired: true,
+      kind: k,
+      prompt: idea,
+      price: (q && q.price) || null,
+      model: (q && q.model) || null,
+      message: `Tell the user the price${q && q.price ? ` (${q.price}${q.model ? `, ${q.model}` : ''})` : ''}: it is added to their ScanSquad bill on their saved card. Ask them to confirm, then call create_media again with confirmed=true.`,
+    };
+  }
+  const out = await chat.startCreation(ctx.user.userId, k, idea, { syncMs: 20000 });
+  await rememberFor(ctx, { text: `create ${k}: ${idea}`, reply: out.url || out.error || 'creating', create: { kind: k, prompt: idea } });
+  if (out.error) return { error: out.error };
+  if (out.done) return { success: true, kind: k, url: out.url, message: 'Ready. Show the url. It is saved to their library, shared with every ScanGym chatbot.' };
+  return { success: true, kind: k, status: 'running', jobId: String(out.jobId), etaSeconds: out.etaSeconds || null, message: 'Still being made. Call check_creation with this jobId in a minute. It will also appear in my_library and we email the link.' };
+}
+
+async function checkCreation({ kind, jobId }, ctx) {
+  const k = String(kind || '').toLowerCase();
+  if (!KINDS[k] || !jobId) return { error: 'kind and jobId are required' };
+  const s = await chat.callRoute(k, 'GET', `/status/${encodeURIComponent(jobId)}`, ctx.user.userId, null);
+  if (s.status >= 400) return { error: (s.body && s.body.error) || 'Not found' };
+  const url = chat.urlOf(s.body);
+  if (s.body.status === 'done' && url) return { status: 'done', url };
+  if (s.body.status === 'error') return { status: 'error', error: s.body.error || 'failed' };
+  return { status: s.body.status || 'running', message: 'Not ready yet, check again shortly.' };
+}
+
+async function myLibrary({ kind }, ctx) {
+  const k = kind && KINDS[String(kind).toLowerCase()] ? String(kind).toLowerCase() : null;
+  const lib = await require('../lib/gen-jobs').libraryFor(ctx.user.userId, { limit: 20, kind: k });
+  const items = ((lib && lib.items) || [])
+    .filter((i) => i.url && (!i.status || /done|complete|succe|ready/i.test(i.status)))
+    .map((i) => ({ kind: i.kind, prompt: String(i.prompt || '').slice(0, 200), url: i.url, model: i.model || null, createdAt: i.created_at }));
+  return { total: items.length, items, all: 'https://www.scangym.com/creator', message: items.length ? 'Show the items with their links.' : 'Library is empty so far. Offer to create an image.' };
+}
+
+async function myMemory(args, ctx) {
+  const mem = await memory.loadMemory(memory.memoryKey(null, ctx.user));
+  return {
+    name: ctx.user.firstName || null,
+    email: ctx.user.email || null,
+    lastCity: mem.lastCity || null,
+    lastCreate: mem.lastCreate || null,
+    chatbotsUsed: mem.channels || [],
+    lastChannel: mem.lastChannel || null,
+    recent: (mem.history || []).slice(-10),
+    summary: memory.formatMemory(mem, ctx.user),
+  };
+}
+
+const ACCOUNT_HANDLERS = {
+  create_media: accountCreate,
+  check_creation: checkCreation,
+  my_library: myLibrary,
+  my_memory: myMemory,
+};
+
 const HANDLERS = {
   create_media: createMedia,
   search_gyms: searchGyms,
@@ -357,7 +498,7 @@ function rpcError(id, code, message) {
   return { jsonrpc: '2.0', id, error: { code, message } };
 }
 
-async function handleRpc(msg) {
+async function handleRpc(msg, ctx = {}) {
   const { id, method, params } = msg || {};
   switch (method) {
     case 'initialize':
@@ -371,13 +512,18 @@ async function handleRpc(msg) {
     case 'ping':
       return rpcResult(id, {});
     case 'tools/list':
-      return rpcResult(id, { tools: TOOLS });
+      return rpcResult(id, { tools: ctx.user
+        ? [...TOOLS.filter((t) => !ACCOUNT_HANDLERS[t.name]), ...ACCOUNT_TOOLS]
+        : TOOLS });
     case 'tools/call': {
       console.log(`[MCP] tools/call ${params?.name} args=${JSON.stringify(params?.arguments || {})}`);
-      const handler = HANDLERS[params?.name];
+      const handler = (ctx.user && ACCOUNT_HANDLERS[params?.name]) || HANDLERS[params?.name];
       if (!handler) return rpcError(id, -32602, `Unknown tool: ${params?.name}`);
       try {
-        const result = await handler(params?.arguments || {});
+        const result = await handler(params?.arguments || {}, ctx);
+        if (ctx.user && params?.name === 'search_gyms' && params?.arguments?.query && !result.error) {
+          rememberFor(ctx, { text: `gyms: ${params.arguments.query}`, reply: `${result.total || 0} gyms`, city: String(params.arguments.query).replace(/\b(gyms?|fitness|centre|center|in|near)\b/gi, '').trim() || null });
+        }
         return rpcResult(id, {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
           structuredContent: result,
@@ -399,7 +545,7 @@ function isInitialize(body) {
   return body && body.method === 'initialize';
 }
 
-router.post('/', async (req, res) => {
+async function serve(req, res, ctx) {
   const body = req.body;
   try {
     // Streamable HTTP transport: assign a session ID on initialize and
@@ -411,18 +557,36 @@ router.post('/', async (req, res) => {
       res.setHeader('Mcp-Session-Id', req.headers['mcp-session-id']);
     }
     if (Array.isArray(body)) {
-      const responses = (await Promise.all(body.map(handleRpc))).filter(Boolean);
+      const responses = (await Promise.all(body.map((m) => handleRpc(m, ctx)))).filter(Boolean);
       if (responses.length === 0) return res.status(202).end();
       return res.json(responses);
     }
-    const response = await handleRpc(body);
+    const response = await handleRpc(body, ctx);
     if (!response) return res.status(202).end();
     return res.json(response);
   } catch (err) {
     console.error('[MCP] request failed:', err);
     return res.status(500).json(rpcError(body?.id ?? null, -32603, 'Internal error'));
   }
-});
+}
+
+router.post('/', (req, res) => serve(req, res, {}));
+
+/* Signed-in connector: same tools plus library, memory and in-chat create.
+   No valid token → 401 with the metadata link, which makes ChatGPT/Claude
+   show "Sign in with ScanGym" (mcp-oauth.js). */
+function requireSignIn(req, res, next) {
+  const user = userFromAuthHeader(req.headers.authorization);
+  if (!user) {
+    res.setHeader('WWW-Authenticate', `Bearer realm="scangym", resource_metadata="${RESOURCE_METADATA()}"`);
+    return res.status(401).json({ error: 'unauthorized', message: 'Sign in with ScanGym to use your library, memory and create in chat.' });
+  }
+  req.mcpUser = user;
+  next();
+}
+router.post('/account', requireSignIn, (req, res) => serve(req, res, { user: req.mcpUser, ua: req.headers['user-agent'] }));
+router.get('/account', requireSignIn, (req, res) => res.status(405).json({ error: 'Method Not Allowed. POST JSON-RPC messages to this endpoint.' }));
+router.delete('/account', (req, res) => res.status(200).end());
 
 // Server-initiated SSE stream. We never push messages, but clients that open
 // this stream must not get a hard 405 mid-conversation — keep it open with
@@ -454,3 +618,4 @@ router.delete('/', (req, res) => {
 });
 
 module.exports = router;
+module.exports._internals = { handleRpc, ACCOUNT_TOOLS, TOOLS };
