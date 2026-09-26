@@ -1178,8 +1178,15 @@
      refresh should not reopen the sheet), and opens Video — the mode a reel came
      from. An empty prompt still opens Create, per the owner's call. */
   function openFromUrl() {
-    var p;
-    try { p = new URLSearchParams(location.search).get('prompt'); } catch (e) { return; }
+    var p, mode;
+    try {
+      var qs = new URLSearchParams(location.search);
+      p = qs.get('prompt');
+      /* Chatbots (server/chatbot/create-media.js) and the MCP create_media tool
+         send ?mode=image|video|audio|music. Anything else falls back to Video. */
+      mode = qs.get('mode');
+    } catch (e) { return; }
+    if (!/^(image|video|audio|music|text)$/.test(mode || '')) mode = 'video';
     if (p === null) return;
     if (!/^\/creator/.test(location.pathname)) return;
     try {
@@ -1187,7 +1194,8 @@
       history.replaceState(null, '', clean);
     } catch (e) { /* keep going: the sheet matters more than the URL */ }
     var open = function () {
-      if (window.sgSquadCreate && window.sgSquadCreate.open('video', String(p).slice(0, 600))) return;
+      var text = String(p).slice(0, 600);
+      if (window.sgSquadCreate && (window.sgSquadCreate.open(mode, text) || window.sgSquadCreate.open('video', text))) return;
       setTimeout(open, 300);
     };
     setTimeout(open, 150);
