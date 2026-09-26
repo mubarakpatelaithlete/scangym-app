@@ -75,7 +75,7 @@ test('library lists creations from every model; unlinked chats get the link step
   assert.match(r.text, /leg day song/);
   assert.doesNotMatch(r.text, /still going/);
   const anon = await handleMessage('discord:5', 'show my library', { platform: 'discord', verified: true }, { pool, libraryFor, awaitSave: true });
-  assert.match(anon.text, /Connect Discord/);
+  assert.match(anon.text, /Type LINK/); // verified chats now link right here (chat-link.js)
 });
 
 test('memory keeps only recent chat', () => {
