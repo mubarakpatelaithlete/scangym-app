@@ -129,6 +129,7 @@ router.post('/events', express.json({ verify: (req, res, buf) => { req.rawBody =
       platform: 'slack',
       channelId,
       verified: !!SLACK_SIGNING_SECRET, // request signature checked above
+      push: (msg) => sendSlackMessage(channelId, msg).catch(() => {}), // slow creations arrive when ready
     });
 
     // Send rich response

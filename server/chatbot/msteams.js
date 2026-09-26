@@ -82,21 +82,46 @@ async function getAccessToken() {
 }
 
 // ─── Verify Bot Framework JWT ────────────────────────────────
+/* Real signature check (2026-09-26). The old check only decoded the token, so
+   anyone could forge one and act as any Teams user. Now: RS256 signature against
+   Microsoft's published Bot Framework keys, issuer, audience = our app id, expiry.
+   Only a verified request may link, read the library or create (meta.verified). */
+const BF_OPENID = 'https://login.botframework.com/v1/.well-known/openidconfiguration';
+const BF_ISSUERS = ['https://api.botframework.com'];
+let bfKeys = { at: 0, keys: [] };
+async function botFrameworkKeys(force) {
+  if (!force && bfKeys.keys.length && Date.now() - bfKeys.at < 12 * 3600 * 1000) return bfKeys.keys;
+  const cfg = await (await fetch(BF_OPENID, { signal: AbortSignal.timeout(5000) })).json();
+  const jwks = await (await fetch(cfg.jwks_uri, { signal: AbortSignal.timeout(5000) })).json();
+  bfKeys = { at: Date.now(), keys: jwks.keys || [] };
+  return bfKeys.keys;
+}
 async function verifyBotFrameworkAuth(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
-  if (!TEAMS_APP_ID) return true;
-
-  const token = authHeader.slice(7);
-  const parts = token.split('.');
+  if (!TEAMS_APP_ID) return false;
+  const parts = authHeader.slice(7).split('.');
   if (parts.length !== 3) return false;
-
   try {
+    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-    if (payload.aud && payload.aud !== TEAMS_APP_ID) return false;
-    if (payload.exp && payload.exp < Date.now() / 1000) return false;
+    if (header.alg !== 'RS256') return false;
+    let jwk = (await botFrameworkKeys()).find((k) => k.kid === header.kid);
+    if (!jwk) jwk = (await botFrameworkKeys(true)).find((k) => k.kid === header.kid);
+    if (!jwk) return false;
+    const key = crypto.createPublicKey({ key: { kty: jwk.kty, n: jwk.n, e: jwk.e }, format: 'jwk' });
+    const ok = crypto.verify('RSA-SHA256', Buffer.from(`${parts[0]}.${parts[1]}`), key, Buffer.from(parts[2], 'base64url'));
+    if (!ok) return false;
+    const nowS = Date.now() / 1000;
+    if (!BF_ISSUERS.includes(payload.iss)) return false;
+    if (payload.aud !== TEAMS_APP_ID) return false;
+    if (!payload.exp || payload.exp + 300 < nowS) return false;
+    if (payload.nbf && payload.nbf - 300 > nowS) return false;
+    const su = req.body && req.body.serviceUrl;
+    if (payload.serviceurl && su && payload.serviceurl.replace(/\/+$/, '') !== String(su).replace(/\/+$/, '')) return false;
     return true;
   } catch (e) {
+    console.error('[Teams] token check failed:', e.message);
     return false;
   }
 }
@@ -117,8 +142,10 @@ router.post('/messages', async (req, res) => {
   const activity = req.body;
 
   if (TEAMS_APP_ID && !(await verifyBotFrameworkAuth(req))) {
+    console.warn('[Teams] Rejected unverified request');
     return res.sendStatus(401);
   }
+  if (activity && typeof activity === 'object') activity._verified = !!TEAMS_APP_ID;
 
   res.sendStatus(200);
 
@@ -200,6 +227,8 @@ async function handleTextMessage(activity) {
 
   const response = await handleMessage(userId, text, {
     userName, platform: 'msteams', conversationId,
+    verified: activity._verified === true, // Bot Framework signature checked (verifyBotFrameworkAuth)
+    push: (msg) => sendTeamsMessage(serviceUrl, conversationId, null, msg).catch(() => {}),
   });
 
   // If response has gym data → send gym card with buttons
