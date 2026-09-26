@@ -258,7 +258,7 @@ router.get('/lookup', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT uc.user_id, u.email, u.first_name, u.stripe_customer_id
        FROM user_channels uc
-       JOIN public.users u ON u.id = uc.user_id
+       JOIN public.users u ON u.id::text = uc.user_id::text
        WHERE uc.channel = $1
          AND (uc.channel_user_id = $2 OR uc.channel_user_id = $1 || ':' || $2 OR uc.channel_username = $2)
          AND uc.is_active = true
