@@ -82,7 +82,7 @@ async function resolveCustomer(chatId, meta = {}, deps) {
       const channel = CHANNEL_OF[p.prefix];
       const { rows } = await db(deps).query(
         `SELECT uc.user_id, u.email, u.first_name
-           FROM user_channels uc JOIN public.users u ON u.id = uc.user_id
+           FROM user_channels uc JOIN public.users u ON u.id::text = uc.user_id::text
           WHERE uc.channel = $1 AND uc.is_active = true
             AND (uc.channel_user_id = $2 OR uc.channel_user_id = $1 || ':' || $2)
           LIMIT 1`, [channel, p.id]);
