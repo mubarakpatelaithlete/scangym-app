@@ -173,3 +173,9 @@
   background-color: var(--sg-secondary-bg) !important;
   border-bottom: 1px solid rgba(255, 255, 255, .10) !important;
 }
+
+/* Profile (/more) is a full-screen overlay layout whose user header sits at
+   top:12px. The USP strip (#sg-sps, z-index 100) is injected 3s after paint as
+   the first child of .sg-tab-content and lands on top of that header, hiding
+   the name + tier badge on mobile. Reassurance copy isn't needed on Profile. */
+body[data-route^="/more"] #sg-sps { display: none !important; }
