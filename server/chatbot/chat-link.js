@@ -19,7 +19,7 @@ const emailLogin = require('../lib/email-login-code');
 const { _linkCache, PLATFORM_LABEL } = require('./customer-memory');
 
 const EMAIL_RE = /[^@\s<>()]+@[^@\s<>()]+\.[^@\s<>()]+/;
-const LINK_ASK = /^\s*(link|connect)(\s+(my\s+)?(account|scangym|telegram|whatsapp|sms|discord|slack|messenger|instagram|chat))?\s*[.!]?\s*$/i;
+const LINK_ASK = /^\s*(link|connect)(\s+(my\s+)?(account|scangym|telegram|whatsapp|sms|discord|slack|messenger|instagram|teams|chat))?\s*[.!]?\s*$/i;
 const CANCEL = /^\s*(cancel|stop|no|nevermind|never mind|quit|exit)\s*[.!]?\s*$/i;
 const TTL_MS = 15 * 60 * 1000;
 const MAX_SENDS_PER_HOUR = 3;
@@ -27,6 +27,7 @@ const MAX_SENDS_PER_HOUR = 3;
 const CHANNEL_OF = {
   telegram: 'telegram', whatsapp: 'whatsapp', sms: 'sms', discord: 'discord', slack: 'slack',
   googlechat: 'googlechat', instagram: 'instagram', messenger: 'messenger', facebook: 'messenger',
+  teams: 'msteams',
 };
 
 function db(deps) { return (deps && deps.pool) || require('../middleware/db'); }
