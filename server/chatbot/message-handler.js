@@ -22,6 +22,7 @@ const { checkoutLink, prettyDate } = require('../lib/checkout-link');
 const { detectCreate, createReply } = require('./create-media');
 const memory = require('./customer-memory');
 const chat = require('./chat-create');
+const chatLink = require('./chat-link');
 /* In-chat creation can be switched off with CHAT_CREATE=off without a deploy. */
 function chatCreateOn(deps) { return !(deps && deps.noChatCreate) && process.env.CHAT_CREATE !== 'off'; }
 
@@ -624,17 +625,45 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
 
   let result = null;
   let create = null;
-  const ask = mem.detectMemoryAsk(text);
+  /* Link this chat to an account right here (email → 6-digit code), so create
+     and library work end to end without visiting the website (chat-link.js). */
+  const link = deps.chatLink || chatLink;
+  const inChatLink = !customer && chatCreateOn(deps) && link.canLink(userId, meta);
+  const linkHint = () => inChatLink
+    ? '🔗 Type LINK to connect this chat to your ScanGym account right here — every chatbot will then share your library and memory.'
+    : mem.linkPrompt(platform);
+  if (inChatLink && session.pendingLink) {
+    const r = await link.handle(session, userId, text, deps);
+    if (r) {
+      result = { text: r.text };
+      if (r.linked) {
+        customer = r.linked;
+        key = mem.memoryKey(userId, customer);
+        if (r.create) {
+          create = r.create;
+          session.pendingCreate = { ...r.create, at: Date.now() };
+          result.text += '\n\n' + chat.askReply(r.create.kind, r.create.prompt, chat.quoteFor(r.create.kind, r.create.prompt));
+        } else {
+          result.text += '\n\n🎨 Try: "make an image of a gym at sunrise"';
+        }
+      }
+    }
+  } else if (inChatLink && link.wantsLink(text)) {
+    result = { text: link.start(session) };
+  }
+  const ask = result ? null : mem.detectMemoryAsk(text);
   if (ask) {
     const known = session.memory || {};
     if (ask === 'memory') {
-      result = { text: mem.formatMemory(known, customer) + (customer ? '' : '\n\n' + mem.linkPrompt(platform)) };
+      result = { text: mem.formatMemory(known, customer) + (customer ? '' : '\n\n' + linkHint()) };
     } else if (ask === 'remix') {
       if (known.lastCreate && known.lastCreate.prompt) {
         create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
         if (customer && chatCreateOn(deps)) {
           session.pendingCreate = { ...create, at: Date.now() };
           result = { text: '🔁 Remixing your last idea.\n\n' + chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)) };
+        } else if (inChatLink) {
+          result = { text: '🔁 Remixing your last idea.\n\n' + link.start(session, { create }) };
         } else {
           result = createReply(create.kind, create.prompt);
           result.text = '🔁 Remixing your last idea:\n\n' + result.text;
@@ -644,7 +673,7 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       }
     } else if (ask === 'library') {
       if (!customer) {
-        result = { text: '📚 Your library keeps everything you create, from every chatbot and every model.\n\n' + mem.linkPrompt(platform) };
+        result = { text: '📚 Your library keeps everything you create, from every chatbot and every model.\n\n' + linkHint() };
       } else {
         const lib = await (deps.libraryFor || require('../lib/gen-jobs').libraryFor)(customer.userId, { limit: 20, kind: mem.kindFromText(text) });
         result = { text: mem.formatLibrary((lib && lib.items) || [], platform) };
@@ -677,6 +706,8 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     if (create && customer && chatCreateOn(deps)) {
       session.pendingCreate = { ...create, at: Date.now() };
       result = { text: chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)), data: { create: { ...create, pending: true } } };
+    } else if (create && inChatLink) {
+      result = { text: link.start(session, { create }), data: { create: { ...create, pending: 'link' } } };
     } else {
       result = await handleMessageCore(userId, text, meta);
       if (create && !customer && result && result.text) {

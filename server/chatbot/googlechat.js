@@ -117,6 +117,7 @@ router.post('/events', express.json(), async (req, res) => {
       userName,
       platform: 'googlechat',
       channelId: spaceId,
+      verified: true, // Google-signed JWT checked above (verifyGoogleRequest)
     });
 
     const gyms = response.data?.gyms;
