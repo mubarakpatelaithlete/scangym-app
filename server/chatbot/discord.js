@@ -225,6 +225,7 @@ async function handleIncomingMessage(msg) {
     platform: 'discord',
     channelId,
     verified: true, // Discord gateway: the author id comes from Discord itself
+    push: (msg) => sendDiscordMessage(channelId, msg).catch(() => {}), // slow creations arrive when ready
   });
 
   // Send with rich embeds + buttons if gym results
@@ -322,7 +323,7 @@ async function handleInteraction(interaction) {
   await respondToInteraction(interaction, null, false, true);
 
   // Process
-  const response = await handleMessage(userId, text, { userName, platform: 'discord', channelId, verified: true });
+  const response = await handleMessage(userId, text, { userName, platform: 'discord', channelId, verified: true, push: (msg) => sendDiscordMessage(channelId, msg).catch(() => {}) });
 
   // Follow up with result — using embeds for gym results (IMPROVED in v3.0)
   if (response.data?.gyms?.length > 0) {
