@@ -174,7 +174,7 @@ function formatLibrary(items, platform) {
     const icon = KIND_ICON[i.kind] || '✨';
     const idea = String(i.prompt || '').replace(/\s+/g, ' ').slice(0, 60);
     const model = i.model ? ` · ${String(i.model).split('/').pop()}` : '';
-    return `${n + 1}. ${icon} ${idea || i.kind}${model}\n   ${i.url}`;
+    return `${n + 1}. ${icon} ${idea || i.kind}${model}\n   ${require('./safe-link').safeLink(i.url)}`;
   });
   return `📚 *Your library* (newest first, from every chatbot):\n\n${lines.join('\n')}\n\n` +
     `All ${done.length > 5 ? 'of them' : 'creations'}: ${BASE}/creator\n🔁 Say "remix my last" to make a new version.`;

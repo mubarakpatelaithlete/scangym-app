@@ -152,7 +152,7 @@ async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgM
 }
 
 function doneReply(kind, url) {
-  return `${ICON[kind]} Your ${LABEL[kind]} is ready!\n${url}\n\n📚 Saved to your library, so every chatbot can find it ("my library").\n🔁 Say "remix my last" for a new version.`;
+  return `${ICON[kind]} Your ${LABEL[kind]} is ready!\n${require('./safe-link').safeLink(url)}\n\n📚 Saved to your library, so every chatbot can find it ("my library").\n🔁 Say "remix my last" for a new version.`;
 }
 
 function runningReply(kind, etaSeconds, canPush) {

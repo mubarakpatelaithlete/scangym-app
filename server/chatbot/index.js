@@ -24,6 +24,8 @@ const { handleMessage } = require('./message-handler');
 // Telegram (free, no cost per message)
 const telegramRouter = require('./telegram');
 router.use('/telegram', telegramRouter);
+// Chat-safe media links (no "_" for chat markdown to eat) → 302 to the fal file
+router.get('/m/:sub/:hex', require('./safe-link').redirectHandler);
 // Inbound Telegram depends on a URL registered in Telegram's console; verify it
 // on boot so a stale or redirecting webhook cannot silence the bot unnoticed.
 if (typeof telegramRouter.ensureWebhook === 'function') telegramRouter.ensureWebhook();
