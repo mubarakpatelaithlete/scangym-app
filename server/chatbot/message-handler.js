@@ -683,8 +683,36 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
   } else if (inChatLink && link.wantsLink(text)) {
     result = { text: link.start(session) };
   }
+  let wiped = false;
+  // "delete my memory" asked last turn → YES wipes it (GDPR), anything else keeps it.
+  if (!result && session.pendingDelete) {
+    const fresh = Date.now() - session.pendingDelete < 10 * 60 * 1000;
+    session.pendingDelete = null;
+    if (fresh && chat.YES.test(text) && key) {
+      await mem.deleteMemory(key, deps);
+      session.memory = {};
+      session.history = [];
+      wiped = true;
+      result = { text: '🗑️ Done — I deleted everything I remembered about you from every chatbot. Your bookings, payments and library are still in your account.' };
+    } else if (fresh) {
+      result = { text: '👍 Kept your memory — nothing deleted.' };
+    }
+  }
   const ask = result ? null : mem.detectMemoryAsk(text);
-  if (ask) {
+  if (ask === 'delete') {
+    session.pendingDelete = Date.now();
+    result = { text: '⚠️ Delete everything I remember about you, from every chatbot? This can\'t be undone. (Bookings, payments and your library stay.)\n\nReply YES to delete, or NO to keep it.', data: { options: [{ label: '🗑️ Yes, delete', value: 'yes' }, { label: '👍 No, keep', value: 'no' }] } };
+  } else if (ask === 'forget') {
+    const what = (String(text).match(mem.FORGET_RE) || [])[1] || '';
+    const fresh = key ? await mem.loadMemory(key, deps) : (session.memory || {});
+    const f = mem.forget(fresh, what);
+    if (f.removed && key) await mem.saveMemory(key, f.mem, deps);
+    session.memory = f.mem;
+    result = { text: f.removed ? `🧹 Forgotten: "${what}". I won't use it again in any chatbot.` : `🤔 I don't have "${what}" saved. Say "what do you know about me" to see everything I remember.` };
+  } else if (ask === 'note') {
+    const what = (String(text).match(mem.NOTE_RE) || [])[1] || '';
+    result = { text: `📝 Got it — I'll remember "${what.trim()}" in every chatbot.\n\nSay "what do you know about me" to see it, or "forget ${what.trim().split(' ').slice(-1)[0]}" to remove it.` };
+  } else if (ask) {
     const known = session.memory || {};
     if (ask === 'memory') {
       const id = customer && mem.loadIdentity ? await mem.loadIdentity(customer, deps) : null;
@@ -806,7 +834,7 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     }
   }
 
-  if (key) {
+  if (key && !wiped) {
     let city = null;
     if (result && result.data && Array.isArray(result.data.gyms) && result.data.gyms.length) {
       city = extractEntities(text).location || null;
@@ -817,7 +845,18 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     const save = Promise.all([
       mem.loadMemory(key, deps).then((fresh) => mem.saveMemory(key, mem.remember(fresh, exchange), deps)),
       mem.logExchange ? mem.logExchange(key, exchange, deps) : null,
-    ]);
+    ]).then(async () => {
+      /* Every ~20 exchanges fold the chat into a short summary on the cheap
+         AI chain (Groq first), so any chatbot can pick up the story. */
+      if (!mem.maybeSummarise || (session.memory.sinceSummary || 0) < mem.SUMMARY_EVERY) return;
+      const summarise = deps.summarise || ((prompt) => callAI(prompt, []));
+      const summary = await mem.maybeSummarise(key, session.memory, { ...deps, summarise });
+      if (!summary) return;
+      const latest = await mem.loadMemory(key, deps);
+      const next = { ...latest, summary, sinceSummary: 0 };
+      session.memory = { ...session.memory, summary, sinceSummary: 0 };
+      await mem.saveMemory(key, next, deps);
+    });
     if (deps.awaitSave) await save; else save.catch(() => {});
   }
   return result;
@@ -942,7 +981,10 @@ async function handleMessageCore(userId, text, meta = {}) {
     }
     // ── AI fallback ──
     else {
-      const aiReply = await callAI(text, session.history || []);
+      // ScanGym ID: summary + personality go in front of the recent chat.
+      const note = memory.contextNote ? memory.contextNote(session.memory || {}) : '';
+      const hist = session.history || [];
+      const aiReply = await callAI(text, note ? [{ role: 'user', text: note }, { role: 'assistant', text: 'Got it.' }, ...hist] : hist);
       if (aiReply) {
         const actionMatch = aiReply.match(/\[ACTION:(SEARCH|BOOK|CANCEL|STATUS):?(.*?)\]/);
         if (actionMatch) {
