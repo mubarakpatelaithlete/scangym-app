@@ -211,7 +211,7 @@ test('settings the client invents are replaced by defaults, never forwarded', as
 
 test('the daily cap is a database count, so it survives a deploy', async () => {
   const { router, calls } = loadRouter((sql) =>
-    /COUNT\(\*\)/.test(sql) ? { rows: [{ n: 5 }] } : { rows: [] },
+    /COUNT\(\*\)/.test(sql) ? { rows: [{ n: 20 }] } : { rows: [] },
   );
   const restore = stubFetch(async () => {
     throw new Error('must not reach the model when the cap is spent');
@@ -291,7 +291,7 @@ test('history returns this user\'s finished clips and their quota', async () => 
   const res = mockRes();
   await handlerFor(router, 'get', '/history')(mockReq(), res);
   assert.deepStrictEqual(res.body.jobs, rows);
-  assert.deepStrictEqual(res.body.quota, { used: 2, limit: 5, remaining: 3 });
+  assert.deepStrictEqual(res.body.quota, { used: 2, limit: 20, remaining: 18 });
 });
 
 test('health reports remaining renders so the sheet never guesses', async () => {
@@ -301,7 +301,7 @@ test('health reports remaining renders so the sheet never guesses', async () => 
     const res = mockRes();
     await handlerFor(router, 'get', '/health')(mockReq(), res);
     assert.strictEqual(res.body.available, true);
-    assert.deepStrictEqual(res.body.quota, { used: 1, limit: 5, remaining: 4 });
+    assert.deepStrictEqual(res.body.quota, { used: 1, limit: 20, remaining: 19 });
     assert.ok(res.body.options, 'the sheet needs the allowed values to render its controls');
     assert.ok(Array.isArray(res.body.models) && res.body.models.length > 1,
       'the sheet needs the model menu, with a price against each one');
