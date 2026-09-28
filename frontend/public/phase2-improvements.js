@@ -258,7 +258,7 @@ document.addEventListener('click',function(e){
     '.sg-tab-item{min-width:44px;min-height:44px}'+
     '.sg-more-item{min-height:48px}'+
     '.tt-action-btn{min-width:44px;min-height:44px}'+
-    '.sg-filter-pill{min-height:36px;padding:8px 16px!important}'+
+    '.sg-filter-pill{min-height:44px;padding:8px 16px!important}'+   /* 44px: measured 36px, under the 44px minimum both Apple and Google publish */
     'button{min-height:36px}'+
 
     /* Prevent text selection on interactive elements */

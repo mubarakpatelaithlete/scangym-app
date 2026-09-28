@@ -175,3 +175,24 @@
    voice pill (one-orange.css) and the admin and partner dashboards, which are
    desktop surfaces with their own buttons. This file governs the round action
    buttons that sit over the app's content. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Tap targets and text size on the horizontal pill rows (Photos, Trainer).
+ *
+ * Audited live on www.scangym.com at 390x844: every pill in `.sg-pills-row`
+ * measured 36px tall, and the Trainer row's labels were 11px — the only text
+ * in the app under 12px. Both numbers are written inline by the render
+ * functions in app.ctr576.js (one per tab, drifted from each other), so they
+ * are corrected here in the one place that owns button looks rather than in
+ * two template strings.
+ *
+ * !important is required: the sizes being overridden are inline styles.
+ * Minimum tap target 44x44 (Apple HIG / Material), minimum body text 12px.
+ * ───────────────────────────────────────────────────────────────────────── */
+.sg-pills-row button {
+  min-height: 44px !important;
+  font-size: 12px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
