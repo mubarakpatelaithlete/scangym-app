@@ -778,10 +778,10 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
         result = { text: '📋 You have no active bookings to cancel.\n\nWant to book a gym? Just tell me a city!' };
       } else if (list.length === 1) {
         session.pendingCancel = { list, at: Date.now() };
-        result = { text: `❌ Cancel this booking?\n\n${list[0].label}\n\nReply YES to cancel, or NO to keep it.`, data: { options: ['YES', 'NO'] } };
+        result = { text: `❌ Cancel this booking?\n\n${list[0].label}\n\nReply YES to cancel, or NO to keep it.`, data: { options: [{ label: '✅ Yes, cancel it', value: 'yes' }, { label: '👍 No, keep it', value: 'keep' }] } };
       } else {
         session.pendingCancel = { list, at: Date.now() };
-        result = { text: `❌ Which booking should I cancel?\n\n${list.map((b, i) => `${i + 1}. ${b.label}`).join('\n')}\n\nReply with a number, or NO to keep them.`, data: { options: list.map((b, i) => String(i + 1)) } };
+        result = { text: `❌ Which booking should I cancel?\n\n${list.map((b, i) => `${i + 1}. ${b.label}`).join('\n')}\n\nReply with a number, or NO to keep them.`, data: { options: list.map((b, i) => ({ label: `${i + 1}. ${b.label}`, value: String(i + 1) })) } };
       }
     }
   }
