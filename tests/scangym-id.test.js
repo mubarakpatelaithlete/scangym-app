@@ -12,6 +12,7 @@ function fakeDb() {
     async query(sql, params) {
       if (/FROM user_channels/.test(sql)) return { rows: [{ user_id: 7, email: 'sam@x.com', first_name: 'Sam' }] };
       if (/INSERT INTO chat_messages/.test(sql)) {
+        assert.match(sql, /\(memory_key, platform, role, text\) VALUES \(\$1, \$2, \$3, \$4\)/);
         const [key, platform, ...rest] = params;
         for (let i = 0; i < rest.length; i += 2) log.push({ memory_key: key, platform, role: rest[i], text: rest[i + 1] });
         return { rows: [] };
