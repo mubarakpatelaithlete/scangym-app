@@ -94,6 +94,36 @@ function pickModel(kind, prompt, deps = {}) {
   } catch (_) { return null; }
 }
 
+const esc = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[\s-]+/g, '[\\s-]+');
+
+/**
+ * What the model should actually see: the customer's idea without the chat
+ * command around it. "create music with Eleven Music of an upbeat beat" must
+ * reach the vendor as "an upbeat beat" — ElevenLabs' content checker rejects
+ * prompts that name a brand, and a voiceover would otherwise read the command
+ * aloud. Falls back to the original text if stripping leaves nothing.
+ */
+function cleanPrompt(kind, prompt, deps = {}) {
+  const raw = String(prompt || '').trim();
+  let t = raw.replace(/^(please\s+)?(can you\s+)?(create|make|generate|do)\s+(me\s+)?(an?\s+)?(image|picture|photo|video|clip|music|song|track|audio|voice\s*over|voiceover)\b[\s:,-]*/i, '');
+  const m = /^(with|using|on|via|in)\s+/i.exec(t);
+  if (m) {
+    let names = [];
+    try {
+      const models = deps.models || require('../lib/gen-models');
+      for (const x of models.catalogueFor(kind) || []) names.push(x.label, x.id);
+    } catch (_) { /* no catalogue */ }
+    names = names.filter(Boolean).sort((a, b) => b.length - a.length);
+    const rest = t.slice(m[0].length);
+    for (const n of names) {
+      const r = new RegExp(`^${esc(n)}(?![a-z0-9])`, 'i').exec(rest);
+      if (r) { t = rest.slice(r[0].length); break; }
+    }
+  }
+  t = t.replace(/^[\s:,-]*((of|about|showing|saying|that says)\b)?[\s:,-]*/i, '').trim();
+  return t || raw;
+}
+
 /** Other models this mode offers, for the confirm message. */
 function modelNames(kind, deps = {}) {
   try {
@@ -116,7 +146,7 @@ function quoteFor(kind, prompt, deps = {}) {
       let seconds = 8;
       try { if (model && model.provider === 'fal') seconds = require(ROUTES.video)._internals.effectiveSeconds(model, 8); } catch (_) { /* keep 8 */ }
       units = { seconds };
-    } else if (kind === 'audio') { model = models.resolveAvailable('audio', picked, provider.configured); units = { chars: String(prompt || '').length }; }
+    } else if (kind === 'audio') { model = models.resolveAvailable('audio', picked, provider.configured); units = { chars: cleanPrompt('audio', prompt, { models }).length }; }
     else if (kind === 'music') { model = models.resolveAvailable('music', picked, provider.configured); units = { minutes: 0.5 }; }
     if (!model) return null;
     const q = pricing.quote(model, units);
@@ -150,7 +180,7 @@ function refusalText(status, body, kind) {
  */
 async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgMs = 15 * 60 * 1000, deps = {} } = {}) {
   const model = pickModel(kind, prompt, deps);
-  const gen = await callRoute(kind, 'POST', '/generate', userId, model ? { prompt, model } : { prompt }, deps);
+  const gen = await callRoute(kind, 'POST', '/generate', userId, model ? { prompt: cleanPrompt(kind, prompt, deps), model } : { prompt: cleanPrompt(kind, prompt, deps) }, deps);
   if (gen.status >= 400 || gen.body.error) return { error: refusalText(gen.status, gen.body, kind) };
   const now = urlOf(gen.body);
   if (now) return { done: true, url: now };
@@ -199,4 +229,4 @@ function runningReply(kind, etaSeconds, canPush) {
 const YES = /^\s*(yes|y|yeah|yep|ok|okay|go|confirm|create|do it|sure)\b/i;
 const NO = /^\s*(no|n|nope|cancel|stop)\b/i;
 
-module.exports = { callRoute, pickModel, quoteFor, askReply, startCreation, doneReply, runningReply, refusalText, urlOf, YES, NO, LABEL };
+module.exports = { callRoute, pickModel, cleanPrompt, quoteFor, askReply, startCreation, doneReply, runningReply, refusalText, urlOf, YES, NO, LABEL };

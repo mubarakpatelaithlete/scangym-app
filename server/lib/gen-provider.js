@@ -81,9 +81,20 @@ function configured(provider) {
  * without this.
  */
 function scrub(text) {
-  return String(text || '')
+  return String(detailText(text) || '')
     .replace(/[A-Za-z0-9_-]{32,}/g, '[redacted]')
     .slice(0, 300);
+}
+
+/**
+ * fal/pydantic errors arrive as `detail: [{msg, type, ...}]`. String() on that
+ * printed "[object Object]" to customers; take the human message instead.
+ */
+function detailText(d) {
+  if (d == null || typeof d !== 'object') return d;
+  if (Array.isArray(d)) return d.map(detailText).filter(Boolean).join('; ');
+  if (d.type === 'content_policy_violation') return 'the model\'s content checker refused this prompt — try rewording it';
+  return d.msg || d.message || d.error || d.detail || JSON.stringify(d);
 }
 
 // ─── fal.ai: asynchronous queue ────────────────────────────────────────────
