@@ -1175,6 +1175,13 @@ async function handleBook(session, text, entities, meta) {
     const m = text.match(/\b(?:re-?)?book\s+(?:me\s+)?(?:again\s+)?(?:in\s+)?(?:at\s+)?(?:(?:the\s+)?same\s+(?:gym|place|one)\s*,?\s*)?(?:at\s+)?([^,]+?)(?:\s*,|\s+(?:for|on|at|tomorrow|today|tonight|this|next|please|again|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\s*$)/i);
     const phrase = m && m[1] ? m[1].trim() : '';
     if (phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase) && !/^(the\s+)?same\s+(gym|place|one)$/i.test(phrase)) {
+      /* "Book Elite Boxing tomorrow" (Telegram test 2026-09-28): the gym they
+         booked before wins over a worldwide name search. */
+      const wordsOf = (x) => normN(x).split(' ').filter((w) => w.length > 2);
+      const lb = session.lastBookedGym;
+      if (lb && lb.name && wordsOf(phrase).length && wordsOf(phrase).every((w) => normN(lb.name).includes(w))) targetGym = lb;
+    }
+    if (!targetGym && phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase) && !/^(the\s+)?same\s+(gym|place|one)$/i.test(phrase)) {
       const data = await callApi(`/api/live/search?${new URLSearchParams({ q: phrase })}`);
       /* Loose match too: "JD gym Bolton" must find "JD Gyms Bolton" (SMS test
          2026-09-25) — compare word sets with plurals folded. */
@@ -1186,6 +1193,14 @@ async function handleBook(session, text, entities, meta) {
         || gyms.find((g) => g.name && loose(g))
         || (gyms.length === 1 ? gyms[0] : null);
       if (hit) { targetGym = hit; session.lastResults = gyms; }
+      else if (gyms.length > 1 && !entities.location) {
+        /* A gym was named but several match: list them rather than booking an
+           older pick (it booked KODIAK for "book Elite Boxing", 2026-09-28). */
+        session.lastResults = gyms; session.lastResultsOffset = 0; session.lastQuery = phrase;
+        session.pendingPick = entities.date ? { date: entities.date, time: entities.time } : null;
+        session.pendingBooking = null;
+        return { text: formatGymList(gyms, meta.platform, 0, phrase), data: { gyms } };
+      }
     }
   }
 
