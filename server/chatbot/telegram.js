@@ -505,6 +505,7 @@ async function handleCallbackQuery(query, verified = false) {
     const result = await executeBotCheckout({
       userId: linkedUserId,
       gymId: booking.gymId,
+      bookingId: booking.id, // pay the booking we showed, keep its code
       date: booking.date,
       time: booking.time || 'anytime',
       cardId,

@@ -1200,16 +1200,34 @@ router.post('/bot-checkout', express.json(), async (req, res) => {
       return res.status(409).json({ error: 'duplicate', message: 'You already have a booking at this gym for this date/time.' });
     }
 
+    /* Pay for the booking the chat already showed (bug 14, 2026-09-28): the
+       bot made an unpaid guest booking (code on the pay link), then this
+       endpoint made a second booking with a new code, so the confirmation
+       code didn't match the one the customer was given. Reuse that row. */
+    const existingId = parseInt(req.body.bookingId, 10);
+    if (existingId) {
+      const prior = await pool.query(
+        `UPDATE public.bookings SET user_id = $1, start_time = $2, end_time = $3,
+           total_amount = $4, platform_fee_amount = $5, booking_type = 'bot',
+           user_email = COALESCE(NULLIF($6, ''), user_email), referral_code = COALESCE($7, referral_code),
+           status = 'pending', updated_at = NOW()
+         WHERE id = $8 AND gym_id = $9 AND status = 'pending' AND user_id IN ('guest', $1)
+         RETURNING *`,
+        [String(userId), startTime, endTime, price, price * 0.10, user.email || '', referral_code || null, existingId, dbGymId]
+      );
+      if (prior.rows.length) booking = prior.rows[0];
+    }
+
     // Generate booking code
-    const crypto = require('crypto');
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let bookingCode = '';
-    for (let i = 0; i < 8; i++) {
+    let bookingCode = booking ? booking.booking_code : '';
+    for (let i = 0; !booking && i < 8; i++) {
       bookingCode += chars[Math.floor(Math.random() * chars.length)];
       if (i === 3) bookingCode += '-';
     }
 
     // Create booking
+    if (!booking) {
     const bookingResult = await pool.query(
       `INSERT INTO public.bookings
         (gym_id, user_id, booking_date, start_time, end_time, total_amount,
@@ -1221,6 +1239,7 @@ router.post('/bot-checkout', express.json(), async (req, res) => {
        bookingCode, user.email || '', user.first_name || 'Bot User', referral_code || null]
     );
     booking = bookingResult.rows[0];
+    }
 
     // Charge saved card
     const intent = await stripe.paymentIntents.create({
