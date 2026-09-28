@@ -22,7 +22,7 @@ const pool = require('../middleware/db');
 
 /** Per-mode daily caps. Video is the expensive one and stays tightest. */
 const CAPS = {
-  video: parseInt(process.env.SQUAD_VIDEO_DAILY_CAP || '5', 10),
+  video: parseInt(process.env.SQUAD_VIDEO_DAILY_CAP || '20', 10),
   image: parseInt(process.env.SQUAD_IMAGE_DAILY_CAP || '30', 10),
   audio: parseInt(process.env.SQUAD_AUDIO_DAILY_CAP || '30', 10),
   music: parseInt(process.env.SQUAD_MUSIC_DAILY_CAP || '10', 10),
