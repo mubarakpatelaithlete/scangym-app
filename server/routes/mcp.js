@@ -361,6 +361,7 @@ async function rememberFor(ctx, exchange) {
   try {
     const fresh = await memory.loadMemory(key);
     await memory.saveMemory(key, memory.remember(fresh, { platform: platformOf(ctx), ...exchange }));
+    await memory.logExchange(key, { platform: platformOf(ctx), ...exchange });
   } catch (e) { console.error('[MCP] remember failed:', e.message); }
 }
 
@@ -458,7 +459,10 @@ async function myLibrary({ kind }, ctx) {
 }
 
 async function myMemory(args, ctx) {
-  const mem = await memory.loadMemory(memory.memoryKey(null, ctx.user));
+  const key = memory.memoryKey(null, ctx.user);
+  const mem = await memory.loadMemory(key);
+  const id = await memory.loadIdentity(ctx.user);
+  const recent = await memory.recentMessages(key, 20);
   return {
     name: ctx.user.firstName || null,
     email: ctx.user.email || null,
@@ -466,8 +470,10 @@ async function myMemory(args, ctx) {
     lastCreate: mem.lastCreate || null,
     chatbotsUsed: mem.channels || [],
     lastChannel: mem.lastChannel || null,
-    recent: (mem.history || []).slice(-10),
-    summary: memory.formatMemory(mem, ctx.user),
+    mobile: id && id.mobile ? String(id.mobile).replace(/\d(?=\d{4})/g, '•') : null,
+    savedCard: (id && id.card) || null,
+    recent: recent.length ? recent : (mem.history || []).slice(-10),
+    summary: memory.formatMemory(mem, ctx.user, id),
   };
 }
 

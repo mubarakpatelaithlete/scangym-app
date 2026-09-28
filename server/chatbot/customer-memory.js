@@ -121,6 +121,76 @@ async function saveMemory(key, data, deps) {
   }
 }
 
+// ─── ScanGym ID: full chat log + identity (items 23/24, 2026-09-28) ───
+/** Store both sides of one exchange in chat_messages (all chatbots, one key). */
+async function logExchange(key, { text, reply, platform }, deps) {
+  if (!key || (!text && !reply)) return;
+  try {
+    const rows = [];
+    if (text) rows.push(['user', String(text).slice(0, 4000)]);
+    if (reply) rows.push(['assistant', String(reply).slice(0, 4000)]);
+    const vals = rows.map((_, i) => `($1, $${i * 2 + 3}, $${i * 2 + 4}, $2)`).join(', ');
+    await db(deps).query(`INSERT INTO chat_messages (memory_key, platform, role, text) VALUES ${vals}`,
+      [key, platform || null, ...rows.flat()]);
+  } catch (e) {
+    if (e.message !== 'no DATABASE_URL') console.error('[Memory] log failed:', e.message);
+  }
+}
+
+/** Last n messages for this customer from every chatbot, oldest first. */
+async function recentMessages(key, n = 16, deps) {
+  try {
+    const { rows } = await db(deps).query(
+      'SELECT role, text, platform FROM chat_messages WHERE memory_key = $1 ORDER BY id DESC LIMIT $2', [key, n]);
+    return rows.reverse();
+  } catch (e) {
+    if (e.message !== 'no DATABASE_URL') console.error('[Memory] recent failed:', e.message);
+    return [];
+  }
+}
+
+/** Name, email, mobile and saved card label (never the number) for a linked customer. */
+async function loadIdentity(customer, deps) {
+  if (!customer) return null;
+  const out = { name: customer.firstName || null, email: customer.email || null };
+  try {
+    const { rows } = await db(deps).query(
+      'SELECT first_name, last_name, email, phone_number, stripe_customer_id FROM public.users WHERE id::text = $1 LIMIT 1',
+      [String(customer.userId)]);
+    const u = rows[0];
+    if (u) {
+      out.name = [u.first_name, u.last_name].filter(Boolean).join(' ') || out.name;
+      out.email = u.email || out.email;
+      out.mobile = u.phone_number || null;
+      if (u.stripe_customer_id) out.card = await cardLabel(u.stripe_customer_id, deps);
+    }
+    const c = await db(deps).query(
+      'SELECT COUNT(*)::int AS n, ARRAY_AGG(DISTINCT platform) AS via FROM chat_messages WHERE memory_key = $1',
+      [memoryKey(null, customer)]);
+    if (c.rows[0]) { out.messages = c.rows[0].n || 0; out.via = (c.rows[0].via || []).filter(Boolean); }
+  } catch (e) {
+    if (e.message !== 'no DATABASE_URL') console.error('[Memory] identity failed:', e.message);
+  }
+  return out;
+}
+
+async function cardLabel(stripeCustomerId, deps) {
+  try {
+    if (deps && deps.cardLabel) return await deps.cardLabel(stripeCustomerId);
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) return null;
+    const stripe = require('stripe')(key);
+    const m = await stripe.paymentMethods.list({ customer: stripeCustomerId, type: 'card', limit: 1 });
+    const card = m.data[0] && m.data[0].card;
+    return card ? `${String(card.brand || 'card').toUpperCase()} ••${card.last4}` : null;
+  } catch (e) { return null; }
+}
+
+const mask = {
+  email: (e) => String(e).replace(/^(.{2})[^@]*(@.*)$/, '$1•••$2'),
+  mobile: (m) => '••••' + String(m).replace(/\D/g, '').slice(-4),
+};
+
 /** Fold one exchange into the stored memory (pure — easy to test). */
 function remember(mem, { text, reply, platform, create, city, prefs }) {
   const out = { ...mem };
@@ -187,18 +257,25 @@ function formatLibrary(items, platform) {
     `All ${done.length > 5 ? 'of them' : 'creations'}: ${BASE}/creator\n🔁 Say "remix my last" to make a new version.`;
 }
 
-function formatMemory(mem, customer) {
+function formatMemory(mem, customer, id) {
   const bits = [];
-  if (customer && customer.firstName) bits.push(`👋 You're ${customer.firstName}.`);
+  if (id && id.name) bits.push(`👋 You're ${id.name}.`);
+  else if (customer && customer.firstName) bits.push(`👋 You're ${customer.firstName}.`);
+  if (id && id.email) bits.push(`📧 ${mask.email(id.email)}`);
+  if (id && id.mobile) bits.push(`📱 ${mask.mobile(id.mobile)}`);
+  if (id && id.card) bits.push(`💳 Saved card: ${id.card}`);
   if (mem.lastCity) bits.push(`📍 Last city: ${mem.lastCity}`);
   if (mem.lastCreate) bits.push(`🎨 Last creation idea: "${mem.lastCreate.prompt.slice(0, 80)}" (${mem.lastCreate.kind})`);
-  if (mem.channels && mem.channels.length) bits.push(`💬 Chatbots used: ${mem.channels.map((c) => PLATFORM_LABEL[c] || c).join(', ')}`);
+  const chans = [...new Set([...(mem.channels || []), ...((id && id.via) || [])])];
+  if (chans.length) bits.push(`💬 Chatbots used: ${chans.map((c) => PLATFORM_LABEL[c] || c).join(', ')}`);
+  if (id && id.messages) bits.push(`🗂️ ${id.messages} messages remembered across all chatbots`);
   if (!bits.length) bits.push("I don't know much yet — search a gym or create something and I'll remember it.");
   return `🧠 *What I remember:*\n${bits.join('\n')}`;
 }
 
 module.exports = {
   resolveCustomer, memoryKey, loadMemory, saveMemory, remember,
+  logExchange, recentMessages, loadIdentity,
   detectMemoryAsk, kindFromText, linkPrompt, formatLibrary, formatMemory,
   PLATFORM_LABEL, _linkCache: linkCache,
 };
