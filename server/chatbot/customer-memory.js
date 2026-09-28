@@ -122,7 +122,7 @@ async function saveMemory(key, data, deps) {
 }
 
 /** Fold one exchange into the stored memory (pure — easy to test). */
-function remember(mem, { text, reply, platform, create, city }) {
+function remember(mem, { text, reply, platform, create, city, prefs }) {
   const out = { ...mem };
   const history = Array.isArray(mem.history) ? mem.history.slice() : [];
   if (text) history.push({ role: 'user', text: String(text).slice(0, 500), via: platform || null });
@@ -134,6 +134,7 @@ function remember(mem, { text, reply, platform, create, city }) {
   if (platform) out.lastChannel = platform;
   if (create) out.lastCreate = { kind: create.kind, prompt: String(create.prompt || '').slice(0, 600), at: new Date().toISOString() };
   if (city) out.lastCity = city;
+  if (prefs) out.createPrefs = prefs;
   return out;
 }
 
