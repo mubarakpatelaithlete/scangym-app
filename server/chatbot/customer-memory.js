@@ -138,7 +138,10 @@ function remember(mem, { text, reply, platform, create, city }) {
 }
 
 // ─── Customer-facing phrases ────────────────────────────────
-const LIBRARY_RE = /\b(my|show( me)?( my)?)\s+(library|creations?|images?|pictures?|photos? i made|videos?|songs?|music|audios?|voiceovers?)\b/i;
+/* "Show my shared library" used to become a city search ("Found 20 gyms in My
+   Shared Library", email test 2026-09-28): allow shared/saved/whole and a
+   bare "library". */
+const LIBRARY_RE = /^\s*(?:my\s+)?(?:shared\s+)?library\s*[.!?]*\s*$|\b(my|show( me)?( my)?|open( my)?|see( my)?)\s+(?:(?:shared|saved|whole|full)\s+)?(library|creations?|images?|pictures?|photos? i made|videos?|songs?|music|audios?|voiceovers?)\b/i;
 const REMIX_RE = /\b(remix|redo|again|another version|make it again)\b.*\b(last|previous|that)\b|\b(remix|redo) (my|that|it)\b/i;
 const MEMORY_RE = /\b(what do you (remember|know) about me|my memory)\b/i;
 

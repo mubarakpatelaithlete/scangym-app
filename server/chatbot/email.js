@@ -31,6 +31,27 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SMTP_FROM = process.env.SMTP_FROM || 'book@scangym.com';
 const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
+/* Replies go out From SMTP_FROM (bookings@scangym.com), but that address has no
+   inbox: scangym.com MX is Cloudflare routing and it answers 550 "Address does
+   not exist" (email test 2026-09-28), so a customer pressing Reply got a bounce.
+   Reply-To points them at the SendGrid Inbound Parse host that reaches this bot. */
+const REPLY_TO = process.env.EMAIL_REPLY_TO || 'bookings@book.scangym.com';
+
+/**
+ * Did the sender's own domain vouch for this mail? SendGrid Inbound Parse adds
+ * `SPF` ("pass") and `dkim` ("{@gmail.com : pass}"). Only then may the email
+ * chat act as the account behind that address (library, memory, in-chat create).
+ * Before this the email channel never passed `verified`, so every sender was
+ * treated as a stranger (email test 2026-09-28).
+ */
+function senderVerified(body, email) {
+  const domain = String(email || '').split('@')[1];
+  if (!body || !domain) return false;
+  const d = domain.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const dkim = String(body.dkim || '');
+  if (new RegExp('@(?:[\\w-]+\\.)*' + d + '\\s*:\\s*pass', 'i').test(dkim)) return true;
+  return String(body.SPF || body.spf || '').trim().toLowerCase() === 'pass';
+}
 
 // Message ID tracking for threading
 const messageThreads = new Map();
@@ -98,6 +119,7 @@ router.post('/webhook', parseInbound, express.urlencoded({ extended: true, limit
       userName: linkedUserName,
       platform: 'email',
       email: senderEmail,
+      verified: senderVerified(req.body, senderEmail),
     });
 
     // Check for attachments info
@@ -268,6 +290,7 @@ async function sendViaResend({ to, subject, text, html, inReplyTo }) {
     subject,
     text,
     html,
+    reply_to: REPLY_TO,
   };
   if (inReplyTo) {
     payload.headers = { 'In-Reply-To': inReplyTo, References: inReplyTo };
@@ -327,6 +350,7 @@ async function sendEmailReply(toEmail, toName, originalSubject, responseText, in
     const mailOptions = {
       from: `ScanGym <${SMTP_FROM}>`,
       to: toEmail,
+      replyTo: REPLY_TO,
       subject: reSubject,
       text: plainText,
       html: htmlBody,
@@ -427,3 +451,4 @@ function formatEmailHtml(text) {
 }
 
 module.exports = router;
+module.exports.senderVerified = senderVerified;
