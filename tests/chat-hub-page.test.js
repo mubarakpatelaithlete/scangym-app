@@ -12,3 +12,8 @@ test('chat hub links every live chatbot', () => {
   }
   assert.ok(!/Scangym1Bot/.test(html), 'Scangym1Bot is the internal TEST bot');
 });
+
+test('/chat is routed before the SPA fallback', () => {
+  const srv = fs.readFileSync(require('path').join(__dirname, '../server/server.js'), 'utf8');
+  assert.match(srv, /app\.get\(\['\/chat', '\/chat\/'\]/);
+});
