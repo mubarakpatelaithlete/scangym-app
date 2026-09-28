@@ -619,8 +619,12 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     if (!session.memLoaded) {
       session.memLoaded = true;
       session.memory = await mem.loadMemory(key, deps);
-      if ((!session.history || !session.history.length) && Array.isArray(session.memory.history)) {
-        session.history = session.memory.history.map((h) => ({ role: h.role, text: h.text }));
+      if (!session.history || !session.history.length) {
+        /* ScanGym ID (2026-09-28): full log from every chatbot first, then
+           the old 12-message JSON as a fallback. */
+        const log = mem.recentMessages ? await mem.recentMessages(key, 16, deps) : [];
+        const src = log.length ? log : (Array.isArray(session.memory.history) ? session.memory.history : []);
+        if (src.length) session.history = src.map((h) => ({ role: h.role, text: h.text }));
       }
     }
   } catch (e) { console.error('[Memory] wrapper setup failed:', e.message); }
@@ -683,7 +687,8 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
   if (ask) {
     const known = session.memory || {};
     if (ask === 'memory') {
-      result = { text: mem.formatMemory(known, customer) + (customer ? '' : '\n\n' + linkHint()) };
+      const id = customer && mem.loadIdentity ? await mem.loadIdentity(customer, deps) : null;
+      result = { text: mem.formatMemory(known, customer, id) + (customer ? '' : '\n\n' + linkHint()) };
     } else if (ask === 'remix') {
       if (known.lastCreate && known.lastCreate.prompt) {
         create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
@@ -809,7 +814,10 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     const exchange = { text, reply: result && result.text, platform, create: create && create.kind ? create : null, city, prefs };
     session.memory = mem.remember(session.memory || {}, exchange);
     // Re-read before writing so two chatbots talking at once don't wipe each other.
-    const save = mem.loadMemory(key, deps).then((fresh) => mem.saveMemory(key, mem.remember(fresh, exchange), deps));
+    const save = Promise.all([
+      mem.loadMemory(key, deps).then((fresh) => mem.saveMemory(key, mem.remember(fresh, exchange), deps)),
+      mem.logExchange ? mem.logExchange(key, exchange, deps) : null,
+    ]);
     if (deps.awaitSave) await save; else save.catch(() => {});
   }
   return result;
