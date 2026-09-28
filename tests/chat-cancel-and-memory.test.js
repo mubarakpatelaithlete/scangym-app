@@ -29,6 +29,7 @@ test('"cancel my booking" with one active booking asks YES, then cancels it', as
   const a = await handleMessage('telegram:900', 'cancel my booking', meta, d);
   assert.match(a.text, /Cancel this booking\?/);
   assert.match(a.text, /AAAA-BBBB/);
+  assert.ok(a.data.options.every((o) => o.label && o.value), 'buttons need label + value');
   const b = await handleMessage('telegram:900', 'YES', meta, d);
   assert.match(b.text, /Cancelled/);
   assert.deepEqual(cancelled, [{ userId: '7', bookingId: 9 }]);
