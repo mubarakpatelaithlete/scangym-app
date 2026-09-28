@@ -1097,6 +1097,12 @@ function handleChannelsQuestion(text, meta) {
 // ─── Search handler ──────────────────────────────────────────
 async function handleSearch(session, text, entities, meta) {
   const query = entities.location || text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in|around|some)\b/gi, '').trim() || text;
+  /* "What boxing gyms are near me?" left "what boxing are ?" as the place, and
+     Google answered with San Francisco. With no place and no pin, ask for one. */
+  if (!entities.location && !(meta && meta.location) && /\b(near(by)?|around)\s*(me|here)?\b|\bnearby\b/i.test(text)
+      && !query.replace(/[?!.,]/g, ' ').replace(/\b(what|which|where|are|is|there|any|good|best|can|i|book|to|for|of|my|boxing|yoga|crossfit|pilates|swim(ming)?|pool|climbing|martial|arts|mma|hiit|spin|cheap|open|now|today|tomorrow)\b/gi, '').trim()) {
+    return { text: "📍 Which town, area or postcode are you in? e.g. \"Bolton\" or \"M1 1AE\". I'll find the gyms near you." };
+  }
   const params = new URLSearchParams({ q: `gym in ${query}` });
   const data = await callApi(`/api/live/search?${params}`);
   
