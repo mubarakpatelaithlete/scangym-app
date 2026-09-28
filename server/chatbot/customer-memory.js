@@ -205,7 +205,111 @@ function remember(mem, { text, reply, platform, create, city, prefs }) {
   if (create) out.lastCreate = { kind: create.kind, prompt: String(create.prompt || '').slice(0, 600), at: new Date().toISOString() };
   if (city) out.lastCity = city;
   if (prefs) out.createPrefs = prefs;
+  out.profile = learnProfile(mem.profile, { text, city, create, prefs });
+  out.sinceSummary = (mem.sinceSummary || 0) + 1;
   return out;
+}
+
+// ─── Personality (ScanGym ID part 2, 2026-09-28) ───────────────
+/* Learned by simple rules, no AI cost: cities, favourite models/shapes,
+   reply style, language, and anything said with "remember that …". */
+const LANGS = { english: 'English', hindi: 'Hindi', urdu: 'Urdu', arabic: 'Arabic', spanish: 'Spanish', french: 'French', german: 'German', polish: 'Polish', portuguese: 'Portuguese', italian: 'Italian', punjabi: 'Punjabi', gujarati: 'Gujarati', bengali: 'Bengali' };
+const NOTE_RE = /^\s*(?:please\s+)?remember(?:\s+that)?\s+(.{3,200})$/i;
+function bump(map, key) {
+  if (!key) return map;
+  const m = { ...(map || {}) };
+  m[key] = (m[key] || 0) + 1;
+  return m;
+}
+function top(map, n = 3) {
+  return Object.entries(map || {}).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
+}
+function learnProfile(profile, { text, city, create, prefs }) {
+  const p = { ...(profile || {}) };
+  const t = String(text || '');
+  if (city) p.cities = bump(p.cities, String(city).slice(0, 60));
+  if (create && create.kind) p.kinds = bump(p.kinds, create.kind);
+  if (prefs && typeof prefs === 'object') {
+    for (const v of Object.values(prefs)) {
+      if (v && v.model) p.models = bump(p.models, String(v.model).split('/').pop().slice(0, 40));
+      if (v && v.shape) p.shapes = bump(p.shapes, String(v.shape).slice(0, 20));
+    }
+  }
+  if (/\b(short|brief|quick) (replies|answers|messages)\b|\bkeep it short\b/i.test(t)) p.style = 'short';
+  else if (/\b(long|detailed|more detail(ed)?) (replies|answers)\b/i.test(t)) p.style = 'detailed';
+  const lang = t.match(/\b(?:reply|speak|talk|answer|write)(?: to me)? in (\w+)/i);
+  if (lang && LANGS[lang[1].toLowerCase()]) p.language = LANGS[lang[1].toLowerCase()];
+  const note = t.match(NOTE_RE);
+  if (note && !/\b(my (booking|password|card))\b/i.test(note[1])) {
+    p.notes = [...(p.notes || []).filter((x) => x !== note[1]), note[1].trim()].slice(-10);
+  }
+  return p;
+}
+
+/** Short text the AI reads before answering (summary + personality). */
+function contextNote(mem) {
+  const p = (mem && mem.profile) || {};
+  const bits = [];
+  if (mem && mem.summary) bits.push(`Summary so far: ${mem.summary}`);
+  if (top(p.cities).length) bits.push(`Usual cities: ${top(p.cities).join(', ')}`);
+  if (top(p.kinds).length) bits.push(`Likes creating: ${top(p.kinds).join(', ')}`);
+  if (top(p.models).length) bits.push(`Favourite models: ${top(p.models).join(', ')}`);
+  if (p.style) bits.push(`Wants ${p.style} replies`);
+  if (p.language) bits.push(`Reply in ${p.language}`);
+  if (p.notes && p.notes.length) bits.push(`Things they asked me to remember: ${p.notes.join('; ')}`);
+  return bits.length ? `[What you know about this customer — use it, don't repeat it back] ${bits.join('. ')}.` : '';
+}
+
+/** Every ~20 exchanges, fold older chat into a 2-3 sentence summary (cheap model). */
+const SUMMARY_EVERY = 20;
+async function maybeSummarise(key, mem, deps) {
+  if (!key || (mem.sinceSummary || 0) < SUMMARY_EVERY) return null;
+  const ai = deps && deps.summarise;
+  if (!ai) return null;
+  try {
+    const recent = await recentMessages(key, 40, deps);
+    if (!recent.length) return null;
+    const convo = recent.map((m) => `${m.role === 'user' ? 'Customer' : 'Bot'}: ${String(m.text).slice(0, 300)}`).join('\n');
+    const prompt = `Summarise what matters about this gym-booking customer in at most 3 short sentences (goals, gyms, times, creations, preferences). No greetings.\nPrevious summary: ${mem.summary || 'none'}\n\n${convo}`;
+    const out = await ai(prompt);
+    if (!out) return null;
+    return String(out).replace(/\s+/g, ' ').trim().slice(0, 600);
+  } catch (e) {
+    console.error('[Memory] summary failed:', e.message);
+    return null;
+  }
+}
+
+/** "forget X": drop matching notes, cities, models; "forget everything" is handled as delete. */
+function forget(mem, what) {
+  const w = String(what || '').toLowerCase().trim();
+  const out = { ...mem, profile: { ...(mem.profile || {}) } };
+  const p = out.profile;
+  const hit = (s) => String(s).toLowerCase().includes(w) || w.includes(String(s).toLowerCase());
+  let n = 0;
+  if (p.notes) { const k = p.notes.filter((x) => !hit(x)); n += p.notes.length - k.length; p.notes = k; }
+  for (const f of ['cities', 'models', 'shapes', 'kinds']) {
+    if (!p[f]) continue;
+    for (const k of Object.keys(p[f])) if (hit(k)) { delete p[f][k]; n++; }
+  }
+  if (/\b(style|short|long)\b/.test(w) && p.style) { delete p.style; n++; }
+  if (/\blanguage\b/.test(w) && p.language) { delete p.language; n++; }
+  if (mem.lastCity && hit(mem.lastCity)) { delete out.lastCity; n++; }
+  if (mem.lastCreate && hit(mem.lastCreate.prompt)) { delete out.lastCreate; n++; }
+  if (n && out.summary && hit(out.summary)) delete out.summary;
+  return { mem: out, removed: n };
+}
+
+/** GDPR: wipe the shared memory row and every stored message. */
+async function deleteMemory(key, deps) {
+  try {
+    await db(deps).query('DELETE FROM chat_messages WHERE memory_key = $1', [key]);
+    await db(deps).query('DELETE FROM chatbot_memory WHERE memory_key = $1', [key]);
+    return true;
+  } catch (e) {
+    if (e.message !== 'no DATABASE_URL') console.error('[Memory] delete failed:', e.message);
+    return false;
+  }
 }
 
 // ─── Customer-facing phrases ────────────────────────────────
@@ -219,8 +323,15 @@ const REMIX_RE = /\b(remix|redo|again|another version|make it again)\b.*\b(last|
    "who am I" fell through to the AI, which invented an answer. */
 const MEMORY_RE = /\b(what do you (remember|know)( about me)?|do you (remember|know) me|who am i|(my|shared|show( me)?( my)?|check( my)?|see( my)?|view( my)?|open( my)?)\s+(shared\s+)?memory|memory context|what did i (make|create) last)\b/i;
 
+const DELETE_RE = /^\s*(?:please\s+)?(?:delete|erase|wipe|clear|forget)\s+(?:all\s+(?:of\s+)?)?(?:my\s+)?(?:memory|data|everything|history|chat history|all about me)(?:\s+about me)?\s*[.!?]*\s*$/i;
+const FORGET_RE = /^\s*(?:please\s+)?forget\s+(?:that\s+|about\s+)?(.{2,120}?)\s*[.!?]*\s*$/i;
+
 function detectMemoryAsk(text) {
   const t = String(text || '');
+  if (DELETE_RE.test(t)) return 'delete';
+  const fg = t.match(FORGET_RE);
+  if (fg && !/^(it|that|this|about it|him|her|them|the booking|my booking)$/i.test(fg[1].trim())) return 'forget';
+  if (NOTE_RE.test(t) && !MEMORY_RE.test(t)) return 'note';
   if (MEMORY_RE.test(t)) return 'memory';
   if (REMIX_RE.test(t)) return 'remix';
   if (LIBRARY_RE.test(t) && !/\b(bookings?|gyms?)\b/i.test(t)) return 'library';
@@ -269,13 +380,21 @@ function formatMemory(mem, customer, id) {
   const chans = [...new Set([...(mem.channels || []), ...((id && id.via) || [])])];
   if (chans.length) bits.push(`💬 Chatbots used: ${chans.map((c) => PLATFORM_LABEL[c] || c).join(', ')}`);
   if (id && id.messages) bits.push(`🗂️ ${id.messages} messages remembered across all chatbots`);
+  const p = mem.profile || {};
+  if (top(p.cities).length) bits.push(`🏙️ Usual cities: ${top(p.cities).join(', ')}`);
+  if (top(p.models).length) bits.push(`🎨 Favourite models: ${top(p.models).join(', ')}`);
+  if (p.style) bits.push(`✍️ You like ${p.style} replies`);
+  if (p.language) bits.push(`🌐 Language: ${p.language}`);
+  if (p.notes && p.notes.length) bits.push(`📝 You asked me to remember: ${p.notes.join('; ')}`);
+  if (mem.summary) bits.push(`🧾 So far: ${mem.summary}`);
   if (!bits.length) bits.push("I don't know much yet — search a gym or create something and I'll remember it.");
-  return `🧠 *What I remember:*\n${bits.join('\n')}`;
+  return `🧠 *What I remember:*\n${bits.join('\n')}\n\n🗑️ Say "forget …" to remove something, or "delete my memory" to wipe it all.`;
 }
 
 module.exports = {
   resolveCustomer, memoryKey, loadMemory, saveMemory, remember,
   logExchange, recentMessages, loadIdentity,
+  learnProfile, contextNote, maybeSummarise, forget, deleteMemory, SUMMARY_EVERY, FORGET_RE, NOTE_RE,
   detectMemoryAsk, kindFromText, linkPrompt, formatLibrary, formatMemory,
   PLATFORM_LABEL, _linkCache: linkCache,
 };
