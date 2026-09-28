@@ -18355,10 +18355,19 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
  * Book tab: "Continue · £4.49 →" navigates to checkout for visible gym.
  * Profile tab: banner hidden, content resizes back to tab bar only. */
 (function(){
-  var banner=document.createElement('div');
-  banner.id='sg-continue-banner';
-  banner.className='sg-cb-hidden';
-  banner.innerHTML='<span class="sg-cb-text">Find gyms near me</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\ud83d\udccd</span>';
+  /* PERF: the shell now ships this bar in the HTML (see index.html, "static
+     continue bar"), because building it here made it the LCP element at
+     ~1230ms — the page looked unfinished until the bundle had parsed. Adopt
+     the static node when it is there; build it exactly as before when it is
+     not, so nothing outside this function has to care. */
+  var banner=document.getElementById('sg-continue-banner');
+  var adopted=!!banner;
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='sg-continue-banner';
+    banner.className='sg-cb-hidden';
+    banner.innerHTML='<span class="sg-cb-text">Find gyms near me</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">\ud83d\udccd</span>';
+  }
 
   /* ONE BAR: other tabs (Partner, Profile, ScanSquad) used to append their own
    * fixed orange bar at bottom:56px;z-index:8999 — four separate elements that
@@ -18411,7 +18420,7 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       }
     }
   });
-  document.body.appendChild(banner);
+  if(!banner.parentNode)document.body.appendChild(banner);
 
   var _cbVisible=false;
 
@@ -18478,6 +18487,13 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   },true);
   /* Cards load async after the banner appears — refresh until they exist */
   setInterval(function(){if(_cbVisible)_updatePrice();},2000);
+
+  /* The static bar ships visible, so the very first _showBanner() must not
+     early-return on a stale _cbVisible=false — mirror the DOM instead. */
+  if(adopted && !banner.classList.contains('sg-cb-hidden')){
+    _cbVisible=true;
+    document.body.classList.add('sg-cb-active');
+  }
 
   function _showBanner(){
     _updatePrice();

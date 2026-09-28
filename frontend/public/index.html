@@ -141,8 +141,19 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- One place decides where right-edge rails live; loaded last so it wins. -->
   <link rel="stylesheet" href="/rails.css?v=2.5">
+<style>
+/* PERF (static continue bar): these rules live in the app bundle's injected
+   stylesheet, which does not exist until app.ctr576.js has parsed. The bar is
+   the LCP element, so the shell needs enough CSS to paint it at first paint.
+   Kept byte-identical to the bundle's rules — if you change one, change both. */
+#sg-continue-banner{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;height:52px;background:linear-gradient(135deg,#FF6D00 0%,#E66200 100%);display:flex;align-items:center;justify-content:center;gap:8px;z-index:8999;box-shadow:0 -4px 20px rgba(255,109,0,.25);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#sg-continue-banner.sg-cb-hidden{display:none}
+#sg-continue-banner .sg-cb-text{font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px;-webkit-user-select:none;user-select:none}
+#sg-continue-banner .sg-cb-price{font-size:13px;font-weight:600;color:rgba(255,255,255,.75)}
+#sg-continue-banner .sg-cb-arrow{font-size:18px;color:#fff;margin-left:2px}
+</style>
 </head>
-<body class="bg-dark min-h-screen">
+<body class="bg-dark min-h-screen sg-cb-active">
 <!-- The app renders its headings client-side, so the document shipped with no
      <h1> at all: Google saw a page whose main heading was nothing. This is the
      one true heading for the shell; visible headings inside the app can repeat
@@ -186,6 +197,14 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
     <div style="text-align:center;opacity:.45"><span style="font-size:24px">&#128100;</span><br><span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Profile</span></div>
   </div>
 <!--boot:end--></div>
+
+<!-- Static continue bar. This is the LCP element: built by app.ctr576.js it
+     did not appear until ~1230ms, so the page looked half-loaded until the
+     bundle parsed. Shipped in the HTML it paints with first paint (~450ms).
+     The bundle adopts this exact node by id instead of creating its own, and
+     owns every state change after boot (label, price, show/hide). Markup and
+     class names must stay in sync with the bundle's version. -->
+<div id="sg-continue-banner"><span class="sg-cb-text">Find gyms near me</span><span class="sg-cb-price"></span><span class="sg-cb-arrow">&#128205;</span></div>
 
 <script>window.__configPromise=fetch('/api/config').then(r=>r.json()).catch(()=>({mapsKey:'',stripeKey:'',brand:'ScanGym',gymCount:1200000,liveSearch:true}));</script>
 
