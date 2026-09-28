@@ -66,7 +66,16 @@ function catalogue(kind, deps = {}) {
  * Start a picker state. If nextStep(w) is null nothing needs asking and the
  * caller goes straight to the price step.
  */
+/* "create image" / "make a video please" carry no idea — treat as empty so
+   the picker asks for one instead of drawing the words "create image". */
+function bareTrigger(p) {
+  return !String(p || '').toLowerCase()
+    .replace(/\b(create|make|generate|draw|design|produce|new|an?|some|my|me|please|pls|for|an|the|image|images|picture|pic|photo|video|clip|music|song|track|audio|voice(over)?|sound)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, '');
+}
+
 function start({ kind = null, prompt = '', model = null, text = '' }, prefs = {}) {
+  if (bareTrigger(prompt)) prompt = '';
   const w = { kind, prompt, model, settings: kind ? settingsFromText(kind, text || prompt) : {}, at: Date.now(), prefs: prefs || {} };
   return w;
 }
@@ -156,4 +165,4 @@ function remember(prefs, w) {
   return p;
 }
 
-module.exports = { start, nextStep, question, answer, body, remember, settingsFromText, BARE_CREATE, KINDS };
+module.exports = { bareTrigger, start, nextStep, question, answer, body, remember, settingsFromText, BARE_CREATE, KINDS };

@@ -81,3 +81,13 @@ test('NO cancels the picker; an unrelated message drops it', async () => {
   const no = await handleMessage('telegram:502', 'no', meta, { pool, awaitSave: true });
   assert.match(no.text, /nothing was charged/);
 });
+
+test('"create image" alone asks for the idea instead of drawing "create image"', () => {
+  const wz = require('../server/chatbot/create-wizard');
+  assert.equal(wz.bareTrigger('create image'), true);
+  assert.equal(wz.bareTrigger('make a video please'), true);
+  assert.equal(wz.bareTrigger('a boxer in a sunny gym'), false);
+  const w = wz.start({ kind: 'image', prompt: 'create image', model: 'seedream-v4', text: 'create image' });
+  w.settings.aspectRatio = '1:1';
+  assert.equal(wz.nextStep(w), 'prompt');
+});
