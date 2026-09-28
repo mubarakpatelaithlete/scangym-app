@@ -550,3 +550,23 @@ test('chat-create shows the real owing-limit message instead of "add a card"', (
   assert.match(t, /owing/);
   assert.match(f(402, { error: 'Add a card to start creating.', needsCard: true }, 'image'), /Add a card once/);
 });
+
+test('chat-create picks the model the customer names, longest name first', () => {
+  const chat = require('../server/chatbot/chat-create');
+  const models = { catalogueFor: () => [
+    { id: 'nano-banana', label: 'Nano Banana' }, { id: 'nano-banana-2', label: 'Nano Banana 2' }, { id: 'kling-2.5-turbo', label: 'Kling 2.5 Turbo' },
+  ] };
+  assert.equal(chat.pickModel('image', 'create image with Nano Banana 2 of a gym', { models }), 'nano-banana-2');
+  assert.equal(chat.pickModel('image', 'create image with nano banana of a gym', { models }), 'nano-banana');
+  assert.equal(chat.pickModel('video', 'video with kling-2.5-turbo: boxer', { models }), 'kling-2.5-turbo');
+  assert.equal(chat.pickModel('image', 'a banana on a gym bench', { models }), null);
+});
+
+test('chat-create sends the named model to the ScanSquad route', async () => {
+  const chat = require('../server/chatbot/chat-create');
+  const seen = [];
+  const router = (req, res) => { seen.push(req.body); res.status(200).json({ imageUrl: 'https://cdn/i.png' }); };
+  const models = { catalogueFor: () => [{ id: 'seedream-v4', label: 'Seedream V4' }] };
+  await chat.startCreation('9', 'image', 'with Seedream V4 a gym', { deps: { router, models } });
+  assert.equal(seen[0].model, 'seedream-v4');
+});
