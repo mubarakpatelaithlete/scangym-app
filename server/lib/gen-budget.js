@@ -43,8 +43,8 @@ const pool = require('../middleware/db');
  * render before they have driven a single booking.
  */
 const TIER_FLOOR_USD = {
-  starter: 0.6,
-  rising: 3,
+  starter: 5, // raised from 0.6 on 2026-09-28 (Simran: every model testable on day one)
+  rising: 6, // kept above starter so climbing a tier still pays
   pro: 10,
   legend: 25,
 };
