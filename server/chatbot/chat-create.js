@@ -186,7 +186,7 @@ async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgM
   const gen = await callRoute(kind, 'POST', '/generate', userId, { ...extra, prompt: cleanPrompt(kind, prompt, deps), ...(model ? { model } : {}) }, deps);
   if (gen.status >= 400 || gen.body.error) return { error: refusalText(gen.status, gen.body, kind) };
   const now = urlOf(gen.body);
-  if (now) return { done: true, url: now };
+  if (now) return { done: true, url: now, jobId: gen.body.jobId || gen.body.id || null };
   const jobId = gen.body.jobId;
   if (!jobId) return { error: refusalText(500, {}, kind) };
 
@@ -201,7 +201,7 @@ async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgM
   while (Date.now() - started < syncMs) {
     await wait(deps.pollMs || 2000);
     const r = await poll();
-    if (r && r.url) return { done: true, url: r.url };
+    if (r && r.url) return { done: true, url: r.url, jobId };
     if (r && r.error) return { error: refusalText(500, { error: r.error }, kind) };
   }
   // Background: keeps the job moving (status polls are what finish a job and
@@ -211,7 +211,7 @@ async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgM
       await wait(deps.bgPollMs || 10000);
       try {
         const r = await poll();
-        if (r && r.url) { if (onReady) await onReady(r.url); return; }
+        if (r && r.url) { if (onReady) await onReady(r.url, jobId); return; }
         if (r && r.error) return;
       } catch (_) { /* transient */ }
     }
@@ -219,8 +219,12 @@ async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgM
   return { done: false, jobId, etaSeconds: gen.body.etaSeconds || null };
 }
 
-function doneReply(kind, url) {
-  return `${ICON[kind]} Your ${LABEL[kind]} is ready!\n${require('./safe-link').safeLink(url)}\n\n📚 Saved to your library, so every chatbot can find it ("my library").\n🔁 Say "remix my last" for a new version.`;
+function doneReply(kind, url, jobId) {
+  const share = require('../lib/share-remix').shareLink(jobId);
+  const earn = share
+    ? `\n\n💸 Share & earn: ${share}\n(Your contacts get the same model, shape, length and prompt ready to go. You earn when they buy.)\n📤 Send to all your contacts in 1 tap: ${share}?share=1`
+    : '';
+  return `${ICON[kind]} Your ${LABEL[kind]} is ready!\n${require('./safe-link').safeLink(url)}${earn}\n\n📚 Saved to your library, so every chatbot can find it ("my library").\n🔁 Say "remix my last" for a new version.`;
 }
 
 function runningReply(kind, etaSeconds, canPush) {
