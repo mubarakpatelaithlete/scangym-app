@@ -1013,12 +1013,12 @@
     .sg-app-badges{position:absolute;bottom:80px;left:16px;right:70px;z-index:10;display:flex;flex-direction:column;gap:6px}
     .sg-app-badges-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);text-shadow:0 1px 4px rgba(0,0,0,.8)}
     .sg-app-badges-row{display:flex;gap:8px;flex-wrap:wrap}
-    .sg-app-badge{height:36px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);padding:6px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;text-decoration:none;-webkit-tap-highlight-color:transparent}
+    .sg-app-badge{min-height:44px;border-radius:8px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);padding:6px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;text-decoration:none;-webkit-tap-highlight-color:transparent}
     .sg-app-badge:active{transform:scale(.95);background:rgba(0,0,0,.8)}
     .sg-app-badge svg{width:20px;height:20px;flex-shrink:0}
     .sg-app-badge-text{display:flex;flex-direction:column}
-    .sg-app-badge-text .sg-abt{font-size:7px;color:rgba(255,255,255,.5);line-height:1;letter-spacing:.3px}
-    .sg-app-badge-text .sg-abb{font-size:11px;color:#fff;font-weight:700;line-height:1.2}
+    .sg-app-badge-text .sg-abt{font-size:11px;color:rgba(255,255,255,.5);line-height:1;letter-spacing:.3px}
+    .sg-app-badge-text .sg-abb{font-size:13px;color:#fff;font-weight:700;line-height:1.2}
   `;
   document.head.appendChild(sty2);
 
