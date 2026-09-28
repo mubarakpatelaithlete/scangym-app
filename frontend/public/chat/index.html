@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chat with ScanGym — book a gym, create, all in one chat</title>
+<meta name="description" content="Pick your favourite app and chat with ScanGym: book gym day passes, cancel, rebook and create images, videos and music. One ScanGym ID remembers you everywhere.">
+<meta name="theme-color" content="#127947">
+<meta property="og:title" content="Chat with ScanGym">
+<meta property="og:description" content="Book a gym or create something just by chatting — in the app you already use.">
+<meta property="og:url" content="https://www.scangym.com/chat">
+<link rel="icon" href="/favicon.ico">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f6f8f7;color:#334155;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(160deg,#127947,#0d5c36);color:#fff;text-align:center;padding:36px 20px 40px}
+header h1{font-size:28px;font-weight:800;letter-spacing:-.4px}
+header p{margin-top:8px;color:#d8ece2;max-width:420px;margin-left:auto;margin-right:auto}
+.wrap{max-width:520px;margin:-22px auto 40px;padding:0 16px}
+a.btn{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:#0f172a;font-weight:700;box-shadow:0 4px 14px rgba(15,23,42,.06)}
+a.btn:active{transform:scale(.99)}
+a.btn .ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex:none}
+a.btn small{display:block;font-weight:500;color:#64748b;font-size:13px}
+a.btn.top{border:2px solid #FF6D00}
+.note{text-align:center;font-size:13px;color:#64748b;margin-top:16px}
+</style>
+</head>
+<body>
+<header>
+  <h1>💬 Chat with ScanGym</h1>
+  <p>Book a gym, cancel, rebook, or create images, videos and music — just by chatting. Pick your app:</p>
+</header>
+<div class="wrap" id="list">
+  <a class="btn top" data-ch="web" href="/"><span class="ic" style="background:#FF6D00">⚡</span><span>ScanGym website<small>Fastest — no app needed</small></span></a>
+  <a class="btn" data-ch="telegram" href="https://t.me/ScanGymBot"><span class="ic" style="background:#0088cc">✈️</span><span>Telegram<small>Tap Start</small></span></a>
+  <a class="btn" data-ch="messenger" href="https://m.me/1380733691780608"><span class="ic" style="background:#0866ff">💬</span><span>Messenger</span></a>
+  <a class="btn" data-ch="instagram" href="https://ig.me/m/mubsy_014"><span class="ic" style="background:#d62976">📸</span><span>Instagram</span></a>
+  <a class="btn" data-ch="chatgpt" href="/chatgpt"><span class="ic" style="background:#10a37f">🤖</span><span>ChatGPT</span></a>
+  <a class="btn" data-ch="claude" href="/claude"><span class="ic" style="background:#d97757">✳️</span><span>Claude</span></a>
+  <a class="btn" data-ch="sms" href="sms:+447366265044?&body=Hi%20ScanGym"><span class="ic" style="background:#16a34a">📱</span><span>Text us (SMS)<small>+44 7366 265044</small></span></a>
+  <a class="btn" data-ch="email" href="mailto:bookings@book.scangym.com?subject=Hi%20ScanGym"><span class="ic" style="background:#475569">✉️</span><span>Email<small>bookings@book.scangym.com</small></span></a>
+  <p class="note">🧠 One ScanGym ID remembers you in every app — start in one, carry on in another.</p>
+</div>
+<script>
+/* Keep ?src=snapchat|pinterest|youtube|linkedin on outgoing links so we can see
+   which post brought the customer (Telegram start payload, web query). */
+(function(){
+  var src=(new URLSearchParams(location.search).get('src')||'').replace(/[^a-z0-9_]/gi,'').slice(0,20);
+  if(!src) return;
+  document.querySelectorAll('a.btn').forEach(function(a){
+    var ch=a.getAttribute('data-ch');
+    if(ch==='telegram') a.href+='?start=src_'+src;
+    else if(ch==="web") a.href="/?src="+src;
+  });
+})();
+</script>
+</body>
+</html>
