@@ -20,9 +20,20 @@ const router = express.Router();
 const crypto = require('crypto');
 const { handleMessage } = require('./message-handler');
 
-// Slack credentials (env only - never hardcode)
+// ─── Slack credentials (env-only — never commit secrets) ───
+// These were once hardcoded here as joined string fragments, which hid them
+// from GitHub secret scanning and Slack's auto-revocation while the repo was
+// public. They are considered compromised and must be rotated in Slack.
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
+
+if (!SLACK_BOT_TOKEN || !SLACK_SIGNING_SECRET) {
+  console.error(
+    '[chatbot/slack] Missing SLACK_BOT_TOKEN and/or SLACK_SIGNING_SECRET. ' +
+    'The Slack chatbot routes are disabled until they are set (see .env.example).'
+  );
+}
+
 const BASE_URL = process.env.BASE_URL || 'https://www.scangym.com';
 const SLACK_API = 'https://slack.com/api';
 
@@ -39,7 +50,9 @@ const sessions = new Map();
 
 // ─── Verify Slack request signature ──────────────────────────
 function verifySlackSignature(req) {
-  if (!SLACK_SIGNING_SECRET) return true;
+  // Fail closed: without a signing secret we cannot verify authenticity,
+  // so the request must be rejected rather than trusted.
+  if (!SLACK_SIGNING_SECRET) return false;
   const timestamp = req.headers['x-slack-request-timestamp'];
   const sig = req.headers['x-slack-signature'];
   if (!timestamp || !sig) return false;
