@@ -284,7 +284,9 @@ router.get('/lookup', async (req, res) => {
 // then to the same hardcoded number the Twilio adapter uses.
 router.get('/whatsapp/number', async (req, res) => {
   // 1. Check env vars
-  let phone = process.env.TWILIO_PHONE_NUMBER || process.env.WHATSAPP_NUMBER || process.env.TWILIO_WHATSAPP_NUMBER || '';
+  // The WhatsApp sender first: TWILIO_PHONE_NUMBER is the SMS number and is
+  // not on WhatsApp (wa.me said "isn't on WhatsApp", test 2026-09-28).
+  let phone = process.env.TWILIO_WHATSAPP_NUMBER || process.env.WHATSAPP_NUMBER || process.env.TWILIO_PHONE_NUMBER || '';
 
   // 2. If no env var, ask the Twilio adapter for the live number
   if (!phone) {

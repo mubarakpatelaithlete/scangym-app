@@ -194,6 +194,14 @@
   // WhatsApp chatbot (Twilio → /api/chatbot/twilio/webhook), same number as
   // /api/channels/whatsapp/number. Opened synchronously so popup blockers allow it.
   var WHATSAPP_NUMBER = '12052094512';
+  // Real sender comes from the server (TWILIO_WHATSAPP_NUMBER); fetched ahead
+  // so the tap still opens synchronously.
+  try {
+    fetch('/api/channels/whatsapp/number').then(function (r) { return r.json(); }).then(function (d) {
+      var n = String((d && d.number) || '').replace(/[^0-9]/g, '');
+      if (n) WHATSAPP_NUMBER = n;
+    }).catch(function () {});
+  } catch (e) {}
   // Email chatbot inbox (server/chatbot/email.js replies from book@scangym.com).
   var EMAIL_BOT = 'book@scangym.com';
   var SCANGYM_GPT_URL = 'https://chatgpt.com/g/g-6a445a2958e48191bc28d9f14374b8ea';
