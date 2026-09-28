@@ -856,6 +856,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'chat', 'index.html'));
   });
 
+  // "Use ScanGym in Gemini" — Connected Apps → custom MCP app (2026-09-28).
+  app.get('/gemini', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'gemini', 'index.html'));
+  });
+
   // "Use ScanGym in ChatGPT" — same guided connector flow as /claude.
   app.get('/chatgpt', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
