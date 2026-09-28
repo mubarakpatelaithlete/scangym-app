@@ -1184,10 +1184,15 @@ router.post('/bot-checkout', express.json(), async (req, res) => {
     try {
       await pool.query(
         `UPDATE public.bookings SET status = 'failed', updated_at = NOW()
-         WHERE user_id = $1 AND status = 'pending' AND created_at < NOW() - INTERVAL '5 minutes'`,
-        [userId]
+         WHERE user_id = $1 AND status = 'pending' AND created_at < NOW() - INTERVAL '5 minutes'
+           AND id <> $2`,
+        [userId, parseInt(req.body.bookingId, 10) || 0]
       );
     } catch (e) { /* non-fatal */ }
+    /* Bug 14 again (live 2026-09-28): a declined first tap marked the shown
+       booking 'failed' and the 5-minute cleanup did too, so the retry made a
+       new code (FDA4-MCUV → 3NPY-96KC). The booking being paid is kept and a
+       failed one may be retried. */
 
     // Prevent duplicates
     const existing = await pool.query(
@@ -1211,7 +1216,7 @@ router.post('/bot-checkout', express.json(), async (req, res) => {
            total_amount = $4, platform_fee_amount = $5, booking_type = 'bot',
            user_email = COALESCE(NULLIF($6, ''), user_email), referral_code = COALESCE($7, referral_code),
            status = 'pending', updated_at = NOW()
-         WHERE id = $8 AND gym_id = $9 AND status = 'pending' AND user_id IN ('guest', $1)
+         WHERE id = $8 AND gym_id = $9 AND status IN ('pending', 'failed') AND user_id IN ('guest', $1)
          RETURNING *`,
         [String(userId), startTime, endTime, price, price * 0.10, user.email || '', referral_code || null, existingId, dbGymId]
       );
