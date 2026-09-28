@@ -133,18 +133,19 @@ function modelNames(kind, deps = {}) {
 }
 
 /** Retail price for the default settings of each mode (same maths as the routes). */
-function quoteFor(kind, prompt, deps = {}) {
+function quoteFor(kind, prompt, deps = {}, opts = {}) {
   try {
     const models = deps.models || require('../lib/gen-models');
     const pricing = deps.pricing || require('../lib/gen-pricing');
     const provider = deps.provider || require('../lib/gen-provider');
     let model; let units;
-    const picked = pickModel(kind, prompt, { models });
+    const picked = (opts.model && opts.model !== 'auto') ? opts.model : pickModel(kind, prompt, { models });
     if (kind === 'image') { model = models.resolve('image', picked); units = { images: 1 }; }
     else if (kind === 'video') {
       model = models.resolveAvailable('video', picked, provider.configured);
-      let seconds = 8;
-      try { if (model && model.provider === 'fal') seconds = require(ROUTES.video)._internals.effectiveSeconds(model, 8); } catch (_) { /* keep 8 */ }
+      const want = Number(opts.durationSeconds) || 8;
+      let seconds = want;
+      try { if (model && model.provider === 'fal') seconds = require(ROUTES.video)._internals.effectiveSeconds(model, want); } catch (_) { /* keep */ }
       units = { seconds };
     } else if (kind === 'audio') { model = models.resolveAvailable('audio', picked, provider.configured); units = { chars: cleanPrompt('audio', prompt, { models }).length }; }
     else if (kind === 'music') { model = models.resolveAvailable('music', picked, provider.configured); units = { minutes: 0.5 }; }
@@ -157,11 +158,13 @@ function quoteFor(kind, prompt, deps = {}) {
   }
 }
 
-function askReply(kind, prompt, quote) {
+function askReply(kind, prompt, quote, settings) {
   const price = quote && quote.price ? `💷 Price: *${quote.price}*${quote.model ? ` (${quote.model})` : ''}, added to your ScanSquad bill on your saved card.\n` : '💷 Charged at the ScanSquad price to your saved card.\n';
   const names = modelNames(kind);
-  const others = names.length > 1 ? `🎛 Other models: ${names.join(', ')}. Say e.g. "create ${kind} with ${names[names.length - 1]} …".\n` : '';
-  return `${ICON[kind]} Ready to make your ${LABEL[kind]} right here:\n"${String(prompt).slice(0, 160)}"\n\n${price}${others}\n👉 Reply *YES* to create, or *NO* to cancel.`;
+  const shape = settings && (settings.aspectRatio || settings.durationSeconds)
+    ? `📐 ${[settings.aspectRatio, settings.durationSeconds ? `${settings.durationSeconds}s` : null].filter(Boolean).join(' · ')}\n` : '';
+  const others = !settings && names.length > 1 ? `🎛 Other models: ${names.join(', ')}. Say e.g. "create ${kind} with ${names[names.length - 1]} …".\n` : '';
+  return `${ICON[kind]} Ready to make your ${LABEL[kind]} right here:\n"${String(prompt).slice(0, 160)}"\n\n${price}${shape}${others}\n👉 Reply *YES* to create, or *NO* to cancel.`;
 }
 
 function refusalText(status, body, kind) {
@@ -178,9 +181,9 @@ function refusalText(status, body, kind) {
  *  { done:true, url } | { done:false, jobId, etaSeconds } | { error:text }
  * If it is still running, keeps polling in the background and calls onReady(url).
  */
-async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgMs = 15 * 60 * 1000, deps = {} } = {}) {
-  const model = pickModel(kind, prompt, deps);
-  const gen = await callRoute(kind, 'POST', '/generate', userId, model ? { prompt: cleanPrompt(kind, prompt, deps), model } : { prompt: cleanPrompt(kind, prompt, deps) }, deps);
+async function startCreation(userId, kind, prompt, { onReady, syncMs = 8000, bgMs = 15 * 60 * 1000, deps = {}, extra = {} } = {}) {
+  const model = extra.model || pickModel(kind, prompt, deps);
+  const gen = await callRoute(kind, 'POST', '/generate', userId, { ...extra, prompt: cleanPrompt(kind, prompt, deps), ...(model ? { model } : {}) }, deps);
   if (gen.status >= 400 || gen.body.error) return { error: refusalText(gen.status, gen.body, kind) };
   const now = urlOf(gen.body);
   if (now) return { done: true, url: now };

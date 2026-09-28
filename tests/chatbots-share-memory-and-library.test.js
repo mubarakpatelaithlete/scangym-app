@@ -54,7 +54,7 @@ test('what is made on Telegram is remembered on WhatsApp', async () => {
   await handleMessage('telegram:111', 'make a video of a boxer training at dawn', { platform: 'telegram', verified: true }, { pool, awaitSave: true });
   const saved = JSON.parse(pool.store.get('user:42'));
   assert.equal(saved.lastCreate.kind, 'video');
-  const r = await handleMessage('whatsapp:+447700900000', 'remix my last video', { platform: 'whatsapp', verified: true }, { pool, awaitSave: true });
+  const r = await handleMessage('whatsapp:+447700900000', 'remix my last video', { platform: 'whatsapp', verified: true }, { pool, awaitSave: true, noCreateWizard: true });
   assert.match(r.text, /Remixing/);
   assert.match(r.text, /Reply \*YES\*/);
   const after = JSON.parse(pool.store.get('user:42'));
@@ -105,18 +105,18 @@ test('in-chat create: price first, nothing spent until YES, file comes back in t
   const calls = [];
   const chatCreate = { startCreation: async (uid, kind, prompt) => { calls.push({ uid, kind, prompt }); return { done: true, url: 'https://cdn/sunrise.png' }; } };
   const meta = { platform: 'telegram', verified: true };
-  const ask = await handleMessage('telegram:222', 'make an image of a gym at sunrise', meta, { pool, chatCreate, awaitSave: true });
+  const ask = await handleMessage('telegram:222', 'make an image of a gym at sunrise', meta, { pool, chatCreate, awaitSave: true, noCreateWizard: true });
   assert.match(ask.text, /Reply \*YES\*/);
   assert.doesNotMatch(ask.text, /scangym\.com\/creator\?mode/);
   assert.equal(calls.length, 0);
-  const done = await handleMessage('telegram:222', 'yes', meta, { pool, chatCreate, awaitSave: true });
+  const done = await handleMessage('telegram:222', 'yes', meta, { pool, chatCreate, awaitSave: true, noCreateWizard: true });
   assert.equal(calls.length, 1);
   assert.equal(calls[0].uid, '7');
   assert.equal(calls[0].kind, 'image');
   assert.match(done.text, /https:\/\/cdn\/sunrise\.png/);
   // NO cancels and charges nothing
-  await handleMessage('telegram:222', 'make a song about leg day', meta, { pool, chatCreate, awaitSave: true });
-  const no = await handleMessage('telegram:222', 'no', meta, { pool, chatCreate, awaitSave: true });
+  await handleMessage('telegram:222', 'make a song about leg day', meta, { pool, chatCreate, awaitSave: true, noCreateWizard: true });
+  const no = await handleMessage('telegram:222', 'no', meta, { pool, chatCreate, awaitSave: true, noCreateWizard: true });
   assert.match(no.text, /nothing was charged/);
   assert.equal(calls.length, 1);
 });

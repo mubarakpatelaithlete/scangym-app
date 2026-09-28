@@ -176,7 +176,7 @@ router.post('/webhook', async (req, res) => {
 
     // Handle callback queries (button taps)
     if (update.callback_query) {
-      await handleCallbackQuery(update.callback_query);
+      await handleCallbackQuery(update.callback_query, fromTelegram(req));
       return;
     }
 
@@ -278,8 +278,11 @@ router.post('/webhook', async (req, res) => {
       push: (t) => sendTelegramMessage(chatId, t),
     });
 
+    // Create picker: the same numbered choices as tap buttons (create-wizard.js).
+    if (response.data && Array.isArray(response.data.options) && response.data.options.length) {
+      await sendWithButtons(chatId, response.text, optionButtons(response.data.options));
     // If response has gym data, store for pagination and add buttons
-    if (response.data && response.data.gyms && response.data.gyms.length > 0) {
+    } else if (response.data && response.data.gyms && response.data.gyms.length > 0) {
       sessions.set(chatId, {
         gyms: response.data.gyms,
         offset: 5,
@@ -340,7 +343,17 @@ router.post('/webhook', async (req, res) => {
 });
 
 // ─── Handle callback queries (button taps) ───────────────────
-async function handleCallbackQuery(query) {
+/** One button per picker choice, two per row (labels stay readable). */
+function optionButtons(options) {
+  const rows = [];
+  for (let i = 0; i < options.length; i += 2) {
+    rows.push(options.slice(i, i + 2).map((o) => ({ text: String(o.label).slice(0, 60), callback_data: `opt_${o.value}` })));
+  }
+  rows.push([{ text: '✖️ Cancel', callback_data: 'opt_no' }]);
+  return rows;
+}
+
+async function handleCallbackQuery(query, verified = false) {
   const chatId = query.message.chat.id;
   const data = query.data;
 
@@ -354,6 +367,25 @@ async function handleCallbackQuery(query) {
   } catch (e) {}
 
   sendAction(chatId, 'typing');
+
+  if (data && data.startsWith('opt_')) {
+    const response = await handleMessage(`telegram:${query.from.id}`, data.slice(4), {
+      platform: 'telegram',
+      userName: query.from.first_name,
+      chatId,
+      linkedUser: await lookupLinkedUser(query.from.id),
+      verified,
+      push: (t) => sendTelegramMessage(chatId, t),
+    });
+    if (response.data && Array.isArray(response.data.options) && response.data.options.length) {
+      await sendWithButtons(chatId, response.text, optionButtons(response.data.options));
+    } else if (response.data && response.data.create && response.data.create.pending === true) {
+      await sendWithButtons(chatId, response.text, [[{ text: '✅ YES, create', callback_data: 'opt_yes' }, { text: '✖️ No', callback_data: 'opt_no' }]]);
+    } else {
+      await sendTelegramMessage(chatId, response.text);
+    }
+    return;
+  }
 
   if (data === 'show_more') {
     const session = sessions.get(chatId);

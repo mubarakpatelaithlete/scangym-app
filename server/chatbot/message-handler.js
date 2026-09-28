@@ -22,6 +22,7 @@ const { checkoutLink, prettyDate } = require('../lib/checkout-link');
 const { detectCreate, createReply } = require('./create-media');
 const memory = require('./customer-memory');
 const chat = require('./chat-create');
+const wizard = require('./create-wizard');
 const chatLink = require('./chat-link');
 /* In-chat creation can be switched off with CHAT_CREATE=off without a deploy. */
 function chatCreateOn(deps) { return !(deps && deps.noChatCreate) && process.env.CHAT_CREATE !== 'off'; }
@@ -626,6 +627,32 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
 
   let result = null;
   let create = null;
+  let prefs = null;
+  /* Create picker (create-wizard.js): Image/Video/Music/Audio → model → shape,
+     one tap-question at a time, skipping what the customer already said. */
+  const wiz = deps.createWizard || wizard;
+  const wizardOn = !(deps && deps.noCreateWizard) && process.env.CREATE_WIZARD !== 'off';
+  const finishCreate = (w, prefix = '') => {
+    const extra = wiz.body(w);
+    session.pendingCreate = { kind: w.kind, prompt: w.prompt, extra, at: Date.now() };
+    const asked = !!w.asked;
+    return { text: prefix + chat.askReply(w.kind, w.prompt, chat.quoteFor(w.kind, w.prompt, {}, extra), asked ? extra : undefined), data: { create: { kind: w.kind, prompt: w.prompt, pending: true } } };
+  };
+  const askStep = (w, prefix = '') => {
+    w.asked = true;
+    session.createWizard = w;
+    const q = wiz.question(w);
+    return { text: prefix + q.text, data: { create: { kind: w.kind, prompt: w.prompt, pending: 'pick' }, options: q.options } };
+  };
+  const beginCreate = (c, prefix = '') => {
+    if (!wizardOn) {
+      session.pendingCreate = { ...c, at: Date.now() };
+      return { text: prefix + chat.askReply(c.kind, c.prompt, chat.quoteFor(c.kind, c.prompt)), data: { create: { ...c, pending: true } } };
+    }
+    const named = c.kind ? chat.pickModel(c.kind, c.prompt) : null;
+    const w = wiz.start({ kind: c.kind, prompt: c.prompt, model: named, text: c.prompt }, (session.memory || {}).createPrefs);
+    return wiz.nextStep(w) ? askStep(w, prefix) : finishCreate(w, prefix);
+  };
   /* Link this chat to an account right here (email → 6-digit code), so create
      and library work end to end without visiting the website (chat-link.js). */
   const link = deps.chatLink || chatLink;
@@ -642,8 +669,8 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
         key = mem.memoryKey(userId, customer);
         if (r.create) {
           create = r.create;
-          session.pendingCreate = { ...r.create, at: Date.now() };
-          result.text += '\n\n' + chat.askReply(r.create.kind, r.create.prompt, chat.quoteFor(r.create.kind, r.create.prompt));
+          const b = beginCreate(r.create);
+          result = { ...b, text: result.text + '\n\n' + b.text };
         } else {
           result.text += '\n\n🎨 Try: "make an image of a gym at sunrise"';
         }
@@ -661,8 +688,7 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       if (known.lastCreate && known.lastCreate.prompt) {
         create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
         if (customer && chatCreateOn(deps)) {
-          session.pendingCreate = { ...create, at: Date.now() };
-          result = { text: '🔁 Remixing your last idea.\n\n' + chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)) };
+          result = beginCreate(create, '🔁 Remixing your last idea.\n\n');
         } else if (inChatLink) {
           result = { text: '🔁 Remixing your last idea.\n\n' + link.start(session, { create }) };
         } else {
@@ -681,6 +707,27 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       }
     }
   }
+  // Create picker answer ("2", "Kling", "16:9 · 8s", or NO).
+  if (!result && session.createWizard) {
+    const w = session.createWizard;
+    const fresh = Date.now() - w.at < 15 * 60 * 1000;
+    const r = fresh && customer ? wiz.answer(w, text) : null;
+    if (r === 'cancel') {
+      session.createWizard = null;
+      result = { text: '👍 Cancelled — nothing was charged.' };
+    } else if (r === 'next') {
+      w.at = Date.now();
+      if (wiz.nextStep(w)) result = askStep(w);
+      else {
+        session.createWizard = null;
+        create = { kind: w.kind, prompt: w.prompt };
+        prefs = wiz.remember((session.memory || {}).createPrefs, w);
+        result = finishCreate(w);
+      }
+    } else {
+      session.createWizard = null; // they moved on
+    }
+  }
   // In-chat creation: answer to "Reply YES to create" (chat-create.js).
   if (!result && session.pendingCreate) {
     const pc = session.pendingCreate;
@@ -691,6 +738,7 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       const out = await (deps.chatCreate || chat).startCreation(customer.userId, pc.kind, pc.prompt, {
         onReady: push ? (url) => push(chat.doneReply(pc.kind, url)) : null,
         deps: deps.createDeps || {},
+        extra: pc.extra || {},
       });
       if (out.error) result = { text: out.error };
       else if (out.done) result = { text: chat.doneReply(pc.kind, out.url), data: { create: { kind: pc.kind, url: out.url } } };
@@ -705,8 +753,9 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
   if (!result) {
     create = detectCreate(text);
     if (create && customer && chatCreateOn(deps)) {
-      session.pendingCreate = { ...create, at: Date.now() };
-      result = { text: chat.askReply(create.kind, create.prompt, chat.quoteFor(create.kind, create.prompt)), data: { create: { ...create, pending: true } } };
+      result = beginCreate(create);
+    } else if (!create && wizardOn && customer && chatCreateOn(deps) && wiz.BARE_CREATE.test(text)) {
+      result = beginCreate({ kind: null, prompt: '' });
     } else if (create && inChatLink) {
       result = { text: link.start(session, { create }), data: { create: { ...create, pending: 'link' } } };
     } else {
@@ -722,7 +771,7 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     if (result && result.data && Array.isArray(result.data.gyms) && result.data.gyms.length) {
       city = extractEntities(text).location || null;
     }
-    const exchange = { text, reply: result && result.text, platform, create, city };
+    const exchange = { text, reply: result && result.text, platform, create: create && create.kind ? create : null, city, prefs };
     session.memory = mem.remember(session.memory || {}, exchange);
     // Re-read before writing so two chatbots talking at once don't wipe each other.
     const save = mem.loadMemory(key, deps).then((fresh) => mem.saveMemory(key, mem.remember(fresh, exchange), deps));
