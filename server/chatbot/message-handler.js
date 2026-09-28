@@ -750,6 +750,41 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       session.pendingCreate = null; // they moved on
     }
   }
+  /* Bug 15 (2026-09-28): "cancel my booking" always asked for a code. For a
+     linked customer we know who they are, so offer only their active
+     (paid, not yet started) bookings and cancel after a number / YES. */
+  if (!result && session.pendingCancel) {
+    const pc = session.pendingCancel;
+    session.pendingCancel = null;
+    const fresh = Date.now() - pc.at < 10 * 60 * 1000;
+    const n = parseInt(String(text).trim(), 10);
+    const pick = pc.list.length === 1 && chat.YES.test(text) ? pc.list[0]
+      : (n >= 1 && n <= pc.list.length ? pc.list[n - 1] : null);
+    if (fresh && customer && pick) {
+      const cancel = deps.cancelBooking || require('../lib/booking-actions').cancelBooking;
+      const out = await cancel({ userId: customer.userId, bookingId: pick.id });
+      result = { text: out.ok
+        ? `✅ Cancelled: ${pick.label}\n${out.refunded ? '💰 Refund in 3-5 business days.\n' : ''}${out.message || ''}\n\nWant to rebook? Say "book again" or a city.`
+        : `😕 ${out.message}` };
+    } else if (fresh && (chat.NO.test(text) || /^\s*(no|keep)/i.test(text))) {
+      result = { text: '👍 Kept your booking — nothing changed.' };
+    }
+  }
+  if (!result && customer && detectIntent(text, session) === INTENTS.CANCEL) {
+    const ents = extractEntities(text);
+    if (!ents.bookingCode && !ents.bookingId) {
+      const list = await activeBookings(customer.userId, deps);
+      if (!list.length) {
+        result = { text: '📋 You have no active bookings to cancel.\n\nWant to book a gym? Just tell me a city!' };
+      } else if (list.length === 1) {
+        session.pendingCancel = { list, at: Date.now() };
+        result = { text: `❌ Cancel this booking?\n\n${list[0].label}\n\nReply YES to cancel, or NO to keep it.`, data: { options: ['YES', 'NO'] } };
+      } else {
+        session.pendingCancel = { list, at: Date.now() };
+        result = { text: `❌ Which booking should I cancel?\n\n${list.map((b, i) => `${i + 1}. ${b.label}`).join('\n')}\n\nReply with a number, or NO to keep them.`, data: { options: list.map((b, i) => String(i + 1)) } };
+      }
+    }
+  }
   if (!result) {
     create = detectCreate(text);
     if (create && customer && chatCreateOn(deps)) {
@@ -1136,6 +1171,30 @@ async function handleBook(session, text, entities, meta) {
 }
 
 // ─── Complete booking ────────────────────────────────────────
+/* Active = paid and not yet started (today or later, start time still ahead). */
+async function activeBookings(userId, deps = {}) {
+  try {
+    const pool = deps.pool || require('../middleware/db');
+    const { rows } = await pool.query(
+      `SELECT b.id, b.booking_date, b.start_time, b.booking_code, g.name AS gym_name
+         FROM public.bookings b LEFT JOIN public.gyms g ON g.id = b.gym_id
+        WHERE b.user_id::text = $1::text AND b.status = 'confirmed' AND b.booking_date >= CURRENT_DATE
+        ORDER BY b.booking_date, b.start_time LIMIT 5`, [String(userId)]);
+    const now = Date.now();
+    return rows.filter((b) => {
+      const d = b.booking_date instanceof Date ? b.booking_date.toISOString().slice(0, 10) : String(b.booking_date).slice(0, 10);
+      const t = /^\d{1,2}:\d{2}/.test(b.start_time || '') ? b.start_time.slice(0, 5).padStart(5, '0') : '23:59';
+      return new Date(`${d}T${t}:00Z`).getTime() > now;
+    }).map((b) => {
+      const d = b.booking_date instanceof Date ? b.booking_date.toISOString().slice(0, 10) : String(b.booking_date).slice(0, 10);
+      return { id: b.id, code: b.booking_code, label: `🏋️ ${b.gym_name || 'Gym'} · 📅 ${prettyDate(d)} ${b.start_time || ''} · 🔖 ${b.booking_code}` };
+    });
+  } catch (e) {
+    console.error('[Cancel] active bookings lookup failed:', e.message);
+    return [];
+  }
+}
+
 async function completeBooking(session, targetGym, entities, meta, passType) {
   const placeId = targetGym.placeId || targetGym.id;
   const ensureResult = await callApi('/api/live/ensure-gym', { method: 'POST', body: JSON.stringify({ placeId }) });

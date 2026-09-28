@@ -98,6 +98,16 @@ router.post('/webhook', parseInbound, express.urlencoded({ extended: true, limit
       console.warn('[Email] Failed to log inbound comms:', e.message);
     }
 
+    /* Bug 17 (2026-09-28): bookings@scangym.com goes to Cloudflare Email
+       Routing, which forwards only to a verified address. Forwarding it to
+       bookings@book.scangym.com makes Cloudflare send a verify mail here; log
+       its link (Railway logs) instead of answering it like a customer. */
+    if (/(^|[.@])cloudflare\.com$/i.test(senderEmail)) {
+      const links = String(text || html || '').match(/https:\/\/[^\s"'<>]*cloudflare\.com[^\s"'<>]*/gi) || [];
+      console.log(`[Email] Cloudflare mail "${subject || ''}" — links: ${links.slice(0, 5).join(' ')}`);
+      return;
+    }
+
     // Recognise the sender if they already have a ScanGym account.
     // This used to POST to /api/channels/email/auto-link, a route that does not
     // exist — live logs showed `[404] Unknown API route .../email/auto-link` on

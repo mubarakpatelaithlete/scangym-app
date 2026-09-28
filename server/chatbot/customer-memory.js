@@ -142,9 +142,12 @@ function remember(mem, { text, reply, platform, create, city, prefs }) {
 /* "Show my shared library" used to become a city search ("Found 20 gyms in My
    Shared Library", email test 2026-09-28): allow shared/saved/whole and a
    bare "library". */
-const LIBRARY_RE = /^\s*(?:my\s+)?(?:shared\s+)?library\s*[.!?]*\s*$|\b(my|show( me)?( my)?|open( my)?|see( my)?)\s+(?:(?:shared|saved|whole|full)\s+)?(library|creations?|images?|pictures?|photos? i made|videos?|songs?|music|audios?|voiceovers?)\b/i;
+const LIBRARY_RE = /^\s*(?:my\s+)?(?:shared\s+)?library\s*[.!?]*\s*$|\b(my|show( me)?( my)?|open( my)?|see( my)?|check( my)?|view( my)?)\s+(?:(?:shared|saved|whole|full)\s+)?(library|creations?|images?|pictures?|photos? i made|videos?|songs?|music|audios?|voiceovers?)\b/i;
 const REMIX_RE = /\b(remix|redo|again|another version|make it again)\b.*\b(last|previous|that)\b|\b(remix|redo) (my|that|it)\b/i;
-const MEMORY_RE = /\b(what do you (remember|know) about me|my memory)\b/i;
+/* Bug 16 (2026-09-28): only "what do you remember about me" / "my memory"
+   matched, so "check shared memory context", "do you remember me" or
+   "who am I" fell through to the AI, which invented an answer. */
+const MEMORY_RE = /\b(what do you (remember|know)( about me)?|do you (remember|know) me|who am i|(my|shared|show( me)?( my)?|check( my)?|see( my)?|view( my)?|open( my)?)\s+(shared\s+)?memory|memory context|what did i (make|create) last)\b/i;
 
 function detectMemoryAsk(text) {
   const t = String(text || '');
