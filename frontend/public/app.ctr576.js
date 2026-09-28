@@ -12004,8 +12004,12 @@ function MusicTabPage(){
       '.sg-m-card[data-active="true"]{animation:sgFadeIn .4s ease-out}'+
       '#sg-m-carousel::-webkit-scrollbar{display:none}'+
       '#sg-m-carousel{scrollbar-width:none;-ms-overflow-style:none}'+
-      '.sg-vol-slider{-webkit-appearance:none;appearance:none;width:80px;height:3px;background:rgba(255,255,255,.2);border-radius:2px;outline:none;cursor:pointer}'+
-      '.sg-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#FF6D00;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(255,109,0,.4)}'+
+      '.sg-vol-slider{-webkit-appearance:none;appearance:none;width:80px;height:24px;background:transparent;outline:none;cursor:pointer}'+
+      /* The visible track stays the same 3px line; the input itself is 24px
+         tall so there is something to actually grab. It was 80x3px. */
+      '.sg-vol-slider::-webkit-slider-runnable-track{height:3px;background:rgba(255,255,255,.2);border-radius:2px}'+
+      '.sg-vol-slider::-moz-range-track{height:3px;background:rgba(255,255,255,.2);border-radius:2px}'+
+      '.sg-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4.5px;background:#FF6D00;border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(255,109,0,.4)}'+
       '.sg-vol-slider::-moz-range-thumb{width:12px;height:12px;background:#FF6D00;border-radius:50%;cursor:pointer;border:none}'+
       '.sg-lyrics-overlay{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:center;padding:80px 24px 140px;overflow-y:auto;-webkit-overflow-scrolling:touch}'+
       '.sg-lyrics-line{color:rgba(255,255,255,.35);font-size:20px;font-weight:700;text-align:center;padding:12px 0;transition:all .3s ease;line-height:1.4}'+
@@ -12063,7 +12067,7 @@ function MusicTabPage(){
         // Volume control
         '<div style="display:flex;align-items:center;gap:6px">'+
           '<div onclick="var a=window._sgAudio;if(a){a.muted=!a.muted;render()}" style="cursor:pointer;font-size:14px;width:20px;text-align:center;-webkit-tap-highlight-color:transparent">'+(window._sgAudio&&window._sgAudio.muted?'🔇':((window._sgVolume||1)>0.5?'🔊':'🔉'))+'</div>'+
-          '<input type="range" min="0" max="100" value="'+Math.round((window._sgVolume||1)*100)+'" class="sg-vol-slider" oninput="window._sgVolume=this.value/100;if(window._sgAudio){window._sgAudio.volume=this.value/100;window._sgAudio.muted=false}">'+
+          '<input type="range" min="0" max="100" aria-label="Volume" value="'+Math.round((window._sgVolume||1)*100)+'" class="sg-vol-slider" oninput="window._sgVolume=this.value/100;if(window._sgAudio){window._sgAudio.volume=this.value/100;window._sgAudio.muted=false}">'+
         '</div>'+
         // Now playing mini info
         '<div style="display:flex;align-items:center;gap:6px;flex:1;justify-content:center;overflow:hidden">'+
@@ -12853,7 +12857,7 @@ function ChatTabPage(){
           <p style="color:${isTyping?'#22c55e':'rgba(255,255,255,.3)'};font-size:10px;margin:0;font-weight:600;transition:color .3s">${isTyping?'● Thinking...':'Online · Powered by AI'}</p>
         </div>
       </div>
-      <button onclick="_sgChatNewConvo()" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:.15s" title="New chat" ontouchstart="this.style.background='rgba(255,255,255,.12)'" ontouchend="this.style.background='rgba(255,255,255,.05)'">
+      <button onclick="_sgChatNewConvo()" aria-label="New chat" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:.15s" title="New chat" ontouchstart="this.style.background='rgba(255,255,255,.12)'" ontouchend="this.style.background='rgba(255,255,255,.05)'">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </button>
     </div>

@@ -543,7 +543,9 @@ body.sg-cta-in-row #chat-fab#chat-fab {
      the measured live rects: circle 42px, 10px label 3px under it. --sg-row-
      lift is the gap from the band's bottom to the circle's bottom, so both
      new items line up with the buttons already in the row. */
-  --sg-row-ico: 42px;
+  /* 44px, not the measured 42px: at 42 the Gyms / Talk / Sign in circles were
+     the only controls in the app under the 44px minimum tap target. */
+  --sg-row-ico: 44px;
   --sg-row-cap: 12px;
   --sg-row-lift: 23px;
 }
