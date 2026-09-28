@@ -307,7 +307,8 @@ function detectIntent(text, session) {
   }
   
   // ── Book ──
-  if (/\b(book|reserve|schedule)\b/.test(lower)) return INTENTS.BOOK;
+  // "Rebook the same gym…" is a booking, not a gym search (email test 2026-09-28).
+  if (/\b(re-?book|book|reserve|schedule)\b/.test(lower)) return INTENTS.BOOK;
   
   // ── Status ──
   if (/\b(status|my booking|my bookings|my session|booking code|my qr|check booking)\b/.test(lower)) return INTENTS.STATUS;
@@ -818,6 +819,7 @@ async function handleMessageCore(userId, text, meta = {}) {
       const location = text.replace(/\b(find|search|show|list|gym|gyms|near|nearby|me|a|the|in|around|some)\b/gi, '').trim();
       if (location.length > 1) {
         result = await handleSearch(session, text, { ...entities, location }, meta);
+        if (entities.date) session.pendingPick = { date: entities.date, time: entities.time };
       } else {
         result = { text: "📍 Which city or area?\n\nJust type a place name like \"London\" or \"Manchester\" and I'll find gyms near you!" };
       }
@@ -1027,9 +1029,12 @@ async function handleBook(session, text, entities, meta) {
   if (!targetGym) {
     const normN = (x) => (x || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
     const said = normN(text);
-    const m = text.match(/\bbook\s+(?:me\s+)?(?:in\s+)?(?:at\s+)?(.+?)\s+(?:for|on|at|tomorrow|today|tonight|this|next|please)\b/i);
+    /* "Rebook the same gym, Elite Boxing Bolton, Wednesday at 11am" (email test
+       2026-09-28): accept re-book, skip "the same gym", and stop at a comma or
+       a weekday so the date never ends up in the gym name. */
+    const m = text.match(/\b(?:re-?)?book\s+(?:me\s+)?(?:again\s+)?(?:in\s+)?(?:at\s+)?(?:(?:the\s+)?same\s+(?:gym|place|one)\s*,?\s*)?(?:at\s+)?([^,]+?)(?:\s*,|\s+(?:for|on|at|tomorrow|today|tonight|this|next|please|again|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b|\s*$)/i);
     const phrase = m && m[1] ? m[1].trim() : '';
-    if (phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase)) {
+    if (phrase.length > 3 && !/^(a\s+)?(gym|gyms|session|slot|pass|day pass)(\s+in\b.*)?$/i.test(phrase) && !/^(the\s+)?same\s+(gym|place|one)$/i.test(phrase)) {
       const data = await callApi(`/api/live/search?${new URLSearchParams({ q: phrase })}`);
       /* Loose match too: "JD gym Bolton" must find "JD Gyms Bolton" (SMS test
          2026-09-25) — compare word sets with plurals folded. */
@@ -1060,6 +1065,8 @@ async function handleBook(session, text, entities, meta) {
   }
   
   if (!targetGym && session.pendingBooking?.gym) targetGym = session.pendingBooking.gym;
+  /* "Rebook" / "same gym again" with no name: the gym they booked last. */
+  if (!targetGym && session.lastBookedGym && /\b(re-?book|same (gym|place|one)|again|usual)\b/i.test(text)) targetGym = session.lastBookedGym;
   
   if (!targetGym) {
     return { text: "🏋️ Which gym would you like to book?\n\n1️⃣ Search first: \"Find gyms in Bolton\"\n2️⃣ Then book: \"Book gym 1 for tomorrow\"\n\nOr: \"Book a gym in Manchester for tomorrow at 3pm\"" };
@@ -1104,6 +1111,7 @@ async function completeBooking(session, targetGym, entities, meta, passType) {
   
   session.pendingBooking = null; session.pendingPick = null;
   if (entities.email) session.savedEmail = entities.email;
+  session.lastBookedGym = targetGym;
   return { text: formatBookingConfirmation(bookingResult.booking, targetGym.name, passType), data: { booking: bookingResult.booking } };
 }
 
