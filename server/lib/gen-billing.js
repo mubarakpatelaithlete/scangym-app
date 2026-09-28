@@ -146,7 +146,14 @@ async function mandateFor(userId, db = pool, deps = {}) {
     const customerId = u.rows[0] && u.rows[0].stripe_customer_id;
     if (!customerId) return null;
     const customer = await client.customers.retrieve(customerId);
-    const pm = customer && customer.invoice_settings && customer.invoice_settings.default_payment_method;
+    let pm = customer && customer.invoice_settings && customer.invoice_settings.default_payment_method;
+    if (!pm && client.paymentMethods && client.paymentMethods.list) {
+      // Cards saved while booking (payment.js) are attached to the customer but
+      // never set as the invoice default — the chatbots offer them as "saved
+      // cards", so Create must see them too instead of asking for a card again.
+      const list = await client.paymentMethods.list({ customer: customerId, type: 'card', limit: 1 });
+      pm = list && list.data && list.data[0] ? list.data[0].id : null;
+    }
     if (!pm) return null;
     await saveMandate(userId, typeof pm === 'string' ? pm : pm.id, db);
     return typeof pm === 'string' ? pm : pm.id;

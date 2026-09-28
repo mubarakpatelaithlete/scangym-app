@@ -524,3 +524,29 @@ test('every priced render stores what the creator owes, alongside what it cost u
   assert.ok(sql.includes('CREATE TABLE IF NOT EXISTS squad_billing'));
   assert.ok(sql.includes('CREATE SEQUENCE IF NOT EXISTS squad_invoice_no_seq'));
 });
+
+test('mandateFor adopts a card saved while booking when no invoice default is set', async () => {
+  const { mod: billing, restore } = fresh('gen-billing.js', VAT_ON);
+  const saved = [];
+  const db = { query: async (sql, args) => {
+    if (sql.includes('stripe_customer_id')) return { rows: [{ stripe_customer_id: 'cus_1' }] };
+    if (sql.includes('INSERT INTO squad_billing')) { saved.push(args[1]); return { rows: [] }; }
+    return { rows: [] };
+  } };
+  const stripeStub = {
+    customers: { retrieve: async () => ({ invoice_settings: { default_payment_method: null } }) },
+    paymentMethods: { list: async () => ({ data: [{ id: 'pm_booking' }] }) },
+  };
+  const pm = await billing.mandateFor('u1', db, { state: { mandate_pm_id: null }, stripe: stripeStub });
+  assert.equal(pm, 'pm_booking');
+  assert.deepEqual(saved, ['pm_booking']);
+  restore();
+});
+
+test('chat-create shows the real owing-limit message instead of "add a card"', () => {
+  const chat = require('../server/chatbot/chat-create');
+  const f = chat.refusalText;
+  const t = f(402, { error: 'You have £9.00 owing, which is the limit for your account.', needsPayment: true }, 'image');
+  assert.match(t, /owing/);
+  assert.match(f(402, { error: 'Add a card to start creating.', needsCard: true }, 'image'), /Add a card once/);
+});
