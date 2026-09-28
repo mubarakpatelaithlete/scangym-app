@@ -49,7 +49,7 @@ const MEASURED = {
 const REFERENCE_SECONDS = 8;
 
 /** Fallbacks when a model is new and we have not timed it yet. */
-const BY_KIND = { text: 3, image: 20, audio: 8, music: 15, video: 180, twin: 180, clipping: 120, ugc: 180 };
+const BY_KIND = { text: 3, image: 20, audio: 8, music: 15, video: 180, edit: 150, twin: 180, clipping: 120, ugc: 180 };
 
 /**
  * Expected wall-clock seconds for one generation.

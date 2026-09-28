@@ -26,6 +26,9 @@ const CAPS = {
   image: parseInt(process.env.SQUAD_IMAGE_DAILY_CAP || '30', 10),
   audio: parseInt(process.env.SQUAD_AUDIO_DAILY_CAP || '30', 10),
   music: parseInt(process.env.SQUAD_MUSIC_DAILY_CAP || '10', 10),
+  /* An edit bills per second of the source clip like video does, so it gets
+     video's tighter cap rather than the image one. */
+  edit: parseInt(process.env.SQUAD_EDIT_DAILY_CAP || '20', 10),
 };
 
 function capFor(kind) {
