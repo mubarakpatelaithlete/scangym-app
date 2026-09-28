@@ -57,7 +57,7 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const VEO_MODEL = process.env.VEO_MODEL || 'veo-3.1-fast-generate-preview';
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const OUT_DIR = path.join('/tmp', 'squad-gen');
-const DAILY_CAP = parseInt(process.env.SQUAD_VIDEO_DAILY_CAP || '5', 10);
+const DAILY_CAP = parseInt(process.env.SQUAD_VIDEO_DAILY_CAP || '20', 10);
 
 const jobs = new Map(); // jobId -> { op, status, videoUrl, error, createdAt, filePath } (cache)
 
