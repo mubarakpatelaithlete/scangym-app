@@ -856,6 +856,9 @@ if (fs.existsSync(FRONTEND_DIR)) {
     res.sendFile(path.join(FRONTEND_DIR, 'chat', 'index.html'));
   });
 
+  // "Share & earn" remix link: same model/settings/prompt + creator's ref (2026-09-28).
+  app.get('/s/:id', require('./lib/share-remix').handler());
+
   // "Use ScanGym in Gemini" — Connected Apps → custom MCP app (2026-09-28).
   app.get('/gemini', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');

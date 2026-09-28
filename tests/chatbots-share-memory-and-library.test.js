@@ -133,7 +133,7 @@ test('chat-create runs the real ScanSquad route and reads the file url', async (
   const seen = [];
   const router = (req, res) => { seen.push([req.method, req.url, req.session.userId, req.body.prompt]); res.status(200).json(req.method === 'POST' ? { jobId: 'j1' } : { status: 'done', imageUrl: 'https://cdn/i.png' }); };
   const out = await chat.startCreation('9', 'image', 'gym', { deps: { router, pollMs: 1 } });
-  assert.deepEqual(out, { done: true, url: 'https://cdn/i.png' });
+  assert.deepEqual(out, { done: true, url: 'https://cdn/i.png', jobId: 'j1' });
   assert.deepEqual(seen[0], ['POST', '/generate', '9', 'gym']);
   const refused = await chat.startCreation('9', 'image', 'gym', { deps: { router: (q, s) => s.status(402).json({ error: 'Add a card' }) } });
   assert.match(refused.error, /Add a card/);

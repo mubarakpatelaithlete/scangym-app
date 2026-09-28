@@ -769,12 +769,12 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       session.pendingCreate = null;
       const push = typeof meta.push === 'function' ? meta.push : null;
       const out = await (deps.chatCreate || chat).startCreation(customer.userId, pc.kind, pc.prompt, {
-        onReady: push ? (url) => push(chat.doneReply(pc.kind, url)) : null,
+        onReady: push ? (url, jobId) => push(chat.doneReply(pc.kind, url, jobId)) : null,
         deps: deps.createDeps || {},
         extra: pc.extra || {},
       });
       if (out.error) result = { text: out.error };
-      else if (out.done) result = { text: chat.doneReply(pc.kind, out.url), data: { create: { kind: pc.kind, url: out.url } } };
+      else if (out.done) result = { text: chat.doneReply(pc.kind, out.url, out.jobId), data: { create: { kind: pc.kind, url: out.url, jobId: out.jobId || null } } };
       else result = { text: chat.runningReply(pc.kind, out.etaSeconds, !!push), data: { create: { kind: pc.kind, jobId: out.jobId } } };
     } else if (fresh && chat.NO.test(text)) {
       session.pendingCreate = null;

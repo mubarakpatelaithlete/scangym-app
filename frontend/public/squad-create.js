@@ -1188,6 +1188,23 @@
     } catch (e) { return; }
     if (!/^(image|video|audio|music|text)$/.test(mode || '')) mode = 'video';
     if (p === null) return;
+    /* "Share & earn" remix links (/s/<id> → server/lib/share-remix.js) also
+       pre-select the model, shape, length and resolution of the original. */
+    try {
+      var st = state[mode];
+      var def = null;
+      for (var i = 0; i < MODES.length; i++) if (MODES[i].key === mode) def = MODES[i];
+      var pre = { aspectRatio: qs.get('ar'), durationSeconds: qs.get('dur'), resolution: qs.get('res') };
+      if (st && def) {
+        (def.settings || []).forEach(function (set) {
+          var v = pre[set.key];
+          if (v == null) return;
+          for (var j = 0; j < set.values.length; j++) if (String(set.values[j]) === String(v)) st[set.key] = set.values[j];
+        });
+        var mdl = qs.get('model');
+        if (mdl && /^[a-z0-9._:/-]{1,80}$/i.test(mdl)) st.__model = mdl;
+      }
+    } catch (e) { /* prefill is a nicety; the prompt still opens */ }
     if (!/^\/creator/.test(location.pathname)) return;
     try {
       var clean = location.pathname + location.hash;
