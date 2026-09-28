@@ -364,7 +364,7 @@ async function sendGymResultsWithButtons(to, gyms, fallbackText) {
 }
 
 // ─── Send WhatsApp Interactive Message (NEW in v3.0) ─────────
-async function sendWhatsAppInteractive(to, interactive) {
+async function sendWhatsAppInteractive(to, interactive, fromOverride) {
   if (!TWILIO_SID || !TWILIO_AUTH) return;
 
   // Twilio's Content API or direct WhatsApp Business API
