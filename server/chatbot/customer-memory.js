@@ -129,7 +129,7 @@ async function logExchange(key, { text, reply, platform }, deps) {
     const rows = [];
     if (text) rows.push(['user', String(text).slice(0, 4000)]);
     if (reply) rows.push(['assistant', String(reply).slice(0, 4000)]);
-    const vals = rows.map((_, i) => `($1, $${i * 2 + 3}, $${i * 2 + 4}, $2)`).join(', ');
+    const vals = rows.map((_, i) => `($1, $2, $${i * 2 + 3}, $${i * 2 + 4})`).join(', ');
     await db(deps).query(`INSERT INTO chat_messages (memory_key, platform, role, text) VALUES ${vals}`,
       [key, platform || null, ...rows.flat()]);
   } catch (e) {
