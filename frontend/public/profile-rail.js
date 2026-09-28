@@ -161,6 +161,12 @@
    * window.open() after an await is a popup blocker's definition of a popup.
    */
   function openFromApi(endpoint, fields, label) {
+    /* PERF: channel-prewarm.js fetches these install URLs at idle. When the
+       cache is warm the tap opens the real URL straight away instead of paying
+       a 130-230ms round trip inside the click. */
+    var warm = window.__sgChannelUrls || {};
+    var key = (endpoint.split('/')[3] || '');
+    if (warm[key]) { window.open(warm[key], '_blank'); return; }
     var w = window.open('', '_blank');
     fetch(endpoint)
       .then(function (r) { return r.json(); })

@@ -16094,6 +16094,11 @@ window._sgLoadChannelStatus=async function(){
 // Fix 3: Track connection in DB when user clicks a channel
 window._sgConnectChannel=async function(channelKey,directUrl){
   if(!state.user){if(directUrl)window.open(directUrl,'_blank');return;}
+  /* PERF: the destination never depends on the connect POST, and awaiting it
+     first made Telegram feel ~250ms slower than every other button (and put the
+     open outside the user gesture, where popup blockers can eat it). Open now,
+     record after. */
+  if(directUrl){try{window.open(directUrl,'_blank');}catch(e){}directUrl=null;}
   try{
     var tk=localStorage.getItem('sg_token');
     await fetch('/api/channels/connect',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(tk||'')},body:JSON.stringify({channel:channelKey})});
