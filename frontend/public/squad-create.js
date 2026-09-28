@@ -3,9 +3,13 @@
  *
  * ElevenLabs-mobile-style flow, in ScanGym dark brand: rail button → bottom
  * sheet → template chips → prompt → settings → Generate → inline preview →
- * native Share. Eight modes share ONE sheet; they differ only by the entry in
+ * native Share. Nine modes share ONE sheet; they differ only by the entry in
  * MODES below (icon, prompt copy, templates, settings schema, backend path).
- * Adding a ninth mode is a config entry, not another sheet.
+ * Adding a tenth mode is a config entry, not another sheet.
+ *
+ * Edit is the one mode that also takes a *video in*: its entry sets
+ * `needsSource`, which adds the source row (paste a link, or tap a clip you
+ * already made) above the prompt. That is the only structural difference.
  *
  * What is actually runnable is a deployment fact, so it is asked for at
  * runtime from /api/squad-create/modes rather than hardcoded here. A mode is
@@ -34,7 +38,7 @@
   var POLL_MS = 4000;
 
   /**
-   * The eight Create modes. `api` mirrors the server's registry; the server is
+   * The nine Create modes. `api` mirrors the server's registry; the server is
    * still the authority on whether a mode may be used (see modeStatus).
    *   settings: [{key,label,values,fmt}] — tap a value to cycle it.
    *   summary:  one-line echo of the chosen settings, shown next to the chips.
@@ -115,6 +119,28 @@
         { key: 'genre', label: 'Genre', values: ['Hype', 'Chill', 'Epic'] },
         { key: 'length', label: 'Length', values: ['15s', '30s', '60s'] },
       ],
+    },
+    {
+      /* The one mode whose input is a clip, not only a prompt: `needsSource`
+         adds the source row above the prompt and nothing else in the sheet
+         changes. Which edit you get (restyle, reframe, dub, sound, extend) is
+         the model chip — the server prices and names them. */
+      key: 'edit', label: 'Edit', icon: '🎞️', api: '/api/squad-edit',
+      title: 'Edit video', placeholder: 'What should change in the clip?',
+      gen: '⚡ Edit video', resultKind: 'video', needsSource: true,
+      note: 'Pick a clip, say what to change · billed per second of the clip',
+      templates: [
+        { label: '📱 Make it vertical', prompt: 'Reframe to 9:16 for Reels, keep the person centred' },
+        { label: '🔤 Add a caption bar', prompt: 'Add a bold caption bar reading "Any gym. £5/day." in orange at the bottom' },
+        { label: '🌅 Brighter gym', prompt: 'Make the gym look brighter and cleaner, warmer light, same action' },
+      ],
+      settings: [
+        { key: 'sourceSeconds', label: 'Clip length', values: [5, 8, 10, 15, 30], fmt: function (v) { return v + 's'; } },
+        { key: 'aspectRatio', label: 'Aspect ratio', values: ['9:16', '1:1', '16:9'] },
+        { key: 'resolution', label: 'Resolution', values: ['720p', '1080p'] },
+        { key: 'language', label: 'Dub into', values: ['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Hindi', 'Arabic', 'Polish', 'English'] },
+      ],
+      summary: function (s) { return s.sourceSeconds + 's · ' + s.aspectRatio + ' · ' + s.resolution; },
     },
     {
       key: 'twin', label: 'Twin', icon: '🧍', api: null,
@@ -308,6 +334,8 @@
   // Video defaults match what the server whitelists as its defaults.
   state.video.durationSeconds = 8;
   state.video.generateAudio = true;
+  // Edit defaults mirror the server's whitelist defaults (routes/squad-edit.js).
+  state.edit.sourceSeconds = 8;
 
   function cycle(mode, setting) {
     var vals = setting.values;
@@ -403,6 +431,12 @@
     ta.placeholder = mode.placeholder;
     sh.appendChild(ta);
 
+    /* Edit needs a clip before it needs a prompt, so the source row sits
+       above the prompt: a link box, plus one-tap chips for clips this creator
+       already made. Only modes that declare needsSource get it — nothing else
+       in the sheet changes. */
+    if (mode.needsSource) sh.appendChild(sourceRow(sh, mode));
+
     var picker = el('div', 'sv-row');
     picker.id = 'sv-models';
     picker.style.display = 'none';
@@ -468,6 +502,54 @@
     requestAnimationFrame(function () { ov.classList.add('open'); sh.classList.add('open'); });
 
     gateSheet(sh, mode);
+  }
+
+  /**
+   * The source clip for an edit: paste a link, or tap one you already made.
+   *
+   * Deliberately small — an input and a row of chips — because the failure to
+   * avoid is a picker that looks like a file browser and then has nothing to
+   * browse. The chips come from /api/squad-create/library, which needs a
+   * login, so they simply do not appear when there is nothing to show.
+   */
+  function sourceRow(sh, mode) {
+    var box = el('div');
+    box.id = 'sv-source';
+    box.style.cssText = 'margin:2px 0 8px;text-align:left;';
+
+    var inp = document.createElement('input');
+    inp.type = 'url';
+    inp.id = 'sv-source-url';
+    inp.placeholder = 'Paste a video link…';
+    inp.style.cssText = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 12px;color:#f1f5f9;font-size:14px;';
+    inp.addEventListener('input', function () { state[mode.key].__sourceUrl = inp.value.trim(); });
+    box.appendChild(inp);
+
+    var chips = el('div', 'sv-chips');
+    chips.id = 'sv-source-chips';
+    chips.style.marginTop = '6px';
+    box.appendChild(chips);
+
+    fetch('/api/squad-create/library?kind=video&limit=8').then(function (r) {
+      return r.status === 401 ? null : r.json();
+    }).then(function (d) {
+      var items = ((d && d.items) || []).filter(function (j) { return j.status === 'done' && j.url; });
+      if (!items.length) return;
+      var head = el('div', '', 'Or one of yours:');
+      head.style.cssText = 'color:#7d8ba3;font-size:11.5px;width:100%;margin-bottom:2px;';
+      chips.appendChild(head);
+      items.slice(0, 6).forEach(function (j) {
+        var c = el('div', 'sv-chip', '🎬 ' + String(j.prompt || 'clip').slice(0, 22));
+        c.addEventListener('click', function () {
+          inp.value = j.url;
+          state[mode.key].__sourceUrl = j.url;
+          toast('Clip selected — now say what to change.', 'info', 2200);
+        });
+        chips.appendChild(c);
+      });
+    }).catch(function () {});
+
+    return box;
   }
 
   /**
@@ -672,7 +754,20 @@
   function startJob(sh, ta, gen, mode) {
     if (!isConfigured(mode) || !mode.api) return; // belt and braces: never fire a dead mode
     var prompt = (ta.value || '').trim();
-    if (!prompt) { toast('Describe it first — or tap a template.', 'info', 2500); return; }
+    /* An edit needs the clip first: without one there is nothing to change,
+       and the server would refuse the request anyway. */
+    var sourceUrl = null;
+    if (mode.needsSource) {
+      var srcInput = sh.querySelector('#sv-source-url');
+      sourceUrl = ((srcInput && srcInput.value) || state[mode.key].__sourceUrl || '').trim();
+      if (!sourceUrl) { toast('Pick a clip to edit — paste a link or tap one of yours.', 'info', 3000); return; }
+    }
+    if (!prompt && !mode.needsSource) { toast('Describe it first — or tap a template.', 'info', 2500); return; }
+    /* Some edits (dub, sound effects, extend) need no prompt at all; the
+       server knows which, and answers with what is missing if it does. */
+    if (!prompt && mode.needsSource && !state[mode.key].__model) {
+      toast('Say what should change — or pick an edit below.', 'info', 3000); return;
+    }
     /* Postpaid means the bill arrives after the render, so anything over a
        pound gets an explicit yes first. Cheap runs (a caption, an image) are
        not worth a dialog — the price is already on the note line. */
@@ -687,6 +782,7 @@
     out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span>Sending…</span></div>';
 
     var body = { prompt: prompt };
+    if (sourceUrl) body.videoUrl = sourceUrl;
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
     if (state[mode.key].__model) body.model = state[mode.key].__model;
 

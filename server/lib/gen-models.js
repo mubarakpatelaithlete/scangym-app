@@ -393,6 +393,113 @@ const MODELS = [
     inputProfile: 'fal-music',
     note: null,
   },
+
+  // ── Edit (video in → video out) ──────────────────────────────────────────
+  // Billed per second of the *source* clip, so the quote is only as good as
+  // the length the creator tells us: the sheet asks for it and the route
+  // whitelists it. Prices read from fal's /v1/models/pricing on 2026-09-28.
+  // Every row here takes { video_url, ... } — the payload shapes are in
+  // routes/squad-edit.js#EDIT_PROFILES, verified against each model's queue
+  // OpenAPI schema on the same day.
+  {
+    id: 'omni-flash-edit',
+    kind: 'edit',
+    label: 'Gemini Omni Flash 1.1',
+    provider: 'fal',
+    providerModel: 'google/gemini-omni-flash/v1.1/edit',
+    usdPerSecond: 0.03,
+    tier: 'default',
+    inputProfile: 'omni-edit',
+    note: 'Change anything by describing it. Cheapest credible edit.',
+  },
+  {
+    id: 'lucy-restyle',
+    kind: 'edit',
+    label: 'Lucy Restyle',
+    provider: 'fal',
+    providerModel: 'decart/lucy-restyle',
+    usdPerSecond: 0.01,
+    tier: 'standard',
+    inputProfile: 'restyle',
+    note: 'Restyles the whole clip — cheapest row, but it changes the look, not the content.',
+  },
+  {
+    id: 'grok-edit-video',
+    kind: 'edit',
+    label: 'Grok Imagine Edit',
+    provider: 'fal',
+    providerModel: 'xai/grok-imagine-video/edit-video',
+    usdPerSecond: 0.05,
+    tier: 'standard',
+    inputProfile: 'grok-edit',
+  },
+  {
+    id: 'wan-2.7-edit',
+    kind: 'edit',
+    label: 'WAN 2.7 Edit',
+    provider: 'fal',
+    providerModel: 'fal-ai/wan/v2.7/edit-video',
+    usdPerSecond: 0.10, // 1080p default; the profile pins 720p, still quoted at list.
+    tier: 'standard',
+    inputProfile: 'wan-edit',
+    note: 'Keeps the original audio. Stronger on motion than the default.',
+  },
+  {
+    id: 'ray-3.2-reframe',
+    kind: 'edit',
+    label: 'Luma Ray Reframe',
+    provider: 'fal',
+    providerModel: 'luma/agent/ray/v3.2/reframe',
+    usdPerSecond: 0.03,
+    tier: 'standard',
+    inputProfile: 'reframe',
+    note: 'Turns a landscape clip vertical (or back) without cropping the subject out.',
+  },
+  {
+    id: 'heygen-dub',
+    kind: 'edit',
+    label: 'HeyGen Dub',
+    provider: 'fal',
+    providerModel: 'fal-ai/heygen/v2/translate/speed',
+    usdPerSecond: 0.05,
+    tier: 'standard',
+    inputProfile: 'dub',
+    note: 'Re-voices the clip in another language, lips matched.',
+  },
+  {
+    id: 'hunyuan-foley',
+    kind: 'edit',
+    label: 'Sound Effects',
+    provider: 'fal',
+    providerModel: 'fal-ai/hunyuan-video-foley',
+    usdPerSecond: 0.01,
+    tier: 'standard',
+    inputProfile: 'foley',
+    note: 'Adds matching sound effects to a silent clip.',
+  },
+  {
+    id: 'ltx-extend',
+    kind: 'edit',
+    label: 'LTX Extend',
+    provider: 'fal',
+    providerModel: 'fal-ai/ltx-2.3/extend-video',
+    usdPerSecond: 0.10,
+    tier: 'standard',
+    inputProfile: 'extend',
+    note: 'Carries the clip on for a few more seconds.',
+  },
+  {
+    // ~14x the default: an 8s edit is $3.36. Premium is a guard, not a badge.
+    id: 'kling-o3-4k-edit',
+    kind: 'edit',
+    label: 'Kling O3 4K Edit',
+    provider: 'fal',
+    providerModel: 'fal-ai/kling-video/o3/4k/video-to-video/edit',
+    usdPerSecond: 0.42,
+    tier: 'premium',
+    inputProfile: 'kling-edit',
+    note: 'Best quality here, and by far the dearest.',
+  },
 ];
 
 const byKind = (kind) => MODELS.filter((m) => m.kind === kind);
@@ -507,6 +614,16 @@ const ROLES = {
   'seedance-2.5': 'Cinematic, premium',
   'veo-3.1-fast': 'Best with dialogue, quicker',
   'veo-3.1-fal': 'Best with dialogue',
+  // edit — the role is the edit a creator wants, the label is the vendor's name
+  'omni-flash-edit': 'Change anything',
+  'lucy-restyle': 'Restyle it',
+  'grok-edit-video': 'Quick change',
+  'wan-2.7-edit': 'Keeps the audio',
+  'ray-3.2-reframe': 'Make it vertical',
+  'heygen-dub': 'Another language',
+  'hunyuan-foley': 'Add sound effects',
+  'ltx-extend': 'Make it longer',
+  'kling-o3-4k-edit': 'Best quality, premium',
 };
 
 /**

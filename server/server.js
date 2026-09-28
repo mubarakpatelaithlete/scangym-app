@@ -48,6 +48,7 @@ const squadCreateRouter = require('./routes/squad-create');
 const squadBillingRouter = require('./routes/squad-billing');
 const squadTextRouter = require('./routes/squad-text');
 const squadImageRouter = require('./routes/squad-image');
+const squadEditRouter = require('./routes/squad-edit');
 const squadAudioRouter = require('./routes/squad-audio');
 const squadMusicRouter = require('./routes/squad-music');
 const commsLogRouter = require('./routes/comms-log');
@@ -563,6 +564,8 @@ app.use('/api/squad-create', express.json({ limit: '1mb' }), squadCreateRouter);
 app.use('/api/squad-billing', squadBillingRouter);
 app.use('/api/squad-text', squadTextRouter);
 app.use('/api/squad-image', squadImageRouter);
+// Edit: video in, video out. Same submit/poll shape as the other media modes.
+app.use('/api/squad-edit', squadEditRouter);
 app.use('/api/squad-audio', squadAudioRouter);
 app.use('/api/squad-music', squadMusicRouter);
 app.use('/api/comms-log', commsLogRouter);

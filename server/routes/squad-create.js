@@ -1,8 +1,8 @@
 /**
  * Squad Create — which creation modes this deployment can actually run.
  *
- * The ScanSquad rail offers eight Create buttons (text, image, video, audio,
- * music, twin, clipping, UGC). Only some of them have a provider behind them
+ * The ScanSquad rail offers nine Create buttons (text, image, video, audio,
+ * music, edit, twin, clipping, UGC). Only some of them have a provider behind them
  * at any given time, and that is a deployment fact, not a UI opinion — so the
  * answer lives here and the sheet asks at runtime.
  *
@@ -123,6 +123,13 @@ const MODES = {
     ready: () => musicReachable(),
     notReady: () => (require('../lib/gen-provider').configured('elevenlabs') ? 'paid_plan_required' : 'no_provider'),
     api: '/api/squad-music',
+  },
+  /* Edit takes a clip and returns a clip — every row in its catalogue is a
+     fal video-to-video model, so one key answers for the whole mode. */
+  edit: {
+    label: 'Edit',
+    ready: () => require('../lib/gen-provider').configured('fal'),
+    api: '/api/squad-edit',
   },
   twin: { label: 'Twin', env: 'SQUAD_TWIN_API_KEY', api: null },
   clipping: { label: 'Clipping', env: 'SQUAD_CLIP_API_KEY', api: null },
