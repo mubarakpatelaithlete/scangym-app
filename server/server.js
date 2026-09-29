@@ -23,6 +23,7 @@ const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
+const shopRouter = require('./routes/shop');
 const socialReelsRouter = require('./routes/social-reels');
 const ingestRouter = require('./routes/ingest');
 // M12: videoProxy.js deleted — all videos use CDN directly
@@ -347,6 +348,22 @@ const _stripeWebhookHandler = async (req, res) => {
     }
   }
 
+  // Shop: the same safety net for a digital-product sale whose buyer closed the
+  // tab before /api/shop/checkout answered. markOrderPaid is idempotent.
+  if (event.type === 'payment_intent.succeeded') {
+    const intent = event.data.object;
+    const shopOrderId = intent.metadata && intent.metadata.shopOrderId
+      ? parseInt(intent.metadata.shopOrderId, 10) : null;
+    if (shopOrderId) {
+      try {
+        const paid = await shopRouter.markOrderPaid(shopOrderId, intent.id);
+        if (paid) console.log(`✅ Webhook: shop order #${shopOrderId} marked paid`);
+      } catch (shopErr) {
+        console.error('Webhook DB error (shop order):', shopErr.message);
+      }
+    }
+  }
+
   res.json({ received: true });
 };
 app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), _stripeWebhookHandler);
@@ -532,6 +549,7 @@ app.use('/api/gym-profile', gymProfileRouter);
 app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
+app.use('/api/shop', shopRouter);
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
 app.use('/api/social-reels', socialReelsRouter);
