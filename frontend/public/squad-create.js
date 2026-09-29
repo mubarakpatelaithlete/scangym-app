@@ -633,7 +633,7 @@
           if (t.model) {
             state[mode.key].__model = t.model;
             var picker = sh.querySelector('#sv-models');
-            if (picker) Array.prototype.forEach.call(picker.children, function (ch) { if (ch.__paint) ch.__paint(); });
+            if (picker) { picker.querySelectorAll('.sv-mchip').forEach(function (ch) { if (ch.__paint) ch.__paint(); }); if (picker.__paintPill) picker.__paintPill(); }
           }
           refreshSummary(sh, mode);
         });
@@ -948,15 +948,36 @@
       }
     }
     if (list.length < 2) { refreshQuota(sh, mode); return; }
-    var host = sh.querySelector('#sv-models');
-    if (!host) return;
-    host.innerHTML = '';
-    host.style.display = 'flex';
+    var picker = sh.querySelector('#sv-models');
+    if (!picker) return;
+    picker.innerHTML = '';
+    picker.style.display = 'block';
+    /* CapCut-style: one line — "Using 10p · Nano Banana 2 — Change model ›" —
+       and the chips only unfold when asked. Six priced chips open by default
+       read as the form itself; the price is what a creator needs to see before
+       Generate, the choice is optional. */
+    var pill = el('div', 'sv-mchip');
+    pill.id = 'sv-model-pill';
+    pill.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;box-sizing:border-box;';
+    var host = el('div', 'sv-row');
+    host.style.cssText = 'display:none;flex-wrap:wrap;margin-top:8px;';
+    picker.appendChild(pill);
+    picker.appendChild(host);
+    var openChips = false;
+    var paintPill = function () {
+      var cur = list.filter(function (m) { return m.id === state[mode.key].__model; })[0];
+      var price = cur && cur.price && mode.key !== 'text' ? cur.price + (cur.unit === 'per image' ? '/image' : '') : '';
+      pill.innerHTML = '<span>' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
+        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">' + (openChips ? 'Done' : 'Change model \u203a') + '</span>';
+    };
+    pill.addEventListener('click', function () { openChips = !openChips; host.style.display = openChips ? 'flex' : 'none'; paintPill(); });
+    picker.__paintPill = paintPill;
 
     /* Default to something the creator can actually run: picking a locked
        premium row for them is a 402 they did not ask for. */
     var runnable = list.filter(function (m) { return m.affordable !== false; });
-    var chosen = state[mode.key].__model
+    var known = list.some(function (m) { return m.id === state[mode.key].__model; });
+    var chosen = (known && state[mode.key].__model)
       || (runnable.filter(function (m) { return m.tier === 'default'; })[0] || runnable[0] || list[0]).id;
     state[mode.key].__model = chosen;
     var chosenRow = list.filter(function (m) { return m.id === chosen; })[0];
@@ -1004,12 +1025,14 @@
         state[mode.key].__quotedSeconds = m.quotedSeconds || null;
         state[mode.key].__unit = m.unit || null;
         Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
+        openChips = false; host.style.display = 'none'; paintPill();
         refreshQuota(sh, mode);
       });
       chip.__paint = paint;
       paint();
       host.appendChild(chip);
     });
+    paintPill();
   }
 
   /** A caption is read, copied and pasted — not played. */
@@ -1048,6 +1071,8 @@
   }
 
   function showResult(out, url, mode, jobId) {
+    /* Create Studio listens and refreshes its feed. */
+    try { document.dispatchEvent(new CustomEvent('sg-squad-create:done', { detail: { mode: mode.key, jobId: jobId } })); } catch (e) {}
     if (!url) return;
     out.innerHTML = '';
     if (mode.resultKind === 'image') {
@@ -1270,10 +1295,13 @@
   /* Voice entry point (chat-agent.js SGScreen open_create): open a mode with the
    * creator's idea already typed in; for text, show the copy the voice tool wrote. */
   window.sgSquadCreate = {
-    open: function (key, prompt, result) {
+    open: function (key, prompt, result, opts) {
       var mode = null;
       for (var i = 0; i < MODES.length; i++) if (MODES[i].key === key) mode = MODES[i];
       if (!mode) return false;
+      /* Create Studio hands over the tile that was tapped: preselect that
+         model so the sheet opens on it, priced, rather than on the default. */
+      if (opts && opts.model) { state[mode.key].__model = opts.model; state[mode.key].__price = null; state[mode.key].__pricePence = null; }
       openSheet(mode);
       var sh = document.getElementById(SHEET_ID);
       if (!sh) return false;
