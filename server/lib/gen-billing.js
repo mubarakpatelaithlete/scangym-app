@@ -201,7 +201,11 @@ async function gate(req, db = pool, deps = {}) {
   }
 
   if (state.suspended_at) {
-    return {
+    /* Re-check before refusing: a suspension the daily sweep can no longer
+       justify (no failed charge) is lifted here, at the moment the creator
+       presses Generate, rather than at tomorrow's 7am run. */
+    const lifted = await liftUnjustifiedSuspensions(db, userId);
+    if (!(lifted.lifted > 0)) return {
       status: 403,
       body: {
         error: 'Generation is paused until your unpaid invoice is settled. Pay it and Create unlocks straight away.',
@@ -483,18 +487,20 @@ async function suspendOverdue(db = pool) {
  * Runs every daily cycle so a wrongly paused creator is unblocked without a
  * support ticket.
  */
-async function liftUnjustifiedSuspensions(db = pool) {
+async function liftUnjustifiedSuspensions(db = pool, userId = null) {
   try {
     const r = await db.query(
       `UPDATE squad_billing b
           SET suspended_at = NULL, suspend_reason = NULL, updated_at = NOW()
         WHERE b.suspended_at IS NOT NULL
+          AND ($1::text IS NULL OR b.user_id = $1::text)
           AND NOT EXISTS (
             SELECT 1 FROM squad_invoices i
              WHERE i.user_id = b.user_id
                AND i.status = 'failed'
                AND i.charge_attempts >= 1)
       RETURNING b.user_id`,
+      [userId === null ? null : String(userId)],
     );
     return { lifted: r.rows.length, users: r.rows.map((x) => x.user_id) };
   } catch (e) {
