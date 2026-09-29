@@ -1080,9 +1080,14 @@ async function _finishPasswordAuth(req, user) {
   };
 }
 
+const PENDING_SIGNUP_TTL_MS = 15 * 60 * 1000;
+
 /**
  * POST /api/auth/password/register
  * { email, password, confirmPassword, firstName }
+ *
+ * Step one of two: validates the four fields and emails a six-digit code.
+ * Responds { needsCode: true }; the account is created by /register/verify.
  */
 router.post('/password/register', async (req, res) => {
   try {
@@ -1112,6 +1117,53 @@ router.post('/password/register', async (req, res) => {
     }
     const password_hash = await hashPassword(password);
 
+    // Nothing is created yet. The account exists only once the customer types
+    // the six-digit code we email them — so a typo'd address can never become
+    // an account nobody can reach, and every account has a proven email.
+    const { issueCode } = require('../lib/email-login-code');
+    const sent = await issueCode({ email });
+    if (!sent.ok) {
+      return res.status(502).json({ error: 'We couldn\'t email you a code just now — check the address and try again' });
+    }
+    req.session.pendingSignup = { email, firstName, password_hash, expiresAt: Date.now() + PENDING_SIGNUP_TTL_MS };
+    console.log('[Auth] Signup code sent:', email);
+    return res.json({ success: true, needsCode: true, email, message: `Code sent to ${email}` });
+  } catch (err) {
+    console.error('[Auth] password/register error:', err.message);
+    return res.status(500).json({ error: 'Could not create your account' });
+  }
+});
+
+/**
+ * POST /api/auth/password/register/verify   { code }
+ *
+ * Second half of signup: the code from the email proves the address, then the
+ * account is created (or an existing passwordless account gains the password)
+ * and the customer is logged in. The pending details live in the session, so
+ * the password never travels twice.
+ */
+router.post('/password/register/verify', async (req, res) => {
+  try {
+    const pending = req.session && req.session.pendingSignup;
+    const code = String((req.body || {}).code || '').replace(/\D/g, '');
+    if (!pending || !pending.email || !pending.password_hash || pending.expiresAt < Date.now()) {
+      return res.status(400).json({ error: 'Your signup timed out — start again' });
+    }
+    if (code.length !== 6) return res.status(400).json({ error: 'Enter the 6-digit code from your email' });
+
+    const { checkCode } = require('../lib/email-login-code');
+    const checked = checkCode({ email: pending.email, code });
+    if (!checked.ok) return res.status(400).json({ error: 'Invalid or expired code' });
+
+    const { email, firstName, password_hash } = pending;
+    const existing = await pool.query(
+      'SELECT * FROM public.users WHERE LOWER(email) = $1 ORDER BY created_at ASC LIMIT 1', [email]
+    );
+    let user;
+    if (existing.rows.length && existing.rows[0].password_hash) {
+      delete req.session.pendingSignup;
+      return res.status(409).json({ error: 'That email already has an account — log in instead' });
+    }
     if (existing.rows.length) {
       // Passwordless account (code / Google / Apple) gains a password. Their
       // bookings, saved card and referral handle all stay put.
@@ -1132,16 +1184,17 @@ router.post('/password/register', async (req, res) => {
         [email, firstName, password_hash]
       );
       user = created.rows[0];
-      console.log('[Auth] New password account:', email);
+      console.log('[Auth] New password account (email verified):', email);
     }
-
+    delete req.session.pendingSignup;
     const payload = await _finishPasswordAuth(req, user);
     return res.json({ ...payload, message: 'Account created' });
   } catch (err) {
-    console.error('[Auth] password/register error:', err.message);
+    console.error('[Auth] password/register/verify error:', err.message);
     return res.status(500).json({ error: 'Could not create your account' });
   }
 });
+
 
 /**
  * POST /api/auth/password/login   { email, password }

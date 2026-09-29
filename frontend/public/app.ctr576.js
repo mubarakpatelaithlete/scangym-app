@@ -7557,6 +7557,17 @@ function LoginPage(){
         <div class="text-center">
           <a onclick="state.authStep='password';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Back to sign in</a>
         </div>
+        ` : state.authStep === 'signupcode' ? `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">We emailed a 6-digit code to ${state.authEmail||'your email'}</label>
+          <input id="auth-code" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter 6-digit code" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand text-center tracking-widest text-lg">
+          <p class="text-slate-500 text-xs mt-2">Check your inbox (and spam). The code works for 10 minutes.</p>
+        </div>
+        <button id="auth-btn" onclick="handleVerifySignupCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Confirm email & create account</button>
+        <div class="text-center flex justify-center gap-4">
+          <a onclick="handleResendSignupCode(this)" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Resend code</a>
+          <a onclick="state.authStep='signup';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Change details</a>
+        </div>
         ` : state.authStep === 'signup' ? `
         <div>
           <label class="text-slate-400 text-xs mb-1 block">First name</label>
@@ -8008,7 +8019,11 @@ window.handlePasswordSignup=async function(){
   btn.textContent='Creating account...';btn.disabled=true;errDiv.classList.add('hidden');
   try{
     const r=await api.authPost('/password/register',{email,password,confirmPassword,firstName});
-    if(r.success&&r.user){
+    if(r.success&&r.needsCode){
+      // Account is only created once the emailed code is confirmed.
+      state.authEmail=email;state.authStep='signupcode';render();
+      setTimeout(function(){var c=document.getElementById('auth-code');if(c)c.focus();},100);
+    }else if(r.success&&r.user){
       try{localStorage.setItem('sg_last_email',email);}catch(e){}
       window._sgPasswordAuthDone(r);
     }else{
@@ -8019,6 +8034,39 @@ window.handlePasswordSignup=async function(){
     errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
     btn.textContent='Create account';btn.disabled=false;
   }
+};
+
+window.handleVerifySignupCode=async function(){
+  const input=document.getElementById('auth-code');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!input)return;
+  const code=input.value.replace(/\D/g,'');
+  if(code.length!==6){errDiv.textContent='Enter the 6-digit code from your email';errDiv.classList.remove('hidden');return;}
+  btn.textContent='Confirming...';btn.disabled=true;errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/password/register/verify',{code});
+    if(r.success&&r.user){
+      try{localStorage.setItem('sg_last_email',state.authEmail||'');}catch(e){}
+      window._sgPasswordAuthDone(r);
+    }else{
+      errDiv.textContent=r.error||'Invalid or expired code';errDiv.classList.remove('hidden');
+      btn.textContent='Confirm email & create account';btn.disabled=false;
+      if(/timed out/i.test(r.error||'')){state.authStep='signup';render();}
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Confirm email & create account';btn.disabled=false;
+  }
+};
+
+window.handleResendSignupCode=async function(link){
+  if(!state.authEmail)return;
+  if(link){link.textContent='Sending…';}
+  try{
+    const r=await api.authPost('/email/send-code',{email:state.authEmail});
+    if(link){link.textContent=r.success?'Code sent ✓':(r.error||'Could not resend');}
+  }catch(e){if(link)link.textContent='Network error';}
 };
 
 window.handleSendEmailCode=async function(){
@@ -20851,14 +20899,59 @@ window.sgFeedback = async function(elementId, vote, btn) {
     setTimeout(function(){var inp=document.getElementById('sg-auth-first-name');if(inp)inp.focus();},350);
   };
 
+  var _sheetSignupEmail='';
+
+  /* Signup step 2: the code we emailed. The account is created only after
+     this is confirmed, so every account has a real, reachable email. */
+  window._sgAuthShowSignupCode=function(){
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    _sheetStep='auth';
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
+      <div class="sg-auth-title">Confirm your email</div>
+      <div class="sg-auth-sub">We emailed a 6-digit code to ${_sheetSignupEmail.replace(/</g,'&lt;')}</div>
+      <input class="sg-auth-field" id="sg-auth-signup-code" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="text-align:center;letter-spacing:6px;font-size:20px">
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-signup-verify-btn" onclick="window._sgAuthVerifySignupCode()">Confirm &amp; create account</button>
+      <div class="sg-auth-back" id="sg-auth-resend" onclick="window._sgAuthResendSignupCode()" style="margin-top:12px">Resend code</div>
+      <div class="sg-auth-back" onclick="window._sgAuthShowSignup()">← Change details</div>
+    </div>`;
+    setTimeout(function(){var inp=document.getElementById('sg-auth-signup-code');if(inp)inp.focus();},350);
+  };
+
+  window._sgAuthVerifySignupCode=function(){
+    var codeEl=document.getElementById('sg-auth-signup-code');
+    var btn=document.getElementById('sg-auth-signup-verify-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!codeEl||!btn||!err)return;
+    var code=codeEl.value.replace(/\D/g,'');
+    if(code.length!==6){err.textContent='Enter the 6-digit code from your email';err.style.display='block';return;}
+    _sheetAuthRequest('/password/register/verify',{code:code},btn,err,'Confirm & create account');
+  };
+
+  window._sgAuthResendSignupCode=function(){
+    var el=document.getElementById('sg-auth-resend');
+    if(!_sheetSignupEmail)return;
+    if(el)el.textContent='Sending…';
+    fetch('/api/auth/email/send-code',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email:_sheetSignupEmail})})
+      .then(function(r){return r.json();})
+      .then(function(r){if(el)el.textContent=r.success?'Code sent ✓':(r.error||'Could not resend');})
+      .catch(function(){if(el)el.textContent='Network error';});
+  };
+
   function _sheetAuthRequest(path, body, btn, errEl, restoreLabel){
     btn.textContent='Please wait…';btn.disabled=true;errEl.style.display='none';
     return fetch('/api/auth'+path,{method:'POST',headers:{'Content-Type':'application/json'},
       credentials:'include',body:JSON.stringify(body)})
       .then(function(r){return r.json();})
       .then(function(r){
+        if(r.success&&r.needsCode){
+          _sheetSignupEmail=r.email||body.email;
+          window._sgAuthShowSignupCode();
+          return;
+        }
         if(r.success&&r.user){
-          try{localStorage.setItem('sg_last_email',body.email);}catch(e){}
+          try{localStorage.setItem('sg_last_email',body.email||_sheetSignupEmail);}catch(e){}
           state.user=r.user;sgSetSession(true);
           state.authStep='password';
           _afterAuthSuccess();
