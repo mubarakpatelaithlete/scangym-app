@@ -30,6 +30,23 @@
         -webkit-user-select:none;user-select:none;
       }
 
+      /* Reels library search: above the video, below the site navigation. */
+      #reels-search-button{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));left:56px;
+        z-index:55;border:1px solid rgba(255,255,255,.35);border-radius:22px;
+        background:rgba(0,0,0,.72);color:#fff;padding:9px 14px;font:600 14px system-ui;cursor:pointer}
+      #reels-search-panel{position:fixed;inset:0;z-index:80;background:#090b13;color:white;
+        padding:calc(22px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;touch-action:pan-y}
+      #reels-search-panel[hidden]{display:none}
+      .reels-search-head{display:flex;gap:8px;align-items:center}
+      #reels-search-input{min-width:0;flex:1;padding:12px;border:1px solid #777;border-radius:12px;
+        background:#171925;color:white;font:16px system-ui}
+      #reels-search-close{padding:12px;border:0;background:transparent;color:#fff;font:600 16px system-ui}
+      #reels-search-results{margin-top:20px;padding-bottom:30px}
+      .reels-search-result{display:block;width:100%;text-align:left;padding:14px 12px;margin:6px 0;
+        border:1px solid #353944;border-radius:12px;background:#171925;color:#fff;font:15px system-ui}
+      .reels-search-result small{display:block;color:#ff8a3d;margin-top:4px}
+      #reels-search-status{color:#ccc;font:14px system-ui}
+
       /* ── Reel Track (GPU-accelerated vertical strip) ── */
       #reel-track{
         position:fixed;top:0;left:0;right:0;bottom:0;
@@ -542,6 +559,14 @@
       <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       Tap for sound
     </div>
+    <button type="button" id="reels-search-button" aria-label="Search Reels">⌕ Search</button>
+    <section id="reels-search-panel" hidden aria-label="Search Reels">
+      <div class="reels-search-head">
+        <input type="search" id="reels-search-input" placeholder="Search gym reels" aria-label="Search gym reels" maxlength="100" />
+        <button type="button" id="reels-search-close">Close</button>
+      </div>
+      <div id="reels-search-results" role="region" aria-live="polite"><p id="reels-search-status">Search the reels on ScanGym</p></div>
+    </section>
     <div id="reel-track"></div>
         <div class="reel-counter" id="reel-counter">Loading…</div>
     <div class="swipe-hint" id="swipe-hint">
@@ -622,6 +647,64 @@
         + '<circle cx="30" cy="30" r="14" fill="#FF6D00" opacity="0.85"/>'
         + '</svg>'
       );
+
+      // Search the existing ScanGym reel library without changing the default feed.
+      var searchButton = document.getElementById('reels-search-button');
+      var searchPanel = document.getElementById('reels-search-panel');
+      var searchInput = document.getElementById('reels-search-input');
+      var searchResults = document.getElementById('reels-search-results');
+      var searchTimer, searchRequest;
+      function closeReelsSearch(){
+        clearTimeout(searchTimer);
+        searchPanel.hidden = true;
+        if(searchRequest) searchRequest.abort();
+      }
+      searchButton.addEventListener('click', function(){
+        searchPanel.hidden = false;
+        searchInput.focus();
+      });
+      document.getElementById('reels-search-close').addEventListener('click', closeReelsSearch);
+      searchInput.addEventListener('input', function(){
+        clearTimeout(searchTimer);
+        if(searchRequest) searchRequest.abort();
+        var q = searchInput.value.trim();
+        searchResults.textContent = q ? 'Searching…' : 'Search the reels on ScanGym';
+        if(!q) return;
+        searchTimer = setTimeout(function(){
+          searchRequest = new AbortController();
+          fetch('/api/reels/search?q=' + encodeURIComponent(q) + '&limit=50', {signal:searchRequest.signal})
+            .then(function(r){ if(!r.ok) throw new Error('Search failed'); return r.json(); })
+            .then(function(data){
+              if(searchInput.value.trim() !== q) return;
+              searchResults.textContent = '';
+              if(!data.videos.length){searchResults.textContent = 'No matching reels found';return;}
+              var title = document.createElement('p');
+              title.textContent = data.videos.length + (data.hasMore ? ' of ' + data.total : '') + ' matching reels';
+              searchResults.appendChild(title);
+              data.videos.forEach(function(video, index){
+                var button = document.createElement('button');
+                button.type = 'button';button.className = 'reels-search-result';
+                button.textContent = video.name || 'Untitled reel';
+                var subtitle = document.createElement('small');
+                subtitle.textContent = [video.author, video.category].filter(Boolean).join(' · ');
+                button.appendChild(subtitle);
+                button.addEventListener('click', function(){
+                  // The selected search results become the playable swipe list.
+                  Object.keys(renderedReels).forEach(function(key){releaseVideo(Number(key));
+                    track.removeChild(renderedReels[key]);delete renderedReels[key];});
+                  allVideos = data.videos;
+                  posterCache = {};
+                  currentIndex = 0;
+                  feedOffset = 0;feedHasMore = false;feedServerTotal = data.videos.length;
+                  closeReelsSearch();snapTo(index, false);playVideo(index);
+                });
+                searchResults.appendChild(button);
+              });
+            }).catch(function(err){
+              if(err.name !== 'AbortError') searchResults.textContent = 'Search unavailable. Please try again.';
+            });
+        }, 250);
+      });
 
       // ── State ──
       var allVideos      = [];
@@ -1399,6 +1482,7 @@
       var lastWheelTime = 0;
 
       window.addEventListener('wheel', function(e){
+        if(!searchPanel.hidden) return;
         e.preventDefault();
         if(wheelLock) return;
 
@@ -1428,6 +1512,7 @@
 
       // ── Keyboard nav ──
       document.addEventListener('keydown', function(e){
+        if(!searchPanel.hidden){if(e.key === 'Escape') closeReelsSearch();return;}
         if(e.key === 'ArrowDown' || e.key === 'j'){
           snapTo(currentIndex + 1, true); // snapTo handles bounds + load-more
         } else if(e.key === 'ArrowUp' || e.key === 'k'){
