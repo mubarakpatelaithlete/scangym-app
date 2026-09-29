@@ -18,7 +18,7 @@ const PUBLIC = path.join(__dirname, '..', 'frontend', 'public');
 /** Documents that are served outside the SPA shell and so need the shared bar. */
 const STANDALONE = ['reels/index.html', 'scansquad/index.html'];
 
-const EXPECTED_TABS = ['Reels', 'Book', 'ScanSquad', 'Partner', 'Profile'];
+const EXPECTED_TABS = ['Reels', 'Book', 'ScanSquad', 'Profile'];
 
 for (const rel of STANDALONE) {
   test(`${rel} loads the shared tab bar`, () => {
@@ -63,7 +63,7 @@ function renderAt(pathname) {
   return nav.innerHTML || '';
 }
 
-test('the bar offers all five tabs', () => {
+test('the bar offers all four tabs', () => {
   const html = renderAt('/reels');
   for (const label of EXPECTED_TABS) {
     assert.ok(html.includes('>' + label + '<'), `missing tab: ${label}`);
@@ -84,7 +84,7 @@ test('the current tab is the one marked active', () => {
     ['/reels', 'Reels'],
     ['/scansquad', 'ScanSquad'],
     ['/scansquad/', 'ScanSquad'],
-    ['/partner', 'Partner'],
+    ['/partner', 'Profile'],
     ['/more/profile', 'Profile'],
   ];
   for (const [pathname, expected] of cases) {

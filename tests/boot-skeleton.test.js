@@ -48,7 +48,7 @@ test('the boot bar marks the tab the SPA will mark', () => {
     '/checkout': 'book', '/booking-success': 'book', '/gym/anytime-fitness': 'book',
     '/reels': 'reels', '/reels/abc': 'reels',
     '/scansquad': 'creator', '/creator': 'creator', '/creator-hub': 'creator',
-    '/partner': 'partner', '/partners': 'partner', '/list-your-gym': 'partner',
+    '/partner': 'more', '/partners': 'more', '/list-your-gym': 'more',
     '/more/profile': 'more', '/profile': 'more', '/wallet': 'more'
   };
   for (const [p, key] of Object.entries(cases)) {
@@ -57,8 +57,8 @@ test('the boot bar marks the tab the SPA will mark', () => {
 });
 
 test('trailing slashes, casing and query strings resolve to the same tab', () => {
-  assert.strictEqual(tabForPath('/partner/'), 'partner');
-  assert.strictEqual(tabForPath('/Partner'), 'partner');
+  assert.strictEqual(tabForPath('/partner/'), 'more');
+  assert.strictEqual(tabForPath('/Partner'), 'more');
   assert.strictEqual(tabForPath('/explore?q=london'), 'book');
   assert.strictEqual(tabForPath('/more/profile#top'), 'more');
 });

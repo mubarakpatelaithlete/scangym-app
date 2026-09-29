@@ -7,10 +7,10 @@
  * three-item tab bar (Reels / Book / Profile). Every SPA route got that same
  * screen until app.ctr576.js (1.6MB) parsed and replaced #app — so a visitor
  * landing on /partner saw a centred search-shaped placeholder and a tab bar
- * missing two of the five real tabs, then watched the whole thing reflow.
+ * missing one of the four real tabs, then watched the whole thing reflow.
  *
  * This module renders the boot screen for the route actually being served:
- * the real five-tab bar with the current tab marked, a skeleton shaped like
+ * the real four-tab bar with the current tab marked, a skeleton shaped like
  * the page that is coming, and one genuine primary action as a plain <a> so it
  * is tappable before any JavaScript runs. The SPA overwrites #app on boot, so
  * everything here is throwaway markup with no hydration contract.
@@ -52,15 +52,6 @@ const TABS = [
       '<path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"></path>'
   },
   {
-    key: 'partner',
-    label: 'Partner',
-    href: '/partner',
-    icon:
-      '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"></path>' +
-      '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
-      '<circle cx="12" cy="7" r="1.5" fill="rgba(255,255,255,.3)"></circle>'
-  },
-  {
     key: 'more',
     label: 'Profile',
     href: '/more/profile',
@@ -78,7 +69,7 @@ function tabForPath(pathname) {
   const p = normalize(pathname);
   if (/^\/reels(\/|$)/.test(p)) return 'reels';
   if (/^\/(scansquad|creator|creator-hub)(\/|$)/.test(p)) return 'creator';
-  if (/^\/(partner|partners|list-your-gym)(\/|$)/.test(p)) return 'partner';
+  if (/^\/(partner|partners|list-your-gym)(\/|$)/.test(p)) return 'more';
   if (/^\/(more|profile|wallet|settings)(\/|$)/.test(p)) return 'more';
   if (
     p === '/' ||
