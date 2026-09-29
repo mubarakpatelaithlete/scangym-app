@@ -18,7 +18,7 @@ const PUBLIC = path.join(__dirname, '..', 'frontend', 'public');
 /** Documents that are served outside the SPA shell and so need the shared bar. */
 const STANDALONE = ['reels/index.html', 'scansquad/index.html'];
 
-const EXPECTED_TABS = ['Reels', 'Create', 'Shop', 'Profile'];
+const EXPECTED_TABS = ['Home', 'Create', 'Shop', 'Profile'];
 
 for (const rel of STANDALONE) {
   test(`${rel} loads the shared tab bar`, () => {
@@ -81,7 +81,7 @@ test('every tab links somewhere real', () => {
 
 test('the current tab is the one marked active', () => {
   const cases = [
-    ['/reels', 'Reels'],
+    ['/reels', 'Home'],
     ['/scansquad', 'Create'],
     ['/scansquad/', 'Create'],
     ['/shop', 'Shop'],
