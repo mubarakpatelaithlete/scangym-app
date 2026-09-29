@@ -12973,9 +12973,9 @@ function BottomTabBar(){
   const creatorIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="12" cy="12" r="3" fill="${t==='creator'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
-    <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
+    <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Home" onclick="switchTab('reels')">
       ${reelsIcon}
-      <span class="sg-tab-label">Reels</span>
+      <span class="sg-tab-label">Home</span>
     </button>
     <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="Create" onclick="switchTab('creator')">
       ${creatorIcon}

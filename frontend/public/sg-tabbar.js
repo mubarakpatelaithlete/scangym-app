@@ -31,7 +31,7 @@
   if (document.querySelector('nav.sg-tab-bar')) return;   // SPA already has one
 
   var TABS = [
-    { key: 'reels', label: 'Reels', href: '/reels', match: /^\/reels/,
+    { key: 'reels', label: 'Home', href: '/reels', match: /^\/reels/,
       icon: '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
             '<line x1="2" y1="8" x2="22" y2="8"></line>' +
             '<line x1="10" y1="2" x2="10" y2="8"></line>' +
