@@ -684,6 +684,34 @@
    * which could not explain why a £3 model was out of reach — so it now reads
    * out the one thing that decides: today's credit, and what grows it.
    */
+  /**
+   * The invoices list, rendered in the sheet. The API at
+   * /api/squad-billing/invoices is JSON for the app, not a page for a person —
+   * linking a creator straight to it showed them raw JSON on a black screen.
+   * Each row links to the printable single-invoice page, which is HTML.
+   */
+  function showInvoices(host) {
+    var box = host.querySelector('.sv-invoices');
+    if (!box) { box = el('div', 'sv-invoices'); box.style.cssText = 'margin-top:8px;font-size:12px;color:#e5e7eb;'; host.appendChild(box); }
+    box.textContent = 'Loading invoices…';
+    fetch('/api/squad-billing/invoices').then(function (r) { return r.json(); }).then(function (d) {
+      var items = (d && d.items) || [];
+      if (!items.length) { box.textContent = 'No invoices yet.'; return; }
+      box.innerHTML = '';
+      items.forEach(function (i) {
+        var row = el('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);';
+        var a = el('a'); a.href = i.url; a.target = '_blank'; a.rel = 'noopener';
+        a.style.cssText = 'color:#FF6D00;font-weight:700;text-decoration:none;';
+        a.textContent = i.number;
+        var when = el('span'); when.textContent = String(i.issuedOn || '').slice(0, 10);
+        var amt = el('span'); amt.textContent = i.total + ' · ' + (i.status === 'paid' ? 'paid' : i.status === 'failed' ? 'card failed' : 'unpaid');
+        row.appendChild(a); row.appendChild(when); row.appendChild(amt);
+        box.appendChild(row);
+      });
+    }).catch(function () { box.textContent = 'Could not load your invoices.'; });
+  }
+
   function refreshQuota(sh, mode) {
     var n = sh.querySelector('#sv-note');
     if (!n) return;
@@ -811,7 +839,9 @@
         }
         if (res.status === 403 && res.d && res.d.suspended) {
           out.innerHTML = '<div class="sv-warn">⏸ ' + (res.d.error || 'Creating is paused until your invoice is paid.') +
-            ' <a href="/api/squad-billing/invoices" style="color:#FF6D00;font-weight:700">See invoices</a></div>';
+            ' <a href="#" class="sv-invoices-link" style="color:#FF6D00;font-weight:700">See invoices</a></div>';
+          var link = out.querySelector('.sv-invoices-link');
+          if (link) link.addEventListener('click', function (ev) { ev.preventDefault(); showInvoices(out); });
           billing = null;
           gen.disabled = false;
           return;

@@ -14082,7 +14082,12 @@ function MoreHubPage(){
         @keyframes sgQrPulse{0%,100%{opacity:.15}50%{opacity:.3}}
       </style>
       <!-- ═══ QR CODE — FULL SCREEN BACKGROUND (like TikTok video) ═══ -->
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#050508;z-index:1">
+      <!-- The QR must stay clear of the bottom overlay (SCAN TO ENTER badge,
+           stats, "Get the app"): on a phone the square filled the width and
+           its lower third sat under that text, so the code was unreadable and
+           looked broken (owner screenshot, 2026-09-29). Reserve the overlay's
+           height at the bottom so the square is centred in the space above. -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#050508;z-index:1;box-sizing:border-box;padding:56px 0 calc(var(--sg-band-bottom, 60px) + var(--sg-band-height, 72px) + 150px)">
         <img src="${qrUrl}" style="width:100%;height:100%;object-fit:contain;padding:12px;opacity:.85" alt="Scan to enter">
         <!-- Scan line animation -->
         <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">

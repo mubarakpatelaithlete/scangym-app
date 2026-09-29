@@ -59,7 +59,7 @@ router.get('/status', requireCreator, async (req, res) => {
       vatIncluded: pricing.vatRegistered(),
       /* Said plainly, because "postpaid" is not a thing most creators have met:
          no prepayment, invoiced daily, charged on a threshold. */
-      terms: `No prepayment. You are invoiced every morning for what you generated, and charged to your saved card once the balance reaches ${pricing.money(billing.THRESHOLD_PENCE)} or after ${billing.MAX_AGE_DAYS} days. Miss payment ${billing.SUSPEND_AFTER_DAYS} days in a row and creating pauses until it clears.`,
+      terms: `No prepayment. You are invoiced every morning for what you generated, and charged to your saved card once the balance reaches ${pricing.money(billing.THRESHOLD_PENCE)} or after ${billing.MAX_AGE_DAYS} days. If a charge to your card fails ${billing.SUSPEND_AFTER_DAYS} days in a row, creating pauses until it clears.`,
     });
   } catch (e) {
     console.error('[SquadBilling] status failed:', e.message);

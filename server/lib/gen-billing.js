@@ -24,7 +24,7 @@
  * Ads' own billing.
  *
  * Suspension, per the founder's rule: a charge that fails is retried the next
- * day, and again the day after; unpaid two days running suspends generation.
+ * day, and again the day after; a charge failing two days running suspends generation.
  * It lifts itself the moment a payment clears — a suspension that needs a human
  * to undo is a support ticket, and this runs unattended.
  *
@@ -56,7 +56,7 @@ const THRESHOLD_PENCE = Math.round(num(process.env.SQUAD_CHARGE_THRESHOLD_PENCE,
 /** …or when the oldest open invoice gets this old, whichever comes first. */
 const MAX_AGE_DAYS = Math.round(num(process.env.SQUAD_CHARGE_MAX_AGE_DAYS, 7));
 
-/** Unpaid this many days in a row → generation suspended. */
+/** A card charge failing this many days in a row → generation suspended. */
 const SUSPEND_AFTER_DAYS = Math.round(num(process.env.SQUAD_SUSPEND_AFTER_DAYS, 2));
 
 /** How much a creator may owe at once, before payment history. */
@@ -445,7 +445,17 @@ async function chargeDue(db = pool, deps = {}) {
   return { charged, failed };
 }
 
-/** Unpaid for SUSPEND_AFTER_DAYS running → generation off until they pay. */
+/**
+ * Suspend only after we have actually tried to take the money and failed,
+ * SUSPEND_AFTER_DAYS days running.
+ *
+ * Why not "invoice older than N days": invoices are only charged once the
+ * balance reaches THRESHOLD_PENCE or the oldest is MAX_AGE_DAYS old. With the
+ * defaults (£5 / 7 days / suspend at 2 days) a creator owing £3.87 over three
+ * days was suspended for an invoice nobody had ever tried to charge. A
+ * suspension is a response to a failed card, never to a small balance.
+ * chargeDue retries daily, so charge_attempts counts days of failure.
+ */
 async function suspendOverdue(db = pool) {
   try {
     const r = await db.query(
@@ -455,8 +465,8 @@ async function suspendOverdue(db = pool) {
           AND EXISTS (
             SELECT 1 FROM squad_invoices i
              WHERE i.user_id = b.user_id
-               AND i.status IN ('open','failed')
-               AND i.issued_on <= CURRENT_DATE - $1::int)
+               AND i.status = 'failed'
+               AND i.charge_attempts >= $1::int)
       RETURNING b.user_id`,
       [SUSPEND_AFTER_DAYS],
     );
@@ -464,6 +474,32 @@ async function suspendOverdue(db = pool) {
   } catch (e) {
     console.error('[SquadBilling] suspension sweep failed:', e.message);
     return { suspended: 0, error: e.message };
+  }
+}
+
+/**
+ * Undo suspensions that no failed charge justifies — accounts caught by the
+ * old age-based sweep, or whose failed invoice was since paid another way.
+ * Runs every daily cycle so a wrongly paused creator is unblocked without a
+ * support ticket.
+ */
+async function liftUnjustifiedSuspensions(db = pool) {
+  try {
+    const r = await db.query(
+      `UPDATE squad_billing b
+          SET suspended_at = NULL, suspend_reason = NULL, updated_at = NOW()
+        WHERE b.suspended_at IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM squad_invoices i
+             WHERE i.user_id = b.user_id
+               AND i.status = 'failed'
+               AND i.charge_attempts >= 1)
+      RETURNING b.user_id`,
+    );
+    return { lifted: r.rows.length, users: r.rows.map((x) => x.user_id) };
+  } catch (e) {
+    console.error('[SquadBilling] lift sweep failed:', e.message);
+    return { lifted: 0, error: e.message };
   }
 }
 
@@ -499,12 +535,14 @@ async function runDailyBilling(db = pool, deps = {}) {
   }
   const charged = await chargeDue(db, deps);
   const suspended = await suspendOverdue(db);
+  const lifted = await liftUnjustifiedSuspensions(db);
   const summary = {
     issued: built.issued || 0,
     blocked: built.blocked,
     emailed,
     ...charged,
     suspended: suspended.suspended,
+    lifted: lifted.lifted,
     at: new Date().toISOString(),
   };
   console.log('[SquadBilling] daily run:', JSON.stringify(summary));
@@ -630,4 +668,5 @@ module.exports = {
   THRESHOLD_PENCE,
   MAX_AGE_DAYS,
   SUSPEND_AFTER_DAYS,
+  liftUnjustifiedSuspensions,
 };

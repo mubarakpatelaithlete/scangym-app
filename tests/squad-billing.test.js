@@ -443,7 +443,21 @@ test('no Stripe key means no charge is invented', async () => {
   restore();
 });
 
-test('two days unpaid suspends; nothing owed lifts it again', async () => {
+test('suspension needs a failed charge, never just an old invoice', async () => {
+  const { mod: billing, restore } = fresh('gen-billing.js', { ...VAT_ON, SQUAD_SUSPEND_AFTER_DAYS: '2' });
+  const db = fakeDb([['SET suspended_at = NOW()', []], ['suspended_at = NULL', [{ user_id: 'u1' }]]]);
+  await billing.suspendOverdue(db);
+  const sql = db.calls[0].sql;
+  assert.ok(sql.includes("i.status = 'failed'"), 'only failed invoices suspend');
+  assert.ok(sql.includes('charge_attempts >= $1'), 'after N failed attempts');
+  assert.ok(!sql.includes('issued_on'), 'invoice age alone must not suspend');
+  const l = await billing.liftUnjustifiedSuspensions(db);
+  assert.equal(l.lifted, 1);
+  assert.ok(db.calls[1].sql.includes("i.status = 'failed'"));
+  restore();
+});
+
+test('two days of failed charges suspends; nothing owed lifts it again', async () => {
   const { mod: billing, restore } = fresh('gen-billing.js', { ...VAT_ON, SQUAD_SUSPEND_AFTER_DAYS: '2' });
   const db = fakeDb([
     ['SET suspended_at = NOW()', [{ user_id: 'u1' }]],
@@ -452,7 +466,7 @@ test('two days unpaid suspends; nothing owed lifts it again', async () => {
   const s = await billing.suspendOverdue(db);
   assert.equal(s.suspended, 1);
   assert.deepEqual(db.calls[0].params, [2]);
-  assert.ok(db.calls[0].sql.includes("i.status IN ('open','failed')"));
+  assert.ok(db.calls[0].sql.includes("i.status = 'failed'"));
 
   assert.equal(await billing.liftSuspensionIfClear('u1', db), true);
   assert.ok(db.calls[1].sql.includes('NOT EXISTS'));
