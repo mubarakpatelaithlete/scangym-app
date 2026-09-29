@@ -104,3 +104,29 @@ test('the rules we enforce are the rules we tell people about', () => {
     'password equal to the email is accepted');
   assert.match(String(validatePassword('x'.repeat(500), 'a@b.co')), /too long/, 'a 500-char password is free scrypt work');
 });
+
+// ─── 3. the email is proven before the account exists ────────────────────────
+
+test('signup emails a code and creates nothing until it is confirmed', () => {
+  const route = AUTH.slice(AUTH.indexOf("router.post('/password/register'"), AUTH.indexOf("router.post('/password/register/verify'"));
+  assert.match(route, /issueCode\(\{ email \}\)/, 'register does not email a code');
+  assert.match(route, /needsCode: true/, 'register does not tell the client a code is needed');
+  assert.ok(!/INSERT INTO public\.users/.test(route), 'register creates the account before the email is confirmed');
+  assert.ok(!/_finishPasswordAuth/.test(route), 'register logs the customer in before the email is confirmed');
+});
+
+test('the verify step checks the code, then creates the account and logs in', () => {
+  const route = AUTH.slice(AUTH.indexOf("router.post('/password/register/verify'"), AUTH.indexOf("router.post('/password/login'"));
+  assert.match(route, /checkCode\(\{ email: pending\.email, code \}\)/, 'verify does not check the code');
+  assert.match(route, /INSERT INTO public\.users/, 'verify never creates the account');
+  assert.match(route, /_finishPasswordAuth/, 'verify never logs the customer in');
+  assert.match(route, /expiresAt < Date\.now\(\)/, 'a pending signup never expires');
+});
+
+test('both signup surfaces show the code step', () => {
+  assert.match(APP, /state\.authStep === 'signupcode'/, 'the login page has no code step');
+  assert.match(APP, /handleVerifySignupCode\(\)/, 'the login page has no confirm button');
+  assert.match(APP, /r\.success&&r\.needsCode/, 'signup handlers ignore needsCode');
+  assert.match(APP, /window\._sgAuthShowSignupCode=function/, 'the booking sheet has no code step');
+  assert.match(APP, /'\/password\/register\/verify'/, 'nothing calls the verify endpoint');
+});
