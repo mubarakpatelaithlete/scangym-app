@@ -23,20 +23,22 @@ test('both signed-in and signed-out Profile have a button to the preserved Partn
   assert.match(app, /else if\(path==='\/partner'\|\|path==='\/partner\/'\)page=PartnerFullPage\(\)/);
 });
 
-test('Book remains reachable from Profile and the new Shop is digital-only until launch', () => {
+test('Book remains reachable from Profile and the Shop stays digital-only', () => {
   assert.match(profile, /aria-label="Book a gym"/);
   const shopStart = app.indexOf('function ShopPage()');
   const shopEnd = app.indexOf('// ─── More Hub Page', shopStart);
   const shop = app.slice(shopStart, shopEnd);
   assert.match(shop, /Digital Shop/);
   assert.match(shop, /No physical goods/);
-  assert.match(shop, /digital products are coming soon/i);
+  // The Shop is live now (creator listings + checkout); what must not change
+  // is that it stays digital-only — no physical goods, no shipping.
+  assert.match(shop, /_sgShopLoad/);
   assert.match(nav, /aria-label="Create"[\s\S]*?sg-tab-label\">Create/);
   assert.match(nav, /aria-label="Shop"[\s\S]*?sg-tab-label\">Shop/);
   assert.doesNotMatch(nav, /aria-label="Book a gym"/);
 });
 
-test('Book remains reachable from Profile and new Shop is digital-only until launch', () => {
+test('Book stays reachable from Profile, and the live Shop stays digital-only', () => {
   for (const user of [null, { id: 'test', name: 'Test' }]) {
     const ctx = { state: { user }, sgRailCircle: () => '<svg></svg>', sgPriceDisplay: () => '£5' };
     vm.runInNewContext(profile + ';result=MoreHubPage()', ctx);
@@ -45,7 +47,9 @@ test('Book remains reachable from Profile and new Shop is digital-only until lau
   const shop = app.slice(app.indexOf('function ShopPage()'), app.indexOf('// ─── More Hub Page'));
   assert.match(shop, /Digital Shop/);
   assert.match(shop, /No physical goods/);
-  assert.match(shop, /digital products are coming soon/i);
+  // The Shop is live now (creator listings + checkout); what must not change
+  // is that it stays digital-only — no physical goods, no shipping.
+  assert.match(shop, /_sgShopLoad/);
   assert.match(nav, /aria-label="Create"[\s\S]*?sg-tab-label">Create/);
   assert.match(nav, /aria-label="Shop"[\s\S]*?sg-tab-label">Shop/);
   assert.doesNotMatch(nav, /aria-label="Book a gym"/);

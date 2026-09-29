@@ -238,15 +238,18 @@ test('core stays under its size budget', () => {
   // measured size plus ~2% headroom: it is here to catch a whole tab being
   // pasted back into core, not to police ordinary edits. If you add a feature
   // and this fails, raise it in the same commit and say why in the message.
-  // Raised 1,480,000 -> 1,510,000 on 2026-09-29 (email + password sign-in):
-  // the login page and the booking sheet both gained a real signup form, and
-  // the old provider buttons they replaced were markup, not weight. Measured
-  // 1,483,970 + ~2% per the rule above.
+  // Raised 1,480,000 -> 1,530,000 on 2026-09-29, two features in one day:
+  // (1) email + password sign-in — the login page and the booking sheet both
+  // gained a real signup form, and the provider buttons they replaced were
+  // markup, not weight; (2) the digital-products Shop — the Shop page stopped
+  // being a placeholder and became a real storefront (listings grid, product
+  // sheet, checkout, creator listing form). Measured together 1,495,075 + ~2%
+  // per the rule above.
   // Raised 1,450,000 -> 1,480,000 on 2026-09-19 (near-me honesty fix): main was
   // already at 1,449,357, i.e. 643 bytes of headroom, so the next ordinary edit
   // of any size would have failed this. Re-set to measured + ~2% per the rule
   // above; the check still catches a whole tab being pasted back in.
-  const CORE_BUDGET = 1_510_000;
+  const CORE_BUDGET = 1_530_000;
   const size = Buffer.byteLength(APP);
   assert.ok(size < CORE_BUDGET,
     `app.ctr576.js is ${size} bytes, over the ${CORE_BUDGET} budget. ` +

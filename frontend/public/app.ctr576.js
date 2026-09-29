@@ -13832,24 +13832,229 @@ function sgRailCircle(iconName, emoji){
 try{ window.sgRailCircle = sgRailCircle; }catch(e){}
 
 // ─── Shop tab: digital products only ───
+/* ═══ THE SHOP ═══
+   Creator-made digital products: a grid of real listings, a product sheet, and
+   a one-tap purchase on the card already saved for gym bookings. The page used
+   to be a "coming soon" placeholder with a disabled search box. */
+var _sgShopState={products:[],category:'All',q:'',loaded:false,owned:{},selling:false};
+
 function ShopPage(){
+  var cats=['All','Prompt packs','Workout plans','Meal guides','Video programs','Templates'];
+  var chips=cats.map(function(c){
+    var on=_sgShopState.category===c;
+    return '<button type="button" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
+      +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:20px;padding:9px 13px;'
+      +'background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
+  }).join('');
+  setTimeout(function(){ if(!_sgShopState.loaded) window._sgShopLoad(); },0);
   return `<section style="max-width:720px;margin:0 auto;padding:22px 16px 40px;color:#fff">
     <div style="margin-bottom:18px">
       <p style="margin:0 0 4px;color:#FF6D00;font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase">ScanGym Digital Shop</p>
       <h1 style="margin:0;font-size:25px;font-weight:900">Shop creator-made fitness tools</h1>
-      <p style="margin:7px 0 0;color:rgba(255,255,255,.6);font-size:14px">Workout plans, meal guides and digital fitness products. No physical goods.</p>
+      <p style="margin:7px 0 0;color:rgba(255,255,255,.6);font-size:14px">Prompt packs, workout plans and digital guides from ScanSquad creators. No physical goods.</p>
     </div>
-    <input type="search" aria-label="Search digital fitness products" placeholder="Search digital products" disabled style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px;opacity:.65">
-    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;padding:2px 0 14px;margin-bottom:8px">
-      ${['All','Workout plans','Meal guides','Video programs','Templates'].map(function(c,i){return '<span style="flex:none;border:1px solid '+(i===0?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:20px;padding:9px 13px;background:'+(i===0?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700">'+c+'</span>'}).join('')}
+    <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search digital products" oninput="window._sgShopFilter(this.value)" style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px">
+    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;padding:2px 0 14px;margin-bottom:8px">${chips}</div>
+    <div id="sg-digital-shop-results" style="min-height:210px">
+      <p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">Loading products…</p>
     </div>
-    <div id="sg-digital-shop-results" style="min-height:210px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed rgba(255,255,255,.16);border-radius:18px;padding:24px">
-      <div><div style="font-size:34px;margin-bottom:8px">🛍️</div><h2 style="margin:0 0 6px;font-size:18px">Digital products are coming soon</h2><p style="max-width:340px;margin:0 auto 16px;color:rgba(255,255,255,.55);font-size:13px;line-height:1.5">The Shop layout is ready, but creator listings and secure digital checkout are not live yet.</p><button type="button" onclick="switchTab('creator')" style="border:0;border-radius:12px;padding:12px 18px;background:#FF6D00;color:white;font-weight:800">Create with ScanGym</button></div>
+    <div style="margin-top:26px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px">
+      <button type="button" onclick="window._sgShopOpenSell()" style="width:100%;border:1px dashed rgba(255,109,0,.5);border-radius:14px;padding:14px;background:rgba(255,109,0,.08);color:#FF6D00;font-weight:800;font-size:14px;cursor:pointer">＋ Sell your own digital product</button>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,.4);font-size:12px;text-align:center">ScanSquad creators keep 70% of every sale.</p>
     </div>
   </section>`;
 }
-window._sgShopFilter=function(){return;};
-window._sgShopCategory=function(button){var bar=button.parentNode;Array.prototype.forEach.call(bar.children,function(el){el.style.borderColor='rgba(255,255,255,.14)';el.style.background='rgba(255,255,255,.04)'});button.style.borderColor='#FF6D00';button.style.background='rgba(255,109,0,.18)';};
+
+window._sgShopCategory=function(category){
+  _sgShopState.category=category;
+  _sgShopState.loaded=false;
+  render();
+};
+
+window._sgShopFilter=function(value){
+  _sgShopState.q=String(value||'');
+  clearTimeout(window._sgShopTimer);
+  window._sgShopTimer=setTimeout(function(){ window._sgShopLoad(true); },250);
+};
+
+window._sgShopLoad=async function(force){
+  var box=document.getElementById('sg-digital-shop-results');
+  if(!box)return;
+  _sgShopState.loaded=true;
+  try{
+    var url='/api/shop/products?limit=40'
+      +(_sgShopState.category&&_sgShopState.category!=='All'?'&category='+encodeURIComponent(_sgShopState.category):'')
+      +(_sgShopState.q?'&q='+encodeURIComponent(_sgShopState.q):'');
+    var data=await fetch(url,{credentials:'include'}).then(function(r){return r.json();});
+    _sgShopState.products=data.products||[];
+    if(state.user){
+      try{
+        var mine=await fetch('/api/shop/my-orders',{credentials:'include'}).then(function(r){return r.json();});
+        _sgShopState.owned={};
+        (mine.orders||[]).forEach(function(o){_sgShopState.owned[o.productId]=o.downloadUrl;});
+      }catch(e){}
+    }
+    window._sgShopRender();
+  }catch(e){
+    box.innerHTML='<p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">The shop is unavailable right now. Pull down to try again.</p>';
+  }
+};
+
+window._sgShopRender=function(){
+  var box=document.getElementById('sg-digital-shop-results');
+  if(!box)return;
+  var items=_sgShopState.products;
+  if(!items.length){
+    box.innerHTML='<div style="text-align:center;border:1px dashed rgba(255,255,255,.16);border-radius:18px;padding:34px 20px">'
+      +'<div style="font-size:34px;margin-bottom:8px">🛍️</div>'
+      +'<h2 style="margin:0 0 6px;font-size:18px">Nothing here yet</h2>'
+      +'<p style="max-width:340px;margin:0 auto;color:rgba(255,255,255,.55);font-size:13px">Be the first ScanSquad creator to list a product in this category.</p></div>';
+    return;
+  }
+  box.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">'+items.map(function(p){
+    var owned=!!_sgShopState.owned[p.id];
+    var cover=p.coverImageUrl
+      ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:118px;object-fit:cover;display:block">'
+      : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:30px">📄</div>';
+    return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);color:#fff;padding:0;cursor:pointer">'
+      +cover
+      +'<div style="padding:10px 12px 12px">'
+      +'<p style="margin:0 0 3px;font-size:14px;font-weight:800;line-height:1.25">'+_sgShopEsc(p.title)+'</p>'
+      +'<p style="margin:0 0 7px;color:rgba(255,255,255,.45);font-size:11px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)+'</p>'
+      +'<p style="margin:0;font-size:14px;font-weight:900;color:'+(owned?'#22c55e':'#FF6D00')+'">'+(owned?'Owned':_sgShopEsc(p.price))+'</p>'
+      +'</div></button>';
+  }).join('')+'</div>';
+};
+
+function _sgShopEsc(text){
+  return String(text==null?'':text).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+
+window._sgShopOpen=function(productId){
+  var p=_sgShopState.products.filter(function(x){return x.id===productId;})[0];
+  if(!p)return;
+  var owned=_sgShopState.owned[p.id];
+  var body='<div style="padding:4px 2px 8px">'
+    +'<h2 style="margin:0 0 4px;font-size:19px;font-weight:900">'+_sgShopEsc(p.title)+'</h2>'
+    +'<p style="margin:0 0 12px;color:rgba(255,255,255,.5);font-size:12px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)
+    +(p.fileSizeKb?' · '+p.fileSizeKb+' KB':'')+'</p>'
+    +'<p style="margin:0 0 16px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap">'+_sgShopEsc(p.description||'')+'</p>'
+    +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
+    +(owned
+      ? '<a href="'+owned+'" style="display:block;text-align:center;border-radius:14px;padding:15px;background:#22c55e;color:#fff;font-weight:800;text-decoration:none">Download again</a>'
+      : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">Buy for '+_sgShopEsc(p.price)+'</button>')
+    +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
+    +'</div>';
+  if(typeof window.sgOpenSheet==='function') return window.sgOpenSheet(body);
+  window._sgShopSimpleSheet(body);
+};
+
+/* The app has several bespoke sheets and no shared one; this is the smallest
+   correct thing rather than a sixth variant with its own dismiss bugs. */
+window._sgShopSimpleSheet=function(html){
+  var old=document.getElementById('sg-shop-sheet');
+  if(old)old.remove();
+  var el=document.createElement('div');
+  el.id='sg-shop-sheet';
+  el.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);display:flex;align-items:flex-end';
+  el.innerHTML='<div style="width:100%;max-height:80vh;overflow:auto;background:#12141d;color:#fff;border-radius:20px 20px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom,0px))">'
+    +'<div style="width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,.25);margin:0 auto 14px"></div>'+html+'</div>';
+  el.addEventListener('click',function(event){ if(event.target===el) el.remove(); });
+  document.body.appendChild(el);
+};
+
+window._sgShopBuy=async function(productId){
+  var btn=document.getElementById('sg-shop-buy-btn');
+  var err=document.getElementById('sg-shop-buy-error');
+  if(!state.user){
+    if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');return;}
+    navigate('/login');return;
+  }
+  if(btn){btn.textContent='Paying…';btn.disabled=true;}
+  if(err)err.style.display='none';
+  try{
+    var r=await fetch('/api/shop/checkout',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:productId})})
+      .then(function(res){return res.json();});
+    if(r.success&&r.downloadUrl){
+      _sgShopState.owned[productId]=r.downloadUrl;
+      var sheet=document.getElementById('sg-shop-sheet');
+      if(sheet)sheet.remove();
+      sgToast(r.alreadyOwned?'You already own this — downloading':'Paid! Your download is ready 🎉','success',4000);
+      window.location.href=r.downloadUrl;
+      window._sgShopRender();
+      return;
+    }
+    if(r.code==='needs_card'){
+      if(err){err.textContent='Add a card first — opening your payment sheet.';err.style.display='block';}
+      if(typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');
+    }else if(err){
+      err.textContent=r.error||'Payment failed';err.style.display='block';
+    }
+  }catch(e){
+    if(err){err.textContent='Network error — try again';err.style.display='block';}
+  }
+  if(btn){btn.textContent='Try again';btn.disabled=false;}
+};
+
+/* ── Listing a product (creators) ── */
+window._sgShopOpenSell=function(){
+  if(!state.user){
+    if(typeof window._sgShowAuthSheet==='function')return window._sgShowAuthSheet('book');
+    return navigate('/login');
+  }
+  var field='width:100%;box-sizing:border-box;padding:12px;margin:0 0 10px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font-size:15px';
+  var cats=['Prompt packs','Workout plans','Meal guides','Video programs','Templates'];
+  window._sgShopSimpleSheet(
+    '<h2 style="margin:0 0 4px;font-size:19px;font-weight:900">Sell a digital product</h2>'
+    +'<p style="margin:0 0 14px;color:rgba(255,255,255,.5);font-size:12px">PDF, ZIP, image, MP3 or MP4, up to 50MB. You keep 70% of every sale.</p>'
+    +'<input id="sg-shop-title" placeholder="Title — e.g. 50 Gym Reel Prompts" maxlength="120" style="'+field+'">'
+    +'<textarea id="sg-shop-desc" placeholder="What the buyer gets" rows="3" style="'+field+'"></textarea>'
+    +'<select id="sg-shop-cat" style="'+field+'">'+cats.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>'
+    +'<input id="sg-shop-price" type="number" min="1" max="500" step="0.01" placeholder="Price in £ (min £1)" style="'+field+'">'
+    +'<input id="sg-shop-file" type="file" accept=".pdf,.zip,.epub,image/*,audio/mpeg,video/mp4" style="'+field+'">'
+    +'<div id="sg-shop-sell-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
+    +'<button type="button" id="sg-shop-sell-btn" onclick="window._sgShopSubmitProduct()" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">List it</button>'
+  );
+};
+
+window._sgShopSubmitProduct=async function(){
+  var btn=document.getElementById('sg-shop-sell-btn');
+  var err=document.getElementById('sg-shop-sell-error');
+  var title=(document.getElementById('sg-shop-title')||{}).value||'';
+  var price=(document.getElementById('sg-shop-price')||{}).value||'';
+  var fileInput=document.getElementById('sg-shop-file');
+  function fail(message){ if(err){err.textContent=message;err.style.display='block';} }
+  if(!title.trim())return fail('Give your product a title');
+  if(!(parseFloat(price)>=1))return fail('Price must be at least £1.00');
+  if(!fileInput||!fileInput.files||!fileInput.files[0])return fail('Attach the file buyers will download');
+  var form=new FormData();
+  form.append('title',title.trim());
+  form.append('description',((document.getElementById('sg-shop-desc')||{}).value||'').trim());
+  form.append('category',(document.getElementById('sg-shop-cat')||{}).value||'Prompt packs');
+  form.append('price',price);
+  form.append('file',fileInput.files[0]);
+  if(btn){btn.textContent='Uploading…';btn.disabled=true;}
+  if(err)err.style.display='none';
+  try{
+    var r=await fetch('/api/shop/products',{method:'POST',credentials:'include',body:form})
+      .then(function(res){return res.json();});
+    if(r.success){
+      var sheet=document.getElementById('sg-shop-sheet');
+      if(sheet)sheet.remove();
+      sgToast('Listed! It is live in the Shop 🎉','success',4000);
+      _sgShopState.loaded=false;
+      window._sgShopLoad(true);
+      return;
+    }
+    fail(r.error||'Could not list that product');
+  }catch(e){
+    fail('Upload failed — try again');
+  }
+  if(btn){btn.textContent='List it';btn.disabled=false;}
+};
 
 // ─── More Hub Page (Everything Else) ───
 function _isAdmin(u){return u&&['8111c9b2-552a-442c-aeff-0580c60ba75e'].indexOf(u.id)>=0;}
