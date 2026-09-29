@@ -35,11 +35,18 @@ function userIdOf(req) {
 router.get('/status', requireCreator, async (req, res) => {
   const userId = userIdOf(req);
   try {
-    const [state, unpaid, member] = await Promise.all([
+    let [state, unpaid, member] = await Promise.all([
       billing.stateFor(userId),
       billing.unpaidPenceFor(userId),
       budget.membershipFor(userId),
     ]);
+    /* Same re-check gate() does at Generate: a suspension no failed charge
+       justifies is lifted here too, so the sheet never says "paused" for a
+       creator who can in fact press the button. */
+    if (state && state.suspended_at) {
+      const lifted = await billing.liftUnjustifiedSuspensions(undefined, userId);
+      if (lifted && lifted.lifted > 0) state = await billing.stateFor(userId);
+    }
     const tier = (member && member.tier) || 'starter';
     const cap = billing.capPenceFor(tier, (state && state.paid_invoices) || 0);
     res.json({
