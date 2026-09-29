@@ -39,7 +39,10 @@
   var css = [
     '#' + ID + '{position:fixed;left:0;right:0;top:0;bottom:var(--sg-tab-height,56px);z-index:8995;background:#070b14;color:#e5e7eb;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(env(safe-area-inset-top,0px),10px) 12px 24px;box-sizing:border-box;font-family:inherit;}',
     '#' + ID + '::-webkit-scrollbar{display:none;}',
-    '.cs-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 10px;}',
+    /* brand-mark.css pins the orange S top-left at ~44px; the title starts after it. */
+    '.cs-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 10px;padding-left:44px;}',
+    /* Header and chips stay put while 30+ tiles scroll under them. */
+    '.cs-sticky{position:sticky;top:-10px;z-index:2;background:#070b14;padding-top:10px;margin-top:-10px;}',
     '.cs-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.2px;}',
     '.cs-close{width:32px;height:32px;border-radius:50%;background:#141b2b;border:1px solid #223050;color:#cbd5e1;font-size:18px;line-height:30px;text-align:center;cursor:pointer;}',
     '.cs-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px;}',
@@ -111,6 +114,12 @@
             /* No catalogue rows: one tile for the mode itself, so the button
                is still findable, drawn as unavailable if it is. */
             return [{ kind: k, id: null, label: k.verb, role: null, price: null, tier: 'default', available: available, reason: (st && st.reason) || d.reason || null }];
+          }
+          if (k.key === 'text') {
+            /* Every text model prices out at a penny a caption; six tiles that
+               differ only by vendor name are noise (the sheet applies the same
+               rule to its chips). One tile, the choice inside the sheet. */
+            return [{ kind: k, id: null, label: k.verb, role: models.length + ' writers \u00b7 pick inside', price: (models[0] && models[0].price) ? models[0].price : null, tier: 'default', available: available, locked: false, note: null, reason: available ? null : ((st && st.reason) || d.reason || 'Not switched on yet') }];
           }
           return models.map(function (m) {
             return {
@@ -246,13 +255,15 @@
 
   function build() {
     var root = el('div'); root.id = ID;
+    var sticky = el('div', 'cs-sticky');
+    root.appendChild(sticky);
     var head = el('div', 'cs-head');
     head.appendChild(el('div', 'cs-title', 'Create'));
     var close = el('div', 'cs-close', '\u00d7');
     close.setAttribute('role', 'button'); close.setAttribute('aria-label', 'Close Create');
     close.addEventListener('click', function () { dismissed = true; root.remove(); });
     head.appendChild(close);
-    root.appendChild(head);
+    sticky.appendChild(head);
 
     var chips = el('div', 'cs-chips');
     var all = [{ key: 'all', chip: 'All' }].concat(KINDS);
@@ -266,7 +277,7 @@
       });
       chips.appendChild(c);
     });
-    root.appendChild(chips);
+    sticky.appendChild(chips);
 
     var grid = el('div', 'cs-grid');
     grid.appendChild(el('div', 'cs-empty', 'Loading models\u2026'));
