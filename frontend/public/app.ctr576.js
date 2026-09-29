@@ -486,7 +486,7 @@ if (window.__sgAuthHint === 'anonymous') {
 
 
 // ─── State ───
-let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'phone',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels',_searchLoading:true};
+let state={user:null,gyms:[],currentGym:null,searchLat:null,searchLng:null,route:'/',bookings:[],wallet:{balance:0},authPhone:'',authStep:'password',lastBooking:null,lastQR:null,userExplicitSearch:false,activeTab:'reels',_searchLoading:true};
 try{var _sb=localStorage.getItem('sg_last_booking');var _sq=localStorage.getItem('sg_last_qr');if(_sb){state.lastBooking=JSON.parse(_sb);}if(_sq){state.lastQR=JSON.parse(_sq);}}catch(e){}
 
 // ─── API Client ───
@@ -7536,7 +7536,7 @@ function LoginPage(){
         </div>
         <button id="auth-btn" onclick="handleVerifyCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Verify & Log In</button>
         <div class="text-center">
-          <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Change phone number</a>
+          <a onclick="state.authStep='password';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Back to sign in</a>
         </div>
         ` : state.authStep === 'emailcode' ? `
         <div>
@@ -7555,42 +7555,42 @@ function LoginPage(){
         </div>
         <button id="auth-btn" onclick="handleSendEmailCode()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Send Code</button>
         <div class="text-center">
-          <a onclick="state.authStep='phone';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Other ways to sign in</a>
+          <a onclick="state.authStep='password';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">← Back to sign in</a>
         </div>
-        ` : `
-        <!-- Order matters: the taps most visitors actually use come first, and
-             the phone form (which used to sit on top and dominate the sheet)
-             now sits below its own divider. Microsoft is here for gym staff and
-             partners too, not hidden away. -->
-        <button id="google-signin-btn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 rounded-xl transition flex items-center justify-center gap-3" style="background:#fff;color:#1f1f1f;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-          Continue with Google
-        </button>
-        <button id="apple-signin-btn" onclick="handleAppleSignIn()" style="background:#000;color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-          Continue with Apple
-        </button>
-        <button id="ms-signin-btn" onclick="window._sgMicrosoftSignIn()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
-          <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-          Continue with Microsoft
-        </button>
-        <button id="email-signin-btn" onclick="state.authStep='email';render()" style="background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:14px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;transition:all .15s">
-
-        <p class="text-slate-500 text-xs text-center" style="margin-top:-2px">One tap — we never ask for a password.</p>
-        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
-          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
-          <span style="color:rgba(255,255,255,.3);font-size:12px;font-weight:500">or use your phone</span>
-          <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+        ` : state.authStep === 'signup' ? `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">First name</label>
+          <input id="auth-first-name" type="text" autocomplete="given-name" maxlength="40" placeholder="Alex" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
         </div>
         <div>
-          <label class="text-slate-400 text-xs mb-1 block">Phone Number</label>
-          <div class="flex gap-2">
-            <select id="auth-country-code" class="bg-slate-800 border border-slate-600 rounded-lg px-2 py-3 text-white text-sm outline-none" style="min-width:72px">${_getCountryCodeOptions()}</select>
-            <input id="auth-phone" type="tel" placeholder="7XXX XXXXXX" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
-          </div>
-          <p class="text-slate-500 text-xs mt-2">We'll text you a 6-digit code — no password needed.</p>
+          <label class="text-slate-400 text-xs mb-1 block">Email address</label>
+          <input id="auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
         </div>
-        <button id="auth-btn" onclick="handleSendCode()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition">Send Verification Code</button>
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Password</label>
+          <input id="auth-password" type="password" autocomplete="new-password" placeholder="At least 8 characters" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+        </div>
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Confirm password</label>
+          <input id="auth-password-confirm" type="password" autocomplete="new-password" placeholder="Type it again" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+        </div>
+        <button id="auth-btn" onclick="handlePasswordSignup()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Create account</button>
+        <div class="text-center">
+          <a onclick="state.authStep='password';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">I already have an account</a>
+        </div>
+        ` : `
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Email address</label>
+          <input id="auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+        </div>
+        <div>
+          <label class="text-slate-400 text-xs mb-1 block">Password</label>
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="Your password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
+        </div>
+        <button id="auth-btn" onclick="handlePasswordLogin()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Log in</button>
+        <div class="text-center">
+          <a onclick="state.authStep='signup';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Create an account</a>
+        </div>
         `}
         <div class="text-center">
           <p class="text-slate-500 text-xs mt-2">Sign in once — your card saves for 1-tap booking ⚡</p>
@@ -7922,6 +7922,102 @@ window.handleVerifyCode=async function(){
   }catch(e){
     errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
     btn.textContent='Verify & Log In';btn.disabled=false;
+  }
+};
+
+/* ── Email + password sign-in ──────────────────────────────────────────
+   Four fields and nothing else: email, password, confirm password, first
+   name. The provider buttons still exist one tap away under "Other ways to
+   sign in", so nobody who created their account with Google or a code is
+   locked out. Both handlers land in the same place as a code login. */
+window._sgPasswordAuthDone=function(r){
+  state.user=r.user;sgSetSession(true);
+  state.authStep='password';
+  if(typeof window._sgAuthAfterSuccess==='function'&&document.querySelector('.sg-auth-overlay.open')){
+    window._sgAuthAfterSuccess();return;
+  }
+  if(typeof _sendToReels==='function')_sendToReels({type:'sg-auth-state',loggedIn:true,user:{name:r.user.name,phone:r.user.phone}});
+  sgToast('Welcome'+(r.user.name?', '+r.user.name:'')+'! 🎉','success',3000);
+  if(window._pendingCheckout&&window._pendingCheckout.gymId){
+    const pc=window._pendingCheckout;
+    window._pendingCheckout=null;
+    if(state.activeTab!=='book')navigate('/explore');
+    setTimeout(()=>showBookingCheckout(pc.gymId,pc.prefillDate,pc.prefillTime),200);
+  }else if(state.pendingBookGym){
+    navigate('/gym/'+state.pendingBookGym);
+    state.pendingBookGym=null;
+  }else{
+    navigate(_sgAuthReturnPath());
+  }
+};
+
+window.handlePasswordLogin=async function(){
+  const emailInput=document.getElementById('auth-email');
+  const passwordInput=document.getElementById('auth-password');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!emailInput||!passwordInput)return;
+  const email=emailInput.value.trim().toLowerCase();
+  const password=passwordInput.value;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+    errDiv.textContent='Please enter a valid email address';errDiv.classList.remove('hidden');return;
+  }
+  if(!password){
+    errDiv.textContent='Please enter your password';errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Logging in...';btn.disabled=true;errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/password/login',{email,password});
+    if(r.success&&r.user){
+      try{localStorage.setItem('sg_last_email',email);}catch(e){}
+      window._sgPasswordAuthDone(r);
+    }else{
+      errDiv.textContent=r.error||'Email or password is incorrect';errDiv.classList.remove('hidden');
+      btn.textContent='Log in';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Log in';btn.disabled=false;
+  }
+};
+
+window.handlePasswordSignup=async function(){
+  const nameInput=document.getElementById('auth-first-name');
+  const emailInput=document.getElementById('auth-email');
+  const passwordInput=document.getElementById('auth-password');
+  const confirmInput=document.getElementById('auth-password-confirm');
+  const btn=document.getElementById('auth-btn');
+  const errDiv=document.getElementById('auth-error');
+  if(!nameInput||!emailInput||!passwordInput||!confirmInput)return;
+  const firstName=nameInput.value.trim();
+  const email=emailInput.value.trim().toLowerCase();
+  const password=passwordInput.value;
+  const confirmPassword=confirmInput.value;
+  if(!firstName){
+    errDiv.textContent='Please enter your first name';errDiv.classList.remove('hidden');return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+    errDiv.textContent='Please enter a valid email address';errDiv.classList.remove('hidden');return;
+  }
+  if(password.length<8){
+    errDiv.textContent='Password must be at least 8 characters';errDiv.classList.remove('hidden');return;
+  }
+  if(password!==confirmPassword){
+    errDiv.textContent="The two passwords don't match";errDiv.classList.remove('hidden');return;
+  }
+  btn.textContent='Creating account...';btn.disabled=true;errDiv.classList.add('hidden');
+  try{
+    const r=await api.authPost('/password/register',{email,password,confirmPassword,firstName});
+    if(r.success&&r.user){
+      try{localStorage.setItem('sg_last_email',email);}catch(e){}
+      window._sgPasswordAuthDone(r);
+    }else{
+      errDiv.textContent=r.error||'Could not create your account';errDiv.classList.remove('hidden');
+      btn.textContent='Create account';btn.disabled=false;
+    }
+  }catch(e){
+    errDiv.textContent='Network error — try again';errDiv.classList.remove('hidden');
+    btn.textContent='Create account';btn.disabled=false;
   }
 };
 
@@ -20523,6 +20619,90 @@ window.sgFeedback = async function(elementId, vote, btn) {
     _renderAuthStep();
   }
 
+  /* ── Email + password, the only way in ──
+   * Google, Apple, Microsoft and phone codes were removed from the customer
+   * sheet: one account type, four fields, nothing to choose between. The
+   * server routes for the old providers still exist for accounts created with
+   * them — those customers set a password on first signup and keep everything.
+   */
+  function _lastEmail(){
+    try{ return (localStorage.getItem('sg_last_email')||'').replace(/"/g,'&quot;'); }catch(e){ return ''; }
+  }
+
+  window._sgAuthShowSignup=function(){
+    var content=document.getElementById('sg-auth-content');
+    if(!content)return;
+    _sheetStep='auth';
+    content.innerHTML=`<div class="sg-auth-step-enter">`+_progressDots('auth')+`
+      <div class="sg-auth-title">Create your account</div>
+      <div class="sg-auth-sub">Four fields, then your pass is two taps away</div>
+      <input class="sg-auth-field" id="sg-auth-first-name" type="text" autocomplete="given-name" maxlength="40" placeholder="First name">
+      <input class="sg-auth-field" id="sg-auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" value="${_lastEmail()}">
+      <input class="sg-auth-field" id="sg-auth-password" type="password" autocomplete="new-password" placeholder="Password (8+ characters)">
+      <input class="sg-auth-field" id="sg-auth-password-confirm" type="password" autocomplete="new-password" placeholder="Confirm password">
+      <div class="sg-auth-error" id="sg-auth-err"></div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-signup-btn" onclick="window._sgAuthPasswordSignup()">Create account</button>
+      <div class="sg-auth-back" onclick="window._sgAuthBackToOptions()">← I already have an account</div>
+    </div>`;
+    setTimeout(function(){var inp=document.getElementById('sg-auth-first-name');if(inp)inp.focus();},350);
+  };
+
+  function _sheetAuthRequest(path, body, btn, errEl, restoreLabel){
+    btn.textContent='Please wait…';btn.disabled=true;errEl.style.display='none';
+    return fetch('/api/auth'+path,{method:'POST',headers:{'Content-Type':'application/json'},
+      credentials:'include',body:JSON.stringify(body)})
+      .then(function(r){return r.json();})
+      .then(function(r){
+        if(r.success&&r.user){
+          try{localStorage.setItem('sg_last_email',body.email);}catch(e){}
+          state.user=r.user;sgSetSession(true);
+          state.authStep='password';
+          _afterAuthSuccess();
+          return;
+        }
+        errEl.textContent=r.error||'Something went wrong';errEl.style.display='block';
+        btn.textContent=restoreLabel;btn.disabled=false;
+      })
+      .catch(function(){
+        errEl.textContent='Network error';errEl.style.display='block';
+        btn.textContent=restoreLabel;btn.disabled=false;
+      });
+  }
+
+  window._sgAuthPasswordLogin=function(){
+    var emailEl=document.getElementById('sg-auth-email');
+    var passEl=document.getElementById('sg-auth-password');
+    var btn=document.getElementById('sg-auth-login-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!emailEl||!passEl||!btn||!err)return;
+    var email=emailEl.value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+      err.textContent='Enter a valid email address';err.style.display='block';return;
+    }
+    if(!passEl.value){err.textContent='Enter your password';err.style.display='block';return;}
+    _sheetAuthRequest('/password/login',{email:email,password:passEl.value},btn,err,'Log in');
+  };
+
+  window._sgAuthPasswordSignup=function(){
+    var nameEl=document.getElementById('sg-auth-first-name');
+    var emailEl=document.getElementById('sg-auth-email');
+    var passEl=document.getElementById('sg-auth-password');
+    var confirmEl=document.getElementById('sg-auth-password-confirm');
+    var btn=document.getElementById('sg-auth-signup-btn');
+    var err=document.getElementById('sg-auth-err');
+    if(!nameEl||!emailEl||!passEl||!confirmEl||!btn||!err)return;
+    var email=emailEl.value.trim().toLowerCase();
+    if(!nameEl.value.trim()){err.textContent='Enter your first name';err.style.display='block';return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+      err.textContent='Enter a valid email address';err.style.display='block';return;
+    }
+    if(passEl.value.length<8){err.textContent='Password must be at least 8 characters';err.style.display='block';return;}
+    if(passEl.value!==confirmEl.value){err.textContent="The two passwords don't match";err.style.display='block';return;}
+    _sheetAuthRequest('/password/register',
+      {email:email,password:passEl.value,confirmPassword:confirmEl.value,firstName:nameEl.value.trim()},
+      btn,err,'Create account');
+  };
+
   // ── Step 1: Sign In ──
   function _renderAuthStep(){
     _sheetStep='auth';
@@ -20545,35 +20725,11 @@ window.sgFeedback = async function(elementId, vote, btn) {
         <span class="sg-auth-divider-text">or sign in to save your card</span>
         <div class="sg-auth-divider-line"></div>
       </div>`:''}
-      <button class="sg-auth-btn sg-auth-btn-google" onclick="handleGoogleSignIn()">
-        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        Continue with Google
-      </button>
-      <button class="sg-auth-btn sg-auth-btn-apple" onclick="handleAppleSignIn()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-        Continue with Apple
-      </button>
-      <!-- Same sign-in options in the booking sheet as on the sign-in page:
-           Microsoft was only on /login, so a customer who taps "Book this gym"
-           never saw it. One account per email either way. -->
-      <button class="sg-auth-btn sg-auth-btn-ms" onclick="window._sgMicrosoftSignIn()">
-        <svg width="18" height="18" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-        Continue with Microsoft
-      </button>
-      <div class="sg-auth-divider">
-        <div class="sg-auth-divider-line"></div>
-        <span class="sg-auth-divider-text">or use phone</span>
-        <div class="sg-auth-divider-line"></div>
-      </div>
-      <div class="sg-auth-phone-row">
-        <select class="sg-auth-phone-cc" id="sg-auth-cc">${_getCountryCodeOptions()}</select>
-        <input class="sg-auth-phone-input" id="sg-auth-phone" type="tel" placeholder="7XXX XXXXXX" autocomplete="tel">
-      </div>
+      <input class="sg-auth-field" id="sg-auth-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" value="${_lastEmail()}">
+      <input class="sg-auth-field" id="sg-auth-password" type="password" autocomplete="current-password" placeholder="Password">
       <div class="sg-auth-error" id="sg-auth-err"></div>
-      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-send-btn" onclick="window._sgAuthSendCode()">
-        📲 Send Code
-      </button>
-      <div class="sg-auth-back" onclick="window._sgAuthEmailLink()" style="margin-top:12px">✉️ Continue with Email instead</div>
+      <button class="sg-auth-btn sg-auth-btn-phone" id="sg-auth-login-btn" onclick="window._sgAuthPasswordLogin()">Log in</button>
+      <div class="sg-auth-back" onclick="window._sgAuthShowSignup()" style="margin-top:12px">Create an account</div>
       <div class="sg-auth-footer">Sign in once — works everywhere in ScanGym</div>
     </div>`;
     // R6: Don't auto-focus phone input — avoids keyboard pop when user wants Google/Apple

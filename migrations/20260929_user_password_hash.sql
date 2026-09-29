@@ -1,0 +1,13 @@
+-- Email + password customer accounts.
+--
+-- Until now every customer account was passwordless (emailed code, phone code,
+-- Google, Apple). password_hash is nullable on purpose: existing accounts keep
+-- working exactly as they did, and setting a password is what links a password
+-- login to an account someone already has.
+--
+-- Deliberately NO unique index on email: this database already allows two rows
+-- with the same address (the email-code login handles it with
+-- "ORDER BY created_at ASC LIMIT 1"), so adding the constraint here would make
+-- the migration — and therefore the deploy — fail on live data. The password
+-- routes use the same oldest-account-wins rule.
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT;
