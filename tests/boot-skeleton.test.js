@@ -30,7 +30,7 @@ test('the shell carries the boot markers this feature replaces between', () => {
   );
 });
 
-test('every tab boots with all five tabs, not three', () => {
+test('every tab boots with all four tabs, not three', () => {
   for (const p of ['/', '/explore', '/partner', '/creator', '/more/profile', '/wallet']) {
     const html = renderSkeleton(p);
     for (const tab of TABS) {
@@ -44,10 +44,10 @@ test('every tab boots with all five tabs, not three', () => {
 
 test('the boot bar marks the tab the SPA will mark', () => {
   const cases = {
-    '/': 'book', '/explore': 'book', '/nearby': 'book', '/search': 'book',
-    '/checkout': 'book', '/booking-success': 'book', '/gym/anytime-fitness': 'book',
+    '/': 'reels', '/explore': 'more', '/nearby': 'more', '/search': 'more',
+    '/checkout': 'more', '/booking-success': 'more', '/gym/anytime-fitness': 'more',
     '/reels': 'reels', '/reels/abc': 'reels',
-    '/scansquad': 'creator', '/creator': 'creator', '/creator-hub': 'creator',
+    '/scansquad': 'creator', '/creator': 'creator', '/creator-hub': 'creator', '/shop':'shop',
     '/partner': 'more', '/partners': 'more', '/list-your-gym': 'more',
     '/more/profile': 'more', '/profile': 'more', '/wallet': 'more'
   };
@@ -59,8 +59,9 @@ test('the boot bar marks the tab the SPA will mark', () => {
 test('trailing slashes, casing and query strings resolve to the same tab', () => {
   assert.strictEqual(tabForPath('/partner/'), 'more');
   assert.strictEqual(tabForPath('/Partner'), 'more');
-  assert.strictEqual(tabForPath('/explore?q=london'), 'book');
+  assert.strictEqual(tabForPath('/explore?q=london'), 'more');
   assert.strictEqual(tabForPath('/more/profile#top'), 'more');
+  assert.strictEqual(tabForPath('/shop?category=gear'), 'shop');
 });
 
 test('exactly one tab is marked current, and only when a tab owns the route', () => {

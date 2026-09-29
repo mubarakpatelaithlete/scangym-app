@@ -21,7 +21,7 @@ const canonicalOf = (html) => (html.match(/<link rel="canonical" href="([^"]*)"/
 
 // The tabs the SPA catch-all serves. /reels, /scansquad and /about ship their own
 // HTML files and are deliberately not in the route-meta table.
-const TABS = ['/explore', '/nearby', '/checkout', '/creator', '/partner', '/profile'];
+const TABS = ['/explore', '/nearby', '/checkout', '/creator', '/partner', '/profile', '/shop'];
 
 test('the shell still has the head tags this feature rewrites', () => {
   assert.ok(titleOf(SHELL), 'index.html lost its <title>');

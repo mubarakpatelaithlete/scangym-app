@@ -34,22 +34,19 @@ const TABS = [
       '<polygon points="10 13 16 16 10 19" fill="rgba(255,255,255,.35)" stroke="none"></polygon>'
   },
   {
-    key: 'book',
-    label: 'Book',
-    href: '/explore',
-    icon:
-      '<circle cx="11" cy="11" r="7"></circle>' +
-      '<line x1="16.5" y1="16.5" x2="21" y2="21"></line>' +
-      '<circle cx="11" cy="11" r="2.5" fill="' + BRAND + '" stroke="none"></circle>'
-  },
-  {
     key: 'creator',
-    label: 'ScanSquad',
+    label: 'Create',
     href: '/scansquad',
     icon:
       '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
       '<circle cx="12" cy="12" r="3" fill="rgba(255,255,255,.3)"></circle>' +
       '<path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"></path>'
+  },
+  {
+    key: 'shop',
+    label: 'Shop',
+    href: '/shop',
+    icon: '<path d="M3 9l1.5-5h15L21 9"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path>'
   },
   {
     key: 'more',
@@ -69,15 +66,11 @@ function tabForPath(pathname) {
   const p = normalize(pathname);
   if (/^\/reels(\/|$)/.test(p)) return 'reels';
   if (/^\/(scansquad|creator|creator-hub)(\/|$)/.test(p)) return 'creator';
+  if (/^\/shop(\/|$)/.test(p)) return 'shop';
   if (/^\/(partner|partners|list-your-gym)(\/|$)/.test(p)) return 'more';
   if (/^\/(more|profile|wallet|settings)(\/|$)/.test(p)) return 'more';
-  if (
-    p === '/' ||
-    /^\/(explore|nearby|search|checkout|booking-success)(\/|$)/.test(p) ||
-    /^\/(gym|r)\//.test(p)
-  ) {
-    return 'book';
-  }
+  if (/^\/(explore|nearby|search|checkout|booking-success|gym|r)(\/|$)/.test(p)) return 'more';
+  if (p === '/') return 'reels';
   return null;
 }
 
@@ -103,7 +96,8 @@ const PRIMARY_ACTIONS = {
   '/search': { label: 'Browse all gyms', href: '/explore' },
   '/partner': { label: "List your gym — it's free", href: '/list-your-gym' },
   '/partners': { label: "List your gym — it's free", href: '/list-your-gym' },
-  '/creator': { label: 'Join ScanSquad', href: '/scansquad' },
+  '/creator': { label: 'Open Create', href: '/scansquad' },
+  '/scansquad': { label: 'Open Create', href: '/scansquad' },
   '/creator-hub': { label: 'Join ScanSquad', href: '/scansquad' },
   '/more/profile': { label: 'Sign in', href: '/login' },
   '/profile': { label: 'Sign in', href: '/login' },
@@ -279,8 +273,9 @@ function bodyFor(pathname) {
   if (p === '/checkout') return quietSkeleton('Securing your pass…');
   if (p === '/booking-success') return quietSkeleton('Confirming your booking…');
   if (/^\/(partner|partners)$/.test(p)) return partnerSkeleton();
+  if (/^\/shop(\/|$)/.test(p)) return quietSkeleton('Browse the ScanGym shop');
   if (p === '/list-your-gym') return quietSkeleton('List your gym');
-  if (/^\/(creator|creator-hub)$/.test(p)) return creatorSkeleton();
+  if (/^\/(creator|creator-hub|scansquad)$/.test(p)) return creatorSkeleton();
   if (/^\/(more|profile)(\/|$)/.test(p)) return profileSkeleton();
   if (p === '/wallet') return walletSkeleton();
   if (p === '/' || /^\/(explore|nearby|search)$/.test(p)) return bookSkeleton();

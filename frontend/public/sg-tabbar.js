@@ -36,15 +36,13 @@
             '<line x1="2" y1="8" x2="22" y2="8"></line>' +
             '<line x1="10" y1="2" x2="10" y2="8"></line>' +
             '<polygon points="10 13 16 16 10 19" fill="rgba(255,255,255,.35)" stroke="none"></polygon>' },
-    { key: 'book', label: 'Book', href: '/explore', match: /^\/(explore|nearby)?$/,
-      icon: '<circle cx="11" cy="11" r="7"></circle>' +
-            '<line x1="16.5" y1="16.5" x2="21" y2="21"></line>' +
-            '<circle cx="11" cy="11" r="2.5" fill="#FF6D00" stroke="none"></circle>' },
-    { key: 'creator', label: 'ScanSquad', href: '/scansquad', match: /^\/(scansquad|creator)/,
+    { key: 'creator', label: 'Create', href: '/scansquad', match: /^\/(scansquad|creator)/,
       icon: '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
             '<circle cx="12" cy="12" r="3" fill="rgba(255,255,255,.3)"></circle>' +
             '<path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"></path>' },
-    { key: 'more', label: 'Profile', href: '/more/profile', match: /^\/(more|profile|partners?)(\/|$)/,
+    { key: 'shop', label: 'Shop', href: '/shop', match: /^\/shop(\/|$)/,
+      icon: '<path d="M3 9l1.5-5h15L21 9"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path>' },
+    { key: 'more', label: 'Profile', href: '/more/profile', match: /^\/(more|profile|partners?|explore|nearby|search|checkout|booking-success|gym)(\/|$)/,
       icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>' +
             '<circle cx="12" cy="7" r="4"></circle>' }
   ];

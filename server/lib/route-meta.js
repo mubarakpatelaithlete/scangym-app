@@ -44,6 +44,10 @@ const ROUTES = [
     title: 'Your Reels — ScanSquad | ScanGym',
     description: 'Upload and manage the gym reels that earn you day-pass commission.',
   }],
+  ['/shop', {
+    title: 'Digital Fitness Shop — ScanGym',
+    description: 'Creator-made workout plans, meal guides and digital fitness products on ScanGym.',
+  }],
   ['/creator', {
     title: 'ScanSquad — Earn by Sharing Gyms | ScanGym',
     description: 'Join ScanSquad: post gym reels, share your link and earn on every day pass you drive.',

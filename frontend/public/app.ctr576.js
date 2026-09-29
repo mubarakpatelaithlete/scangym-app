@@ -729,11 +729,12 @@ function getTabForRoute(path){
   if(path==='/'||path==='')return 'reels';
   if(path==='/reels')return 'reels';
   if(path==='/explore'||path==='/nearby'||path==='/search'||path.startsWith('/gym/')||path==='/booking-success'||path.startsWith('/r/')||path==='/checkout')return 'book';
+  if(path==='/shop'||path.startsWith('/shop/'))return 'shop';
   if(path==='/music')return 'music';
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
   if(path==='/ai-trainer'||path==='/trainer')return 'trainer';
-  if(path==='/creator'||path==='/creator/')return 'creator';
+  if(path==='/creator'||path==='/creator/'||path==='/scansquad'||path==='/scansquad/')return 'creator';
   if(path==='/partner'||path==='/partner/'||path.startsWith('/partner/'))return 'partner';
   return 'more';
 }
@@ -741,6 +742,7 @@ function switchTab(tab){
   state.activeTab=tab;
   if(tab==='reels'){state.route='/';history.pushState(null,'','/');}
   else if(tab==='book'){state.route=state._lastBookRoute||'/explore';history.pushState(null,'',state.route);}
+  else if(tab==='shop'){state.route='/shop';history.pushState(null,'','/shop');}
   else if(tab==='music'){state.route='/music';history.pushState(null,'','/music');}
   else if(tab==='photos'){state.route='/photos';history.pushState(null,'','/photos');}
   else if(tab==='chat'){state.route='/chat';history.pushState(null,'','/chat');}
@@ -749,7 +751,7 @@ function switchTab(tab){
   else if(tab==='partner'){state.route='/partner';history.pushState(null,'','/partner');}
   else if(tab==='more'){state.route=state._lastMoreRoute||'/more';history.pushState(null,'',state.route);}
   render();
-  /* Chrome that lives OUTSIDE #app — the Reels rail, the ScanSquad Create rail,
+  /* Chrome that lives OUTSIDE #app — the Reels rail, the Create rail,
      the Profile rail, the orange "Ask AI" bar — used to discover a tab change by
      polling (600ms in sg-rail-ui.js, 800ms in squad-create.js, and a poll in
      profile-rail.js). #app is rebuilt in the same frame as the tap, so for up to
@@ -12963,11 +12965,11 @@ function BottomTabBar(){
   const t=state.activeTab;
   // SVG icons — crisp at any resolution, no emoji rendering differences
   const reelsIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="10" y1="2" x2="10" y2="8"/><polygon points="10 13 16 16 10 19" fill="${t==='reels'?'#FF6D00':'rgba(255,255,255,.35)'}" stroke="none"/></svg>`;
-  const bookIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><circle cx="11" cy="11" r="2.5" fill="${t==='book'?'#FF6D00':'rgba(255,255,255,.3)'}" stroke="none"/></svg>`;
-  const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/><circle cx="18" cy="16" r="3" fill="${t==='music'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
-  const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2" fill="${t==='photos'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M21 15l-5-5L5 21"/></svg>`;
+  const shopIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg>`;
+  const musicIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+  const photosIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>`;
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
-  const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M2 17l1-7h7l1 7"/><path d="M14 7h8M14 7v0M22 7v0M13 4h2M21 4h2M14 10h8"/></svg>`;
+  const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M2 17l1-7h7l1 7"/><path d="M14 7h8M13 4h2M21 4h2M14 10h8"/></svg>`;
   const creatorIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="12" cy="12" r="3" fill="${t==='creator'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
@@ -12975,31 +12977,19 @@ function BottomTabBar(){
       ${reelsIcon}
       <span class="sg-tab-label">Reels</span>
     </button>
-    <button class="sg-tab-item ${t==='book'?'active':''}" role="tab" aria-selected="${t==='book'}" aria-label="Book a gym" onclick="switchTab('book')">
-      ${bookIcon}
-      <span class="sg-tab-label">Book</span>
-    </button>
-    <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="ScanSquad" onclick="switchTab('creator')">
+    <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="Create" onclick="switchTab('creator')">
       ${creatorIcon}
-      <span class="sg-tab-label">ScanSquad</span>
+      <span class="sg-tab-label">Create</span>
     </button>
-    <button class="sg-tab-item ${t==='music'?'active':''}" role="tab" aria-selected="${t==='music'}" aria-label="Music" onclick="switchTab('music')">
-      ${musicIcon}
-      <span class="sg-tab-label">Music</span>
+    <button class="sg-tab-item ${t==='shop'?'active':''}" role="tab" aria-selected="${t==='shop'}" aria-label="Shop" onclick="switchTab('shop')">
+      ${shopIcon}
+      <span class="sg-tab-label">Shop</span>
     </button>
-    <button class="sg-tab-item ${t==='photos'?'active':''}" role="tab" aria-selected="${t==='photos'}" aria-label="Photos" onclick="switchTab('photos')">
-      ${photosIcon}
-      <span class="sg-tab-label">Photos</span>
-    </button>
-    <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">
-      ${chatIcon}
-      <span class="sg-tab-label">Chat</span>
-    </button>
-    <button class="sg-tab-item ${t==='trainer'?'active':''}" role="tab" aria-selected="${t==='trainer'}" aria-label="AI Trainer" onclick="switchTab('trainer')">
-      ${trainerIcon}
-      <span class="sg-tab-label">Trainer</span>
-    </button>
-    <button class="sg-tab-item ${t==='more'||t==='partner'?'active':''}" role="tab" aria-selected="${t==='more'||t==='partner'}" aria-label="Profile and settings" onclick="switchTab('more')">
+    <button class="sg-tab-item ${t==='music'?'active':''}" role="tab" aria-selected="${t==='music'}" aria-label="Music" onclick="switchTab('music')">${musicIcon}<span class="sg-tab-label">Music</span></button>
+    <button class="sg-tab-item ${t==='photos'?'active':''}" role="tab" aria-selected="${t==='photos'}" aria-label="Photos" onclick="switchTab('photos')">${photosIcon}<span class="sg-tab-label">Photos</span></button>
+    <button class="sg-tab-item ${t==='chat'?'active':''}" role="tab" aria-selected="${t==='chat'}" aria-label="Chat" onclick="switchTab('chat')">${chatIcon}<span class="sg-tab-label">Chat</span></button>
+    <button class="sg-tab-item ${t==='trainer'?'active':''}" role="tab" aria-selected="${t==='trainer'}" aria-label="AI Trainer" onclick="switchTab('trainer')">${trainerIcon}<span class="sg-tab-label">Trainer</span></button>
+    <button class="sg-tab-item ${t==='more'||t==='partner'||t==='book'?'active':''}" role="tab" aria-selected="${t==='more'||t==='partner'||t==='book'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
       <span class="sg-tab-label">Profile</span>
     </button>
@@ -13745,6 +13735,26 @@ function sgRailCircle(iconName, emoji){
 }
 try{ window.sgRailCircle = sgRailCircle; }catch(e){}
 
+// ─── Shop tab: digital products only ───
+function ShopPage(){
+  return `<section style="max-width:720px;margin:0 auto;padding:22px 16px 40px;color:#fff">
+    <div style="margin-bottom:18px">
+      <p style="margin:0 0 4px;color:#FF6D00;font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase">ScanGym Digital Shop</p>
+      <h1 style="margin:0;font-size:25px;font-weight:900">Shop creator-made fitness tools</h1>
+      <p style="margin:7px 0 0;color:rgba(255,255,255,.6);font-size:14px">Workout plans, meal guides and digital fitness products. No physical goods.</p>
+    </div>
+    <input type="search" aria-label="Search digital fitness products" placeholder="Search digital products" disabled style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px;opacity:.65">
+    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;padding:2px 0 14px;margin-bottom:8px">
+      ${['All','Workout plans','Meal guides','Video programs','Templates'].map(function(c,i){return '<span style="flex:none;border:1px solid '+(i===0?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:20px;padding:9px 13px;background:'+(i===0?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700">'+c+'</span>'}).join('')}
+    </div>
+    <div id="sg-digital-shop-results" style="min-height:210px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed rgba(255,255,255,.16);border-radius:18px;padding:24px">
+      <div><div style="font-size:34px;margin-bottom:8px">🛍️</div><h2 style="margin:0 0 6px;font-size:18px">Digital products are coming soon</h2><p style="max-width:340px;margin:0 auto 16px;color:rgba(255,255,255,.55);font-size:13px;line-height:1.5">The Shop layout is ready, but creator listings and secure digital checkout are not live yet.</p><button type="button" onclick="switchTab('creator')" style="border:0;border-radius:12px;padding:12px 18px;background:#FF6D00;color:white;font-weight:800">Create with ScanGym</button></div>
+    </div>
+  </section>`;
+}
+window._sgShopFilter=function(){return;};
+window._sgShopCategory=function(button){var bar=button.parentNode;Array.prototype.forEach.call(bar.children,function(el){el.style.borderColor='rgba(255,255,255,.14)';el.style.background='rgba(255,255,255,.04)'});button.style.borderColor='#FF6D00';button.style.background='rgba(255,109,0,.18)';};
+
 // ─── More Hub Page (Everything Else) ───
 function _isAdmin(u){return u&&['8111c9b2-552a-442c-aeff-0580c60ba75e'].indexOf(u.id)>=0;}
 function MoreHubPage(){
@@ -13797,6 +13807,10 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
+        <button type="button" onclick="navigate('/explore')" aria-label="Book a gym" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
+          ${sgRailCircle('book','\ud83c\udfea')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Book</span>
+        </button>
         <!-- Partner lives here in Profile, not in the main tab bar. -->
         <button type="button" onclick="navigate('/partner')" aria-label="Partner" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
           ${sgRailCircle('partner','\ud83c\udfe2')}
@@ -13881,8 +13895,10 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok style ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
-        <!-- Find Gym / Pricing / Creator removed at the owner's request (2026-09-26):
-             Book already finds gyms; the row stays short. -->
+        <button type="button" onclick="navigate('/explore')" aria-label="Book a gym" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
+          ${sgRailCircle('book','\ud83c\udfea')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Book</span>
+        </button>
         <button type="button" onclick="navigate('/partner')" aria-label="Partner" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
           ${sgRailCircle('partner','\ud83c\udfe2')}
           <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
@@ -16569,6 +16585,7 @@ function _renderInner(){
 `);
     else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"QR Scan-and-Go",desc:"Easy gym entry with unique QR codes. Show your QR at reception — no membership cards needed."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="10" data-suffix="+">0</p><p class="text-slate-500 text-xs">Cities Live</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1" data-suffix="">0</p><p class="text-slate-500 text-xs">Country (UK)</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
     else if(path==='/tools')page=ToolsPage();
+  else if(path==='/shop'||path.startsWith('/shop/'))page=ShopPage();
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:`From ${sgPrice('day').display} per 24-hour session. 4 pass types: Day ${sgPrice('day').display}, 3-Day ${sgPrice('3day').display}, Weekly ${sgPrice('weekly').display}, Monthly ${sgPrice('monthly').display}. Same price any time of day.`},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. Show it at reception and you're in."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"Quick sign-in with Google or phone number. Your card saves automatically — every booking after is just 1 tap. Apple Pay and Google Pay supported too."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does ScanSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Starters: \u00a350-150/mo. Rising Stars: \u00a3150-400/mo. Hot Creators: \u00a3400-800/mo + free sessions. Elite: \u00a3800-2,000/mo. Legends: \u00a32,000-5,000+/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
   else if(path==='/for-gyms'||path==='/gym-owners')page=InfoPage('For Gym Owners',`<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p class="text-lg text-slate-300">Gym-goers search ScanGym daily. Turn your quiet hours into profit.</p><div class="mt-6 bg-brand/10 border border-brand/30 rounded-xl p-6"><p class="text-white font-bold mb-3">💰 Revenue Calculator — How much could you earn?</p><div class="grid sm:grid-cols-3 gap-4 mb-4"><div><label class="text-slate-400 text-xs">Empty slots per day</label><input type="range" id="calc-slots" min="2" max="50" value="10" class="w-full accent-brand" oninput="document.getElementById('calc-result').textContent='£'+((this.value*${sgPrice('day').amount}*0.85)*30).toFixed(0)"></div><div class="text-center"><p class="text-slate-400 text-xs">Estimated monthly revenue</p><p id="calc-result" class="text-3xl font-bold text-brand">£${Math.round(10 * sgPrice('day').amount * 0.85 * 30).toLocaleString()}</p></div><div class="text-center"><p class="text-slate-400 text-xs">Your commission</p><p class="text-white font-bold">85%</p><p class="text-slate-500 text-xs">You keep · We take 15%</p></div></div><p class="text-slate-500 text-xs">Based on ${sgPrice('day').display} avg day pass × 10 bookings/day × 30 days. Actual results vary.</p></div><div class="mt-6 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">💸</p><p class="text-white font-semibold text-sm">You set the price</p><p class="text-slate-500 text-xs">4 passes from ${sgPrice('day').display}. Change anytime.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">⏸️</p><p class="text-white font-semibold text-sm">Full control</p><p class="text-slate-500 text-xs">Pause bookings with one toggle.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">🥤</p><p class="text-white font-semibold text-sm">Free equipment</p><p class="text-slate-500 text-xs">Vending machines + QR scanners.</p></div></div><p class="mt-6 text-center text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><div class="mt-6 flex gap-4 flex-wrap justify-center"><a onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20">List Your Gym — It's Free →</a><a onclick="navigate('/owner-benefits')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">See All Benefits →</a></div>`);
   else if(path==='/list-your-gym')page=ListYourGymFullPage();
@@ -16671,6 +16688,8 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
       </div>
       ${page}
     </main>`+BottomTabBar();
+  } else if(tab==='shop') {
+    html=`<main class="sg-tab-content fade-in">${page||ShopPage()}</main>`+BottomTabBar();
   } else if(tab==='music') {
     html=`<main class="sg-tab-content fade-in">${MusicTabPage()}</main>`+BottomTabBar();
   } else if(tab==='photos') {
@@ -18549,18 +18568,18 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
       _restoreDefault();
       var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
       var tab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
-      if(tab==='reels'||tab==='book'){_cbVisible=false;_showBanner();}
+      if(tab==='reels'){_cbVisible=false;_showBanner();}
       else _hideBanner();
     },
     owner:function(){return _custom?_custom.owner:null;}
   };
 
-  // Show on Reels + Book, hide on Profile
+  // Show on Reels; Book is reached inside Profile
   // R7: body class approach means order doesn't matter — class survives render()
   var _origSwitchTab=window.switchTab;
   if(typeof _origSwitchTab==='function'){
     window.switchTab=function(tab){
-      if(tab==='reels'||tab==='book'){
+      if(tab==='reels'){
         /* leaving a borrowed tab (Partner/Profile) — take the bar back */
         if(_custom)_restoreDefault();
         _cbVisible=false;
@@ -18576,7 +18595,7 @@ if(localStorage.getItem('sg_push_enabled')==='1'&&state.user){
   setTimeout(function(){
     var activeLabel=document.querySelector('.sg-tab-item.active .sg-tab-label');
     var tab=activeLabel?activeLabel.textContent.trim().toLowerCase():'';
-    if(tab==='reels'||tab==='book'){
+    if(tab==='reels'){
       _showBanner();
     }
   },500);
