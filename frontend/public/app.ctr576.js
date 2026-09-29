@@ -12969,7 +12969,6 @@ function BottomTabBar(){
   const chatIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`;
   const trainerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" fill="${t==='trainer'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M2 17l1-7h7l1 7"/><path d="M14 7h8M14 7v0M22 7v0M13 4h2M21 4h2M14 10h8"/></svg>`;
   const creatorIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="12" cy="12" r="3" fill="${t==='creator'?'#FF6D00':'rgba(255,255,255,.3)'}"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"/></svg>`;
-  const partnerIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/><circle cx="12" cy="7" r="1.5" fill="${t==='partner'?'#FF6D00':'rgba(255,255,255,.3)'}"/></svg>`;
   const moreIcon=`<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   return`<nav class="sg-tab-bar" role="tablist" aria-label="Main navigation">
     <button class="sg-tab-item ${t==='reels'?'active':''}" role="tab" aria-selected="${t==='reels'}" aria-label="Reels" onclick="switchTab('reels')">
@@ -12983,10 +12982,6 @@ function BottomTabBar(){
     <button class="sg-tab-item ${t==='creator'?'active':''}" role="tab" aria-selected="${t==='creator'}" aria-label="ScanSquad" onclick="switchTab('creator')">
       ${creatorIcon}
       <span class="sg-tab-label">ScanSquad</span>
-    </button>
-    <button class="sg-tab-item ${t==='partner'?'active':''}" role="tab" aria-selected="${t==='partner'}" aria-label="Partner" onclick="switchTab('partner')">
-      ${partnerIcon}
-      <span class="sg-tab-label">Partner</span>
     </button>
     <button class="sg-tab-item ${t==='music'?'active':''}" role="tab" aria-selected="${t==='music'}" aria-label="Music" onclick="switchTab('music')">
       ${musicIcon}
@@ -13004,7 +12999,7 @@ function BottomTabBar(){
       ${trainerIcon}
       <span class="sg-tab-label">Trainer</span>
     </button>
-    <button class="sg-tab-item ${t==='more'?'active':''}" role="tab" aria-selected="${t==='more'}" aria-label="Profile and settings" onclick="switchTab('more')">
+    <button class="sg-tab-item ${t==='more'||t==='partner'?'active':''}" role="tab" aria-selected="${t==='more'||t==='partner'}" aria-label="Profile and settings" onclick="switchTab('more')">
       ${moreIcon}
       <span class="sg-tab-label">Profile</span>
     </button>
@@ -13802,11 +13797,11 @@ function MoreHubPage(){
       </div>
       <!-- ═══ RIGHT-SIDE BUTTONS — TikTok/Reels style, floating on QR ═══ -->
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:10">
-        <!-- Creator (/creator) and Partner (/partner) used to sit here, which put
-             them twice on one screen: this rail and the tab bar underneath it,
-             where ScanSquad IS /creator and Partner IS /partner. The owner called
-             it the double buttons. Removed from the rail; the tab bar keeps them,
-             so nothing became unreachable. (owner, 2026-09-19) -->
+        <!-- Partner lives here in Profile, not in the main tab bar. -->
+        <button type="button" onclick="navigate('/partner')" aria-label="Partner" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
+          ${sgRailCircle('partner','\ud83c\udfe2')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
+        </button>
         <div onclick="navigate('/apps')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
           ${sgRailCircle('grid','\ud83d\udcf1')}
           <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Apps</span>
@@ -13888,6 +13883,10 @@ function MoreHubPage(){
       <div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:18px;align-items:center;z-index:10">
         <!-- Find Gym / Pricing / Creator removed at the owner's request (2026-09-26):
              Book already finds gyms; the row stays short. -->
+        <button type="button" onclick="navigate('/partner')" aria-label="Partner" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;background:none;border:0;padding:0">
+          ${sgRailCircle('partner','\ud83c\udfe2')}
+          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
+        </button>
         <!-- The "Sign Up" circle stood here. It opened /login, which is where the
              "Get Your QR Pass" button below and the row's own Sign in button
              already go: three doors, one room, two of them side by side on the

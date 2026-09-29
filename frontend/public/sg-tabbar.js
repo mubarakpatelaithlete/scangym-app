@@ -6,9 +6,9 @@
  * documents. Neither one contained a single reference to `sg-tab-bar`, so the
  * bottom navigation simply vanished when a visitor landed on them. From Reels
  * there was no way back to Book at all except the browser's back button, and
- * ScanSquad offered only a "<-" arrow. Two of the five tabs dead-ended.
+ * ScanSquad offered only a "<-" arrow. Two of the four tabs dead-ended.
  *
- * This renders the same five-item bar those pages were missing, using plain
+ * This renders the same four-item bar those pages were missing, using plain
  * links (the SPA's switchTab() does not exist in these documents), and marks
  * the current tab active from the pathname.
  *
@@ -44,11 +44,7 @@
       icon: '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
             '<circle cx="12" cy="12" r="3" fill="rgba(255,255,255,.3)"></circle>' +
             '<path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"></path>' },
-    { key: 'partner', label: 'Partner', href: '/partner', match: /^\/partners?/,
-      icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"></path>' +
-            '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
-            '<circle cx="12" cy="7" r="1.5" fill="rgba(255,255,255,.3)"></circle>' },
-    { key: 'more', label: 'Profile', href: '/more/profile', match: /^\/(more|profile)/,
+    { key: 'more', label: 'Profile', href: '/more/profile', match: /^\/(more|profile|partners?)(\/|$)/,
       icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>' +
             '<circle cx="12" cy="7" r="4"></circle>' }
   ];

@@ -334,13 +334,12 @@ test('every document that draws row buttons loads the icon table', () => {
 });
 
 test('the profile rail does not repeat the tab bar', () => {
-  // Creator and Partner appeared on the rail AND as tabs directly below it.
+  // Creator stays in the tab bar; Partner moves into the Profile rail.
   const app = read('app.ctr576.js');
   const rail = app.slice(app.indexOf('RIGHT-SIDE BUTTONS \u2014 TikTok/Reels style'),
                          app.indexOf('MORE MENU POPUP'));
-  for (const dup of ["navigate('/creator')", "navigate('/partner')"]) {
-    assert.ok(!rail.includes(dup), `${dup} is back on the rail as well as the tab bar`);
-  }
+  assert.ok(!rail.includes("navigate('/creator')"), "Creator repeats the tab bar");
+  assert.ok(rail.includes("navigate('/partner')"), "Partner is missing from Profile");
   assert.ok(rail.includes("navigate('/apps')") && rail.includes("navigate('/channels')"),
     'the rail lost the destinations the tab bar does not carry');
 });
