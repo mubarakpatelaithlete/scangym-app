@@ -1028,4 +1028,159 @@ router.post('/logout', (req, res) => {
   });
 });
 
+/* ══════════════════════════════════════════════════════════════════════
+   Email + password accounts
+   ──────────────────────────────────────────────────────────────────────
+   The signup a customer is asked for is now four fields — email, password,
+   confirm password, first name — and nothing else. The passwordless routes
+   above are untouched: someone who signed in with Google or a code last week
+   still lands on the same account, because both paths key on the email
+   address, and setting a password on an existing account simply fills in
+   password_hash.
+   ══════════════════════════════════════════════════════════════════════ */
+const { hashPassword, verifyPassword, validatePassword } = require('../lib/password');
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+
+/* Wrong-password attempts per email and per IP. Without this, the password
+   login is a free oracle for credential stuffing — the emailed-code route
+   next door is throttled for the same reason. */
+const _pwAttempts = new Map();
+function _pwThrottled(key, now = Date.now()) {
+  const recent = (_pwAttempts.get(key) || []).filter((t) => now - t < 15 * 60 * 1000);
+  _pwAttempts.set(key, recent);
+  if (_pwAttempts.size > 5000) _pwAttempts.clear();
+  return recent.length >= 8;
+}
+function _pwRecordFailure(key, now = Date.now()) {
+  const recent = (_pwAttempts.get(key) || []).filter((t) => now - t < 15 * 60 * 1000);
+  recent.push(now);
+  _pwAttempts.set(key, recent);
+}
+
+/** One shape of success for both routes, matching the code-login response. */
+async function _finishPasswordAuth(req, user) {
+  const stripeCustomerId = await ensureStripeCustomer(user.id, user.phone_number, user.email);
+  const referralHandle = await ensureReferralHandle(
+    user.id, user.first_name, user.last_name, user.email, user.phone_number
+  );
+  req.session.userId = user.id;
+  if (user.phone_number) req.session.phone = user.phone_number;
+  return {
+    success: true,
+    user: {
+      id: user.id,
+      phone: user.phone_number || null,
+      name: [user.first_name, user.last_name].filter(Boolean).join(' ') || null,
+      email: user.email,
+      hasStripeCustomer: !!stripeCustomerId,
+      referralHandle,
+      referralLink: referralHandle ? `scangym.com/r/${referralHandle}` : null,
+    },
+  };
+}
+
+/**
+ * POST /api/auth/password/register
+ * { email, password, confirmPassword, firstName }
+ */
+router.post('/password/register', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const email = String(body.email || '').trim().toLowerCase();
+    const password = String(body.password || '');
+    const confirmPassword = String(body.confirmPassword || body.confirm_password || '');
+    const firstName = String(body.firstName || body.first_name || '').trim().slice(0, 40);
+
+    if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'That email address doesn\'t look right' });
+    if (!firstName) return res.status(400).json({ error: 'First name is required' });
+    const invalid = validatePassword(password, email);
+    if (invalid) return res.status(400).json({ error: invalid });
+    if (password !== confirmPassword) return res.status(400).json({ error: 'The two passwords don\'t match' });
+    if (_pwThrottled('signup-ip:' + req.ip)) {
+      return res.status(429).json({ error: 'Too many attempts — wait a few minutes and try again' });
+    }
+
+    const existing = await pool.query(
+      'SELECT * FROM public.users WHERE LOWER(email) = $1 ORDER BY created_at ASC LIMIT 1', [email]
+    );
+
+    let user;
+    if (existing.rows.length && existing.rows[0].password_hash) {
+      _pwRecordFailure('signup-ip:' + req.ip);
+      return res.status(409).json({ error: 'That email already has an account — log in instead' });
+    }
+    const password_hash = await hashPassword(password);
+
+    if (existing.rows.length) {
+      // Passwordless account (code / Google / Apple) gains a password. Their
+      // bookings, saved card and referral handle all stay put.
+      const updated = await pool.query(
+        `UPDATE public.users
+            SET password_hash = $1,
+                first_name = COALESCE(NULLIF(first_name, ''), $2),
+                updated_at = NOW()
+          WHERE id = $3 RETURNING *`,
+        [password_hash, firstName, existing.rows[0].id]
+      );
+      user = updated.rows[0];
+      console.log('[Auth] Password set on existing account:', email);
+    } else {
+      const created = await pool.query(
+        `INSERT INTO public.users (id, email, first_name, password_hash, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *`,
+        [email, firstName, password_hash]
+      );
+      user = created.rows[0];
+      console.log('[Auth] New password account:', email);
+    }
+
+    const payload = await _finishPasswordAuth(req, user);
+    return res.json({ ...payload, message: 'Account created' });
+  } catch (err) {
+    console.error('[Auth] password/register error:', err.message);
+    return res.status(500).json({ error: 'Could not create your account' });
+  }
+});
+
+/**
+ * POST /api/auth/password/login   { email, password }
+ *
+ * One message for every failure. "No account with that email" tells a stranger
+ * which of our customers exist.
+ */
+router.post('/password/login', async (req, res) => {
+  const body = req.body || {};
+  const email = String(body.email || '').trim().toLowerCase();
+  const password = String(body.password || '');
+  const WRONG = 'Email or password is incorrect';
+  try {
+    if (!EMAIL_RE.test(email) || !password) return res.status(400).json({ error: WRONG });
+    if (_pwThrottled('login:' + email) || _pwThrottled('login-ip:' + req.ip)) {
+      return res.status(429).json({ error: 'Too many attempts — wait 15 minutes and try again' });
+    }
+
+    const found = await pool.query(
+      'SELECT * FROM public.users WHERE LOWER(email) = $1 ORDER BY created_at ASC LIMIT 1', [email]
+    );
+    const user = found.rows[0];
+    if (!user || !user.password_hash) {
+      _pwRecordFailure('login:' + email); _pwRecordFailure('login-ip:' + req.ip);
+      return res.status(401).json({ error: WRONG });
+    }
+    const ok = await verifyPassword(password, user.password_hash);
+    if (!ok) {
+      _pwRecordFailure('login:' + email); _pwRecordFailure('login-ip:' + req.ip);
+      return res.status(401).json({ error: WRONG });
+    }
+
+    await pool.query('UPDATE public.users SET updated_at = NOW() WHERE id = $1', [user.id]);
+    const payload = await _finishPasswordAuth(req, user);
+    return res.json({ ...payload, message: 'Logged in successfully' });
+  } catch (err) {
+    console.error('[Auth] password/login error:', err.message);
+    return res.status(500).json({ error: 'Login failed' });
+  }
+});
+
 module.exports = router;

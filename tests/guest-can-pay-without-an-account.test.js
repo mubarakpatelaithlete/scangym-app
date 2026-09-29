@@ -209,13 +209,17 @@ test('the /checkout Pay button no longer ends at the sign-in sheet', () => {
     'sign-in is still tried before payment');
 });
 
-test('the sign-in sheet offers the guest path and an email fallback', () => {
+test('the sign-in sheet offers the guest path and an email + password sign-in', () => {
+  // The sheet used to list Google, Apple, Microsoft and a phone field, with an
+  // emailed code hidden behind a link. It is now one account type: email and
+  // password, with guest checkout still first for people who just want a pass.
   const step = APP.slice(APP.indexOf('function _renderAuthStep'), APP.indexOf('// ── Step 1b: OTP Code ──'));
   assert.ok(step.length > 100, 'could not find _renderAuthStep');
   assert.match(step, /_sgAuthGuestCheckout/, 'the sheet does not offer guest checkout');
-  assert.match(step, /_sgAuthEmailLink/, 'the sheet does not offer an email sign-in link');
-  assert.match(APP, /window\._sgAuthSendEmailCode\s*=/, 'nothing calls /api/auth/email/send-code');
-  assert.match(APP, /'\/api\/auth\/email\/send-code'/, 'the email code endpoint is not wired up');
+  assert.match(step, /id="sg-auth-email"/, 'the sheet has no email field');
+  assert.match(step, /id="sg-auth-password"/, 'the sheet has no password field');
+  assert.match(step, /_sgAuthShowSignup/, 'the sheet offers no way to create an account');
+  assert.match(APP, /'\/api\/auth'\+path/, 'the sheet does not call the password endpoints');
 });
 
 test('the shell loads guest-checkout.js', () => {
