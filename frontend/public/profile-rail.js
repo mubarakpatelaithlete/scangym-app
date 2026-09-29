@@ -409,8 +409,8 @@
   var GROUPS = [
     // One Facebook chatbot button (it opens the ScanGym Messenger bot). The old
     // Social "Facebook" button opened the same chat, so it looked doubled.
-    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['tiktokbot', 'TikTok'], ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['msteams', 'Teams'], ['googlechat', 'Google Chat']] },
-    { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok'], ['gemini', 'Gemini']] },
+    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['tiktokbot', 'TikTok'], ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['googlechat', 'Google Chat']] },
+    { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] /* Teams and Gemini buttons removed from Profile (owner, 2026-09-29); /gemini page and Teams install stay reachable by URL. */ },
     // Apps group dropped: the host row's "Apps" button already opens MS Store
     // and Install (owner saw double buttons, 2026-09-25).
     { title: 'Social', items: [['tiktok', 'TikTok']] },

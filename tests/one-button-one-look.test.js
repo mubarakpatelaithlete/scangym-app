@@ -252,8 +252,9 @@ test('the profile rails use the shared circle, not hand-built 46px emoji buttons
     'a profile rail button is back to a hand-set 46px circle');
   assert.ok(!/rgba\(255,109,0,\.15\)|rgba\(34,197,94,\.12\)/.test(profileRails),
     'a profile rail button is tinted orange or green again');
-  // shield left with Partner when the rail stopped repeating the tab bar.
-  for (const icon of ['grid', 'chat', 'more', 'help']) {
+  // shield left with Partner when the rail stopped repeating the tab bar;
+  // grid / chat / more left with Apps / Channels / More (owner, 2026-09-29).
+  for (const icon of ['help']) {
     assert.ok(profileRails.includes(`sgRailCircle('${icon}'`),
       `the profile rail stopped drawing ${icon} from the shared table`);
   }
@@ -340,8 +341,9 @@ test('the profile rail does not repeat the tab bar', () => {
                          app.indexOf('MORE MENU POPUP'));
   assert.ok(!rail.includes("navigate('/creator')"), "Creator repeats the tab bar");
   assert.ok(rail.includes("navigate('/partner')"), "Partner is missing from Profile");
-  assert.ok(rail.includes("navigate('/apps')") && rail.includes("navigate('/channels')"),
-    'the rail lost the destinations the tab bar does not carry');
+  // Apps, Channels and More were removed from this rail (owner, 2026-09-29).
+  assert.ok(!rail.includes("navigate('/apps')") && !rail.includes("navigate('/channels')"),
+    'Apps / Channels are back on the Profile rail');
 });
 
 test('nothing stacks a third bar between the row and the nav', () => {

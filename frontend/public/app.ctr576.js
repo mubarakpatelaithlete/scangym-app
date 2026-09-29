@@ -14101,8 +14101,10 @@ function MoreHubPage(){
         <div style="position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(0deg,rgba(0,0,0,.9) 0%,transparent 100%);pointer-events:none"></div>
       </div>
       <!-- ═══ TOP OVERLAY — User info (like TikTok top bar) ═══ -->
+      <!-- The avatar opens the menu the removed "More" button used to (Edit
+           Profile, Bookings, Wallet, Sign Out) so none of those went missing. -->
       <div style="position:absolute;top:max(env(safe-area-inset-top,0px),12px);left:16px;right:70px;z-index:10;display:flex;align-items:center;gap:10px">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8533);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,109,0,.4);color:#fff">${initial}</div>
+        <div role="button" tabindex="0" aria-label="Account menu" onclick="(function(e){e.stopPropagation();var m=document.getElementById('sgMoreMenu');if(m)m.style.display=m.style.display==='flex'?'none':'flex'})(event)" style="cursor:pointer;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FF6D00,#ff8533);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0;border:2px solid rgba(255,109,0,.4);color:#fff">${initial}</div>
         <div>
           <div style="display:flex;align-items:center;gap:6px">
             <span style="font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.8)">${uName}</span>
@@ -14122,18 +14124,10 @@ function MoreHubPage(){
           ${sgRailCircle('partner','\ud83c\udfe2')}
           <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Partner</span>
         </button>
-        <div onclick="navigate('/apps')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('grid','\ud83d\udcf1')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Apps</span>
-        </div>
-        <div onclick="navigate('/channels')" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('chat','\ud83d\udce1')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">Channels</span>
-        </div>
-        <div onclick="(function(e){e.stopPropagation();var m=document.getElementById('sgMoreMenu');if(m)m.style.display=m.style.display==='flex'?'none':'flex'})(event)" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer">
-          ${sgRailCircle('more','\u22ef')}
-          <span style="color:#fff;font-size:10px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8)">More</span>
-        </div>
+        <!-- Apps, Channels and More removed from this rail (owner, 2026-09-29).
+             Channels are still reachable from the chatbot buttons in the band
+             below; the More menu's destinations stay at /bookings, /wallet
+             and the header avatar. -->
       </div>
       <!-- ═══ MORE MENU POPUP — Edit, Bookings, Wallet, Out ═══ -->
       <div id="sgMoreMenu" onclick="this.style.display='none'" style="display:none;position:absolute;inset:0;z-index:50;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
