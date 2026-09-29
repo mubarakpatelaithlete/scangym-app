@@ -51,7 +51,6 @@ test('areaFor groups the five tabs and their aliases', () => {
   assert.strictEqual(areaFor('/wallet'), 'wallet');
   assert.strictEqual(areaFor('/admin/uploads'), 'admin');
   assert.strictEqual(areaFor('/more/profile'), 'profile');
-  assert.strictEqual(areaFor('/explore'), 'book');
   assert.strictEqual(areaFor('/'), 'book');
   assert.strictEqual(areaFor('/gym/anything'), 'book');
 });

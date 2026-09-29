@@ -14,14 +14,14 @@
  * 2. Nothing here trusts the model with identity. share_my_link resolves the caller's
  *    own referral handle from their user row, the same way squad-tools does.
  *
- * Shared by every agent (Book, ScanSquad, Partner) so "go to the Book tab" works from
+ * Shared by every agent (Book, Create, Shop, Partner) so "go to the Book tab" works from
  * any tab — the tools are spread into each catalogue.
  */
 
 const pool = require('../middleware/db');
 
 /** Tab names the app bundle's switchTab() understands, plus what people call them. */
-const TABS = ['reels', 'book', 'music', 'photos', 'chat', 'trainer', 'creator', 'partner', 'more'];
+const TABS = ['reels', 'book', 'music', 'photos', 'chat', 'trainer', 'creator', 'shop', 'partner', 'more'];
 const TAB_ALIASES = {
   home: 'reels', videos: 'reels', feed: 'reels',
   map: 'book', maps: 'book', explore: 'book', gyms: 'book', search: 'book',
@@ -29,13 +29,14 @@ const TAB_ALIASES = {
   gallery: 'photos', pictures: 'photos',
   messages: 'chat', inbox: 'chat',
   coach: 'trainer', 'ai-trainer': 'trainer', 'ai trainer': 'trainer', ai: 'trainer',
-  scansquad: 'creator', squad: 'creator', creators: 'creator',
+  scansquad: 'creator', create: 'creator', squad: 'creator', creators: 'creator',
+  shop: 'shop', store: 'shop',
   partners: 'partner', gym: 'partner', owner: 'partner',
   profile: 'more', account: 'more', settings: 'more', me: 'more', wallet: 'more',
 };
 const TAB_LABEL = {
   reels: 'Reels', book: 'Book', music: 'Music', photos: 'Photos', chat: 'Chat',
-  trainer: 'AI Trainer', creator: 'ScanSquad', partner: 'Partner', more: 'Profile',
+  trainer: 'AI Trainer', creator: 'Create', shop: 'Shop', partner: 'Partner', more: 'Profile',
 };
 
 function normaliseTab(raw) {
@@ -71,7 +72,7 @@ const tools = {
           tab: {
             type: 'string',
             enum: TABS,
-            description: 'Destination tab. Map/explore → book; ScanSquad → creator; profile/account/wallet → more.',
+            description: 'Destination tab. Map/explore → book; Create/ScanSquad → creator; digital Shop → shop; profile/account/wallet → more.',
           },
         },
         required: ['tab'],
@@ -81,7 +82,7 @@ const tools = {
     async run(_userId, args = {}) {
       const tab = normaliseTab(args.tab);
       if (!tab) {
-        return { ok: false, message: `I don't have a tab called "${String(args.tab || '').slice(0, 30)}". I can open Reels, Book, Music, Photos, Chat, AI Trainer, ScanSquad, Partner or Profile.` };
+        return { ok: false, message: `I don't have a tab called "${String(args.tab || '').slice(0, 30)}". I can open Reels, Book, Create, Shop, Music, Photos, Chat, AI Trainer, Partner or Profile.` };
       }
       return { ok: true, tab, ui: { action: 'go_to_tab', tab }, message: `Opening ${TAB_LABEL[tab]}.` };
     },
