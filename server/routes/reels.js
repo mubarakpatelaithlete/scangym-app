@@ -496,6 +496,30 @@ router.get('/feed', async (req, res) => {
 });
 
 /**
+ * Search the clips available in ScanGym's Reels feed. This is a library
+ * search, not an unrestricted search of every video on YouTube.
+ */
+router.get('/search', async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 100).toLocaleLowerCase();
+  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 40, 1), 50);
+  const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
+  if (!q) return res.json({ videos: [], total: 0, hasMore: false });
+  try {
+    const catalog = (await loadCatalogFromDB()).map(v => ({ ...v, type: 'catalog' }));
+    const social = await loadSocialReels();
+    const matches = catalog.concat(social).filter(v =>
+      [v.name, v.category, v.author].some(value => String(value || '').toLocaleLowerCase().includes(q))
+    );
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ videos: matches.slice(offset, offset + limit), total: matches.length,
+      hasMore: offset + limit < matches.length });
+  } catch (err) {
+    console.error('Reels search failed:', err.message);
+    res.status(500).json({ error: 'Search is unavailable right now' });
+  }
+});
+
+/**
  * GET /api/reels/video/:id
  * Stream an uploaded video file by its creator_uploads.id
  * Supports range requests for video seeking.
