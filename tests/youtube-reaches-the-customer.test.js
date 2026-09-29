@@ -73,9 +73,15 @@ test('the player still prefers geo-feed, so this is the path that matters', () =
     path.join(__dirname, '..', 'frontend', 'public', 'reels', 'index.html'),
     'utf8'
   );
-  const geoAt = player.indexOf('/api/reels/geo-feed');
-  const feedAt = player.indexOf('/api/reels/feed?limit=');
-  assert.ok(geoAt > -1 && feedAt > -1, 'both endpoints are used by the player');
+  // Look at the boot fetch only. The category rail also calls /feed on tap,
+  // and that call sits earlier in the file, so a whole-file index comparison
+  // stopped meaning anything once categories landed.
+  const bootAt = player.indexOf('prefetchedPromise');
+  assert.ok(bootAt > -1, 'the boot prefetch is still where the first feed request is made');
+  const boot = player.slice(bootAt, bootAt + 2000);
+  const geoAt = boot.indexOf('/api/reels/geo-feed');
+  const feedAt = boot.indexOf('/api/reels/feed?limit=');
+  assert.ok(geoAt > -1 && feedAt > -1, 'both endpoints are used at boot');
   assert.ok(
     geoAt < feedAt,
     'geo-feed is requested first; if that ever changes, this test should be revisited'
