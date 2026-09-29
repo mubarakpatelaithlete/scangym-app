@@ -449,7 +449,7 @@
     row.appendChild(setChip);
     var summary = el('div', 'sv-mchip');
     summary.id = 'sv-summary';
-    summary.style.cssText = 'background:transparent;border:none;color:#7d8ba3;padding-left:0;cursor:default;';
+    summary.style.cssText = 'background:transparent;border:none;color:#b6c2d6;padding-left:0;cursor:default;';
     row.appendChild(summary);
     sh.appendChild(row);
 
@@ -967,7 +967,7 @@
     var paintPill = function () {
       var cur = list.filter(function (m) { return m.id === state[mode.key].__model; })[0];
       var price = cur && cur.price && mode.key !== 'text' ? cur.price + (cur.unit === 'per image' ? '/image' : '') : '';
-      pill.innerHTML = '<span>' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
+      pill.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
         '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">' + (openChips ? 'Done' : 'Change model \u203a') + '</span>';
     };
     pill.addEventListener('click', function () { openChips = !openChips; host.style.display = openChips ? 'flex' : 'none'; paintPill(); });

@@ -44,3 +44,20 @@ test('catalogue and history come from the existing endpoints', () => {
   assert.match(studio, /Couldn\\u2019t generate|Couldn’t generate/);
   assert.match(studio, /Generating/);
 });
+
+const { test: t2 } = require('node:test');
+const a2 = require('node:assert');
+const fs2 = require('node:fs');
+const path2 = require('node:path');
+
+t2('the billing status line lifts an unjustified suspension before reporting "paused"', () => {
+  const src = fs2.readFileSync(path2.join(__dirname, '..', 'server', 'routes', 'squad-billing.js'), 'utf8');
+  const route = src.slice(src.indexOf("router.get('/status'"), src.indexOf('suspended:'));
+  a2.match(route, /liftUnjustifiedSuspensions\(/, 'status reports the raw suspended flag without the re-check gate() does');
+});
+
+t2('the model price line never wraps into "Change model"', () => {
+  const src = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'squad-create.js'), 'utf8');
+  const pill = src.slice(src.indexOf('var paintPill'), src.indexOf('pill.addEventListener'));
+  a2.match(pill, /text-overflow:ellipsis;white-space:nowrap/, 'the price span can wrap onto two lines');
+});

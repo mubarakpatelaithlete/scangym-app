@@ -60,7 +60,7 @@
     '.cs-price{position:absolute;bottom:8px;right:8px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.6);color:#fff;}',
     '.cs-body{padding:9px 10px 11px;}',
     '.cs-name{font-size:12.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-    '.cs-sub{font-size:11px;color:#94a3b8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '.cs-sub{font-size:11px;color:#c3cddc;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
     '.cs-sec{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 8px;}',
     '.cs-sec b{font-size:15px;color:#fff;}',
     '.cs-sec span{font-size:12px;color:#94a3b8;}',
