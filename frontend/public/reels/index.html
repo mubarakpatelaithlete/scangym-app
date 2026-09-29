@@ -30,17 +30,49 @@
         -webkit-user-select:none;user-select:none;
       }
 
-      /* Reels library search: above the video, below the site navigation. */
-      #reels-search-button{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));left:56px;
-        z-index:55;border:1px solid rgba(255,255,255,.35);border-radius:22px;
-        background:rgba(0,0,0,.72);color:#fff;padding:9px 14px;font:600 14px system-ui;cursor:pointer}
+      /* ── Discovery header: category rail + search, above the video ── */
+      #reels-top-bar{position:fixed;top:0;left:0;right:0;z-index:55;display:flex;align-items:center;
+        gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 8px 10px 8px;
+        background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 100%);pointer-events:none}
+      #reels-cat-rail{flex:1;min-width:0;display:flex;align-items:center;gap:18px;overflow-x:auto;
+        overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
+        scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+        touch-action:pan-x;pointer-events:auto;padding:0 6px}
+      #reels-cat-rail::-webkit-scrollbar{display:none}
+      .reels-cat{flex:0 0 auto;scroll-snap-align:center;position:relative;border:0;background:none;
+        padding:6px 2px 8px;cursor:pointer;white-space:nowrap;
+        color:rgba(255,255,255,.62);font:600 15px/1 system-ui;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+      .reels-cat[aria-selected="true"]{color:#fff;font-weight:700}
+      .reels-cat[aria-selected="true"]::after{content:"";position:absolute;left:50%;bottom:0;
+        width:22px;height:2px;border-radius:2px;background:#fff;transform:translateX(-50%)}
+      #reels-search-button{flex:0 0 auto;pointer-events:auto;width:40px;height:40px;display:flex;
+        align-items:center;justify-content:center;border:0;border-radius:50%;
+        background:rgba(0,0,0,.35);color:#fff;cursor:pointer;padding:0}
+      #reels-search-button svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;
+        stroke-linecap:round}
+      /* Reels library search: full-screen discovery surface. */
       #reels-search-panel{position:fixed;inset:0;z-index:80;background:#090b13;color:white;
         padding:calc(22px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;touch-action:pan-y}
       #reels-search-panel[hidden]{display:none}
       .reels-search-head{display:flex;gap:8px;align-items:center}
-      #reels-search-input{min-width:0;flex:1;padding:12px;border:1px solid #777;border-radius:12px;
+      #reels-search-input{min-width:0;flex:1;padding:12px 14px;border:1px solid #2a2d3a;border-radius:24px;
         background:#171925;color:white;font:16px system-ui}
-      #reels-search-close{padding:12px;border:0;background:transparent;color:#fff;font:600 16px system-ui}
+      #reels-search-close{padding:8px 10px;border:0;background:transparent;color:#fff;font:600 20px system-ui;
+        cursor:pointer}
+      #reels-search-submit{padding:8px 4px;border:0;background:transparent;color:#FF6D00;
+        font:700 16px system-ui;cursor:pointer}
+      .reels-disc-title{margin:22px 0 10px;font:700 16px system-ui;color:#fff}
+      .reels-suggest-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+      .reels-suggest{text-align:left;border:0;background:none;padding:0;cursor:pointer;
+        color:rgba(255,255,255,.82);font:15px system-ui;overflow:hidden;text-overflow:ellipsis;
+        white-space:nowrap}
+      .reels-suggest:first-child,.reels-suggest:nth-child(2){color:#FF6D00}
+      .reels-trend{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;border:0;
+        background:none;padding:10px 0;cursor:pointer;color:#fff;font:15px system-ui}
+      .reels-trend .reels-trend-dot{color:#FF6D00;font-size:10px;line-height:1}
+      .reels-trend small{color:rgba(255,255,255,.45);font:12px system-ui;margin-left:auto}
+      .reels-recent{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;
+        background:none;padding:10px 0;cursor:pointer;color:rgba(255,255,255,.82);font:15px system-ui}
       #reels-search-results{margin-top:20px;padding-bottom:30px}
       .reels-search-result{display:block;width:100%;text-align:left;padding:14px 12px;margin:6px 0;
         border:1px solid #353944;border-radius:12px;background:#171925;color:#fff;font:15px system-ui}
@@ -495,7 +527,8 @@
       /* ── Swipe hint ── */
       
       .reel-counter{
-        position:fixed;top:12px;right:16px;z-index:9999;
+        /* The discovery header owns the top strip now, so the counter sits under it. */
+        position:fixed;top:calc(56px + env(safe-area-inset-top,0px));right:16px;z-index:9999;
         background:rgba(0,0,0,.55);backdrop-filter:blur(8px);
         color:#fff;font-size:13px;font-weight:600;
         padding:6px 14px;border-radius:20px;
@@ -559,11 +592,29 @@
       <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       Tap for sound
     </div>
-    <button type="button" id="reels-search-button" aria-label="Search Reels">⌕ Search</button>
+    <!-- Discovery header: category rail on the left, search on the right.
+         Same shape as TikTok's: the rail scrolls sideways, the feed follows it. -->
+    <header id="reels-top-bar">
+      <nav id="reels-cat-rail" aria-label="Reel categories"></nav>
+      <button type="button" id="reels-search-button" aria-label="Search Reels">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      </button>
+    </header>
     <section id="reels-search-panel" hidden aria-label="Search Reels">
       <div class="reels-search-head">
+        <button type="button" id="reels-search-close" aria-label="Back">&#8592;</button>
         <input type="search" id="reels-search-input" placeholder="Search gym reels" aria-label="Search gym reels" maxlength="100" />
-        <button type="button" id="reels-search-close">Close</button>
+        <button type="button" id="reels-search-submit">Search</button>
+      </div>
+      <div id="reels-search-discover">
+        <section id="reels-recent-wrap" hidden>
+          <h2 class="reels-disc-title">Recent</h2>
+          <div id="reels-recent"></div>
+        </section>
+        <h2 class="reels-disc-title">You may like</h2>
+        <div id="reels-suggest" class="reels-suggest-grid"></div>
+        <h2 class="reels-disc-title">Trending searches</h2>
+        <div id="reels-trending"></div>
       </div>
       <div id="reels-search-results" role="region" aria-live="polite"><p id="reels-search-status">Search the reels on ScanGym</p></div>
     </section>
@@ -648,63 +699,266 @@
         + '</svg>'
       );
 
-      // Search the existing ScanGym reel library without changing the default feed.
+      // ══════════════════════════════════════════════════════════
+      //  DISCOVERY: category rail + TikTok-style search
+      //  The feed used to be one undifferentiated stream with a text
+      //  "Search" button. Now the top of the tab works like TikTok's:
+      //  a sideways-scrolling category rail that swaps the feed, and a
+      //  search surface that suggests something to tap before you type.
+      // ══════════════════════════════════════════════════════════
       var searchButton = document.getElementById('reels-search-button');
       var searchPanel = document.getElementById('reels-search-panel');
       var searchInput = document.getElementById('reels-search-input');
       var searchResults = document.getElementById('reels-search-results');
-      var searchTimer, searchRequest;
+      var searchDiscover = document.getElementById('reels-search-discover');
+      var catRail = document.getElementById('reels-cat-rail');
+      var searchTimer, searchRequest, catRequest;
+      var RECENT_KEY = 'sg_reels_recent_searches';
+      var FEED_ALL = '__all__';           // the "For You" rail item
+      var activeCategory = null;          // null = unfiltered feed
+      var railCategories = [];            // [{label, value, count}]
+
+      // ── Recent searches (local only, never leaves the device) ──
+      function readRecent(){
+        try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').slice(0, 6); }
+        catch(e){ return []; }
+      }
+      function rememberRecent(q){
+        try {
+          var list = readRecent().filter(function(item){ return item.toLowerCase() !== q.toLowerCase(); });
+          list.unshift(q);
+          localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 6)));
+        } catch(e){}
+      }
+      function forgetRecent(q){
+        try {
+          localStorage.setItem(RECENT_KEY, JSON.stringify(readRecent().filter(function(item){
+            return item !== q;
+          })));
+        } catch(e){}
+      }
+
+      function setCounterText(text){
+        var el = document.getElementById('reel-counter');
+        if(el) el.textContent = text;
+      }
+
+      // ── Swap the playable list without reloading the page ──
+      function applyVideoList(videos, opts){
+        opts = opts || {};
+        Object.keys(renderedReels).forEach(function(key){
+          releaseVideo(Number(key));
+          track.removeChild(renderedReels[key]);
+          delete renderedReels[key];
+        });
+        allVideos = videos;
+        posterCache = {};
+        currentIndex = 0;
+        feedOffset = opts.offset != null ? opts.offset : videos.length;
+        feedHasMore = !!opts.hasMore;
+        feedServerTotal = opts.total || videos.length;
+        var startAt = opts.startAt || 0;
+        snapTo(startAt, false);
+        playVideo(startAt);
+        if(typeof updateReelCounter === 'function') updateReelCounter();
+      }
+
+      // ── Category rail ────────────────────────────────────────
+      function renderCatRail(){
+        catRail.textContent = '';
+        railCategories.forEach(function(cat){
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'reels-cat';
+          button.textContent = cat.label;
+          button.setAttribute('role', 'tab');
+          button.setAttribute('aria-selected', String(cat.value === (activeCategory || FEED_ALL)));
+          button.addEventListener('click', function(){
+            selectCategory(cat);
+            button.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+          });
+          catRail.appendChild(button);
+        });
+      }
+
+      function selectCategory(cat){
+        if(cat.value === (activeCategory || FEED_ALL)) return;
+        activeCategory = cat.value === FEED_ALL ? null : cat.value;
+        renderCatRail();
+        setCounterText('Loading…');
+        var url = '/api/reels/feed?limit=' + PAGE_SIZE + '&offset=0&shuffle=true'
+          + (activeCategory ? '&category=' + encodeURIComponent(activeCategory) : '');
+        fetch(url)
+          .then(function(r){ if(!r.ok) throw new Error('Feed error'); return r.json(); })
+          .then(function(data){
+            var videos = data.videos || [];
+            if(!videos.length){
+              setCounterText('No reels in ' + cat.label);
+              return;
+            }
+            feedSeed = data.seed || null;
+            applyVideoList(videos, {hasMore: data.hasMore, total: data.total, offset: videos.length});
+          })
+          .catch(function(){ setCounterText('Could not load ' + cat.label); });
+      }
+
+      function loadCategories(){
+        if(catRequest) return;
+        catRequest = true;
+        railCategories = [{label:'For You', value:FEED_ALL, count:0}];
+        renderCatRail();
+        fetch('/api/reels/categories')
+          .then(function(r){ if(!r.ok) throw new Error('Categories error'); return r.json(); })
+          .then(function(data){
+            var seen = {};
+            (data.categories || []).forEach(function(cat){
+              if(!cat || !cat.name) return;
+              var label = humanizeCategory(cat.name);
+              var key = label.toLowerCase();
+              if(seen[key] || railCategories.length > 10) return;
+              seen[key] = true;
+              railCategories.push({label: label, value: cat.name, count: cat.count || 0});
+            });
+            renderCatRail();
+          })
+          .catch(function(){ /* rail stays at "For You" — the feed is unaffected */ });
+      }
+
+      // ── Search surface ───────────────────────────────────────
+      function showDiscover(show){
+        searchDiscover.hidden = !show;
+        searchResults.hidden = show;
+      }
+
+      function renderDiscover(){
+        var recentWrap = document.getElementById('reels-recent-wrap');
+        var recentBox = document.getElementById('reels-recent');
+        var recent = readRecent();
+        recentBox.textContent = '';
+        recentWrap.hidden = recent.length === 0;
+        recent.forEach(function(q){
+          var row = document.createElement('div');
+          row.className = 'reels-recent';
+          var go = document.createElement('button');
+          go.type = 'button'; go.className = 'reels-recent'; go.style.padding = '0';
+          go.textContent = '\u21BA  ' + q;
+          go.addEventListener('click', function(){ runSearch(q); });
+          var del = document.createElement('button');
+          del.type = 'button'; del.setAttribute('aria-label', 'Remove ' + q);
+          del.style.cssText = 'margin-left:auto;border:0;background:none;color:rgba(255,255,255,.45);font:16px system-ui;cursor:pointer';
+          del.textContent = '\u2715';
+          del.addEventListener('click', function(){ forgetRecent(q); renderDiscover(); });
+          row.appendChild(go); row.appendChild(del);
+          recentBox.appendChild(row);
+        });
+
+        // "You may like" — reel titles already in the feed, so it is never empty
+        // once the feed has loaded, and it costs no extra request.
+        var suggestBox = document.getElementById('reels-suggest');
+        suggestBox.textContent = '';
+        var suggestions = [];
+        (allVideos || []).forEach(function(video){
+          var name = (video && video.name || '').trim();
+          if(name && name.length < 42 && suggestions.indexOf(name) === -1) suggestions.push(name);
+        });
+        railCategories.forEach(function(cat){
+          if(cat.value !== FEED_ALL && suggestions.indexOf(cat.label) === -1) suggestions.push(cat.label);
+        });
+        suggestions.slice(0, 6).forEach(function(text){
+          var button = document.createElement('button');
+          button.type = 'button'; button.className = 'reels-suggest';
+          button.textContent = text;
+          button.addEventListener('click', function(){ runSearch(text); });
+          suggestBox.appendChild(button);
+        });
+
+        // "Trending searches" — the categories with the most reels behind them.
+        var trendBox = document.getElementById('reels-trending');
+        trendBox.textContent = '';
+        railCategories.filter(function(cat){ return cat.value !== FEED_ALL; }).slice(0, 8)
+          .forEach(function(cat){
+            var button = document.createElement('button');
+            button.type = 'button'; button.className = 'reels-trend';
+            var dot = document.createElement('span');
+            dot.className = 'reels-trend-dot'; dot.textContent = '\u25CF';
+            var label = document.createElement('span');
+            label.textContent = cat.label;
+            var count = document.createElement('small');
+            count.textContent = cat.count ? cat.count + ' reels' : 'Trending';
+            button.appendChild(dot); button.appendChild(label); button.appendChild(count);
+            button.addEventListener('click', function(){ runSearch(cat.label); });
+            trendBox.appendChild(button);
+          });
+      }
+
       function closeReelsSearch(){
         clearTimeout(searchTimer);
         searchPanel.hidden = true;
         if(searchRequest) searchRequest.abort();
       }
-      searchButton.addEventListener('click', function(){
+
+      function openReelsSearch(){
         searchPanel.hidden = false;
+        showDiscover(true);
+        renderDiscover();
         searchInput.focus();
-      });
+      }
+
+      function runSearch(q){
+        q = String(q || '').trim();
+        if(!q) return;
+        searchInput.value = q;
+        rememberRecent(q);
+        showDiscover(false);
+        searchResults.textContent = 'Searching…';
+        if(searchRequest) searchRequest.abort();
+        searchRequest = new AbortController();
+        fetch('/api/reels/search?q=' + encodeURIComponent(q) + '&limit=50', {signal:searchRequest.signal})
+          .then(function(r){ if(!r.ok) throw new Error('Search failed'); return r.json(); })
+          .then(function(data){
+            if(searchInput.value.trim() !== q) return;
+            searchResults.textContent = '';
+            if(!data.videos.length){searchResults.textContent = 'No matching reels found';return;}
+            var title = document.createElement('p');
+            title.textContent = data.videos.length + (data.hasMore ? ' of ' + data.total : '') + ' matching reels';
+            searchResults.appendChild(title);
+            data.videos.forEach(function(video, index){
+              var button = document.createElement('button');
+              button.type = 'button';button.className = 'reels-search-result';
+              button.textContent = video.name || 'Untitled reel';
+              var subtitle = document.createElement('small');
+              subtitle.textContent = [video.author, video.category].filter(Boolean).join(' · ');
+              button.appendChild(subtitle);
+              button.addEventListener('click', function(){
+                // The selected search results become the playable swipe list.
+                closeReelsSearch();
+                applyVideoList(data.videos, {startAt: index, hasMore: false, total: data.videos.length, offset: 0});
+              });
+              searchResults.appendChild(button);
+            });
+          }).catch(function(err){
+            if(err.name !== 'AbortError') searchResults.textContent = 'Search unavailable. Please try again.';
+          });
+      }
+
+      searchButton.addEventListener('click', openReelsSearch);
       document.getElementById('reels-search-close').addEventListener('click', closeReelsSearch);
+      document.getElementById('reels-search-submit').addEventListener('click', function(){
+        runSearch(searchInput.value);
+      });
+      searchInput.addEventListener('keydown', function(event){
+        if(event.key === 'Enter'){ event.preventDefault(); runSearch(searchInput.value); }
+      });
       searchInput.addEventListener('input', function(){
         clearTimeout(searchTimer);
         if(searchRequest) searchRequest.abort();
         var q = searchInput.value.trim();
-        searchResults.textContent = q ? 'Searching…' : 'Search the reels on ScanGym';
-        if(!q) return;
-        searchTimer = setTimeout(function(){
-          searchRequest = new AbortController();
-          fetch('/api/reels/search?q=' + encodeURIComponent(q) + '&limit=50', {signal:searchRequest.signal})
-            .then(function(r){ if(!r.ok) throw new Error('Search failed'); return r.json(); })
-            .then(function(data){
-              if(searchInput.value.trim() !== q) return;
-              searchResults.textContent = '';
-              if(!data.videos.length){searchResults.textContent = 'No matching reels found';return;}
-              var title = document.createElement('p');
-              title.textContent = data.videos.length + (data.hasMore ? ' of ' + data.total : '') + ' matching reels';
-              searchResults.appendChild(title);
-              data.videos.forEach(function(video, index){
-                var button = document.createElement('button');
-                button.type = 'button';button.className = 'reels-search-result';
-                button.textContent = video.name || 'Untitled reel';
-                var subtitle = document.createElement('small');
-                subtitle.textContent = [video.author, video.category].filter(Boolean).join(' · ');
-                button.appendChild(subtitle);
-                button.addEventListener('click', function(){
-                  // The selected search results become the playable swipe list.
-                  Object.keys(renderedReels).forEach(function(key){releaseVideo(Number(key));
-                    track.removeChild(renderedReels[key]);delete renderedReels[key];});
-                  allVideos = data.videos;
-                  posterCache = {};
-                  currentIndex = 0;
-                  feedOffset = 0;feedHasMore = false;feedServerTotal = data.videos.length;
-                  closeReelsSearch();snapTo(index, false);playVideo(index);
-                });
-                searchResults.appendChild(button);
-              });
-            }).catch(function(err){
-              if(err.name !== 'AbortError') searchResults.textContent = 'Search unavailable. Please try again.';
-            });
-        }, 250);
+        if(!q){ showDiscover(true); renderDiscover(); return; }
+        showDiscover(false);
+        searchResults.textContent = 'Searching…';
+        searchTimer = setTimeout(function(){ runSearch(q); }, 250);
       });
+      loadCategories();
 
       // ── State ──
       var allVideos      = [];
@@ -2286,7 +2540,9 @@
       function loadMoreFeed(){
         if(feedLoading || !feedHasMore) return;
         feedLoading = true;
-        fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=' + feedOffset + '&shuffle=true' + (feedSeed ? '&seed=' + feedSeed : ''))
+        fetch('/api/reels/feed?limit=' + PAGE_SIZE + '&offset=' + feedOffset + '&shuffle=true'
+          + (feedSeed ? '&seed=' + feedSeed : '')
+          + (activeCategory ? '&category=' + encodeURIComponent(activeCategory) : ''))
           .then(function(r){
             if(!r.ok) throw new Error('Feed error');
             return r.json();
