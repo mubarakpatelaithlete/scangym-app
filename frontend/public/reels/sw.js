@@ -19,7 +19,7 @@
  *   - Static cache: HTML, CSS, JS, images
  */
 
-var CACHE_VERSION = 'reels-v10';
+var CACHE_VERSION = 'reels-v11'; // v11: reel row pinned outside the track (task 12, 2026-09-30)
 var FEED_CACHE    = CACHE_VERSION + '-feed';
 var VIDEO_CACHE   = CACHE_VERSION + '-video';
 var POSTER_CACHE  = CACHE_VERSION + '-poster';

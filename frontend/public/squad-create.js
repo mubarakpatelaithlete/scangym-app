@@ -608,7 +608,7 @@
       loadHistory(sh, mode); // My Creations: every mode, not just this one
       loadTemplates(sh, mode);
       loadBilling(sh, mode);  // card on file, what is owed, whether Create is paused
-      fetch(mode.api + '/health').then(function (r) { return r.json(); }).then(function (d) {
+      getHealth(mode).then(function (d) {
         health = d;
         if (d.budget) { budget = d.budget; }
         if (d.quota) { quota = d.quota; }
@@ -689,6 +689,28 @@
       if (!row) return;
       var val = row.querySelector('.sv-val');
       if (val) val.textContent = shown(mode, st);
+    });
+  }
+
+  /* Task 14 (owner, 2026-09-30): "clicking button… is slow". The sheet
+     opened at once but sat half-drawn until /health answered, then jumped
+     (price, model line and an orange Generate all arrived ~250 ms later). The
+     proven fix is the one Instagram/TikTok use: start the request on the
+     finger going down (makeBtn), and keep the answer for a minute so opening
+     the same sheet again is instant. A render drops the entry, since it
+     changes the quota. */
+  var healthCache = {};
+  function getHealth(mode) {
+    var c = healthCache[mode.key];
+    if (c && Date.now() - c.t < 60000) return c.p;
+    var p = fetch(mode.api + '/health').then(function (r) { return r.json(); });
+    healthCache[mode.key] = { t: Date.now(), p: p };
+    p.catch(function () { delete healthCache[mode.key]; });
+    return p;
+  }
+  function warmMode(mode) {
+    loadModes().then(function () {
+      if (isConfigured(mode) && mode.api) getHealth(mode).catch(function () {});
     });
   }
 
@@ -844,6 +866,7 @@
 
   // ── generation ──────────────────────────────────────────────────────────
   function startJob(sh, ta, gen, mode) {
+    delete healthCache[mode.key]; // the quota is about to change
     if (!isConfigured(mode) || !mode.api) return; // belt and braces: never fire a dead mode
     var prompt = (ta.value || '').trim();
     /* An edit needs the clip first: without one there is nothing to change,
@@ -1314,6 +1337,7 @@
     b.innerHTML = '<div class="sv-circle"><span class="sv-dot ' + (live ? 'live' : 'soon') + '"></span>' +
       iconFor(mode) + '</div><div class="sv-label">' + mode.label + '</div>';
     b.addEventListener('click', function (ev) { ev.stopPropagation(); openSheet(mode); });
+    b.addEventListener('pointerdown', function () { warmMode(mode); }, { passive: true });
     return b;
   }
 
