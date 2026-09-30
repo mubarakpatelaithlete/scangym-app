@@ -36,7 +36,7 @@ const TABS = [
   {
     key: 'creator',
     label: 'Create',
-    href: '/scansquad',
+    href: '/creator',
     icon:
       '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
       '<circle cx="12" cy="12" r="3" fill="rgba(255,255,255,.3)"></circle>' +
