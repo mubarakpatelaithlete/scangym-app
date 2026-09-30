@@ -6935,7 +6935,6 @@ function WalletPage(){
         <p style="color:rgba(255,255,255,.5);font-size:11px;margin-top:8px">Earnings + credit · auto-applied at checkout</p>
         <div style="display:flex;gap:8px;margin-top:14px;position:relative">
           <button onclick="_sgWalletGo('_sgWalletWithdraw')" style="flex:1;background:#fff;color:#E66200;font-weight:800;font-size:14px;padding:11px 0;border-radius:12px;border:none;cursor:pointer">💸 Withdraw</button>
-          <button onclick="_sgWalletGo('_sgWalletAddMethod')" style="flex:1;background:rgba(255,255,255,.18);color:#fff;font-weight:700;font-size:14px;padding:11px 0;border-radius:12px;border:none;cursor:pointer">🏦 Payout method</button>
         </div>
       </div>
 
