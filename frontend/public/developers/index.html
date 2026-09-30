@@ -63,16 +63,11 @@ input{border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:15px;wi
 </main>
 <script>
 (function(){
-  var tk = localStorage.getItem('sg_token');
   var box = document.getElementById('keysBody');
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function api(method, url, body){
-    return fetch(url,{method:method,headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
+    return fetch(url,{method:method,credentials:'same-origin',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
       .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Error');return j;});});
-  }
-  if(!tk){
-    box.innerHTML='<p style="margin-bottom:10px">Sign in to ScanGym to create a free API key.</p><a class="btn" href="/login">Sign in</a>';
-    return;
   }
   function render(keys, fresh){
     var h='<div class="row"><input id="kname" placeholder="App name (e.g. My gym site)" maxlength="60"><button id="kcreate">Create API key</button></div>';
@@ -94,7 +89,7 @@ input{border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:15px;wi
   }
   function load(fresh){
     api('GET','/api/developer/keys').then(function(j){render(j.keys||[],fresh);})
-      .catch(function(){box.innerHTML='<p style="margin-bottom:10px">Your session has expired. Please sign in again.</p><a class="btn" href="/login">Sign in</a>';});
+      .catch(function(){box.innerHTML='<p style="margin-bottom:10px">Sign in to ScanGym to create a free API key.</p><a class="btn" href="/login">Sign in</a>';});
   }
   load();
 })();
