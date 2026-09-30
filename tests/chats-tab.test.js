@@ -31,3 +31,23 @@ test('chat page has the WhatsApp basics: ticks, typing, last seen, delete, calls
   const html = read('frontend/public/chats/app.html');
   for (const s of ['✓✓', 'typing…', 'last seen', 'Delete for everyone', 'data-sec="calls"', 'data-sec="tools"', 'data-tab="fav"', 'attachSheet', '/upload']) assert.ok(html.includes(s), s);
 });
+
+test('Task 11: Chats/Calls/Tools sit in the bottom band and calls are real WebRTC', () => {
+  const fs2 = require('node:fs'), p2 = require('node:path');
+  const html = fs2.readFileSync(p2.join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
+  assert.ok(/<nav class="seg"/.test(html), 'sections are a bottom nav');
+  for (const s of ['RTCPeerConnection', 'callStart', '/calls/log', '/calls/incoming', 'watchIncoming']) assert.ok(html.includes(s), s);
+  assert.ok(!html.includes('coming next'), 'no "coming soon" placeholder left');
+  const calls = require('../server/routes/dm-calls.js');
+  assert.equal(typeof calls.mount, 'function');
+  const srv = fs2.readFileSync(p2.join(__dirname, '..', 'server', 'server.js'), 'utf8');
+  assert.ok(srv.includes('camera=(self)'), 'camera allowed for video calls and photos');
+});
+
+test('Task 26: Profile row has a Wallet door and the wallet page can withdraw', () => {
+  const fs2 = require('node:fs'), p2 = require('node:path');
+  const rails = fs2.readFileSync(p2.join(__dirname, '..', 'frontend', 'public', 'rails.js'), 'utf8');
+  assert.ok(rails.includes("key: 'wallet'") && rails.includes("navigate('/wallet')"));
+  const app = fs2.readFileSync(p2.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  assert.ok(app.includes("_sgWalletGo('_sgWalletWithdraw')"));
+});
