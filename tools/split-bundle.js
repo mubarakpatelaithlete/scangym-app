@@ -62,7 +62,7 @@ const CHUNKS = {
   'sg-scansquad': {
     pages: [
       'CreatorsPage', 'CreatorFullPage', 'CreatorDashboardPage',
-      'CreatorEarningsPage', 'CreatorSignedOutPage', 'CreatorReelsPage',
+      'CreatorEarningsPage', 'CreatorReelsPage',
     ],
     rest: [
       '_loadCreatorEarnings', '_loadCreatorFullPage', '_loadCreatorDash',
