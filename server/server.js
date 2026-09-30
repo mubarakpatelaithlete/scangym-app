@@ -23,6 +23,7 @@ const ownerRouter = require('./routes/owner');
 const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
+const reelSocialRouter = require('./routes/reel-social');
 const shopRouter = require('./routes/shop');
 const socialReelsRouter = require('./routes/social-reels');
 const ingestRouter = require('./routes/ingest');
@@ -553,6 +554,7 @@ app.use('/api/owner', ownerRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/shop', shopRouter);
+app.use('/api/reels/social', reelSocialRouter); // Task 52: like / comment / repost
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
 app.use('/api/social-reels', socialReelsRouter);

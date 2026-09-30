@@ -1127,3 +1127,13 @@ html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
   box-shadow: none !important;
   border: 0 !important;
 }
+
+/* ── TASK 54: BOOK AND PARTNER GO LAST (owner, 2026-09-30) ──────────────────
+   "Move book and partner button to last." The Profile row is one flex line
+   (the trio slot is display:contents, so its Book is a direct flex item), so
+   `order` moves both to the end without touching the markup that builds them. */
+.sg-pr-host-capped > *,
+.sg-pr-host-capped .sg-row-slot > * { order: 0; }
+.sg-pr-host-capped .sg-row-slot > .sg-row-trio[data-sg-row-act="book"],
+#sg-profile-rail .sg-row-slot > .sg-row-trio[data-sg-row-act="book"] { order: 90 !important; }
+.sg-pr-host-capped > button[aria-label="Partner"] { order: 91 !important; }

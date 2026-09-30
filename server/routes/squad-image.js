@@ -214,9 +214,8 @@ router.get('/status/:jobId', async (req, res) => {
       await jobs.finishJob(req.params.jobId, { status: 'error', error: out.error });
       return res.json({ status: 'error', error: out.error });
     }
-    // The URL is fal's CDN, which keeps outputs about 7 days. Good enough for
-    // "look at what I just made"; anything a creator keeps is re-hosted when
-    // it is attached to a post, which is where R2 already gets used.
+    // provider.poll already re-hosted fal's file on cdn.scangym.com (Task 57);
+    // it only falls back to fal's url when R2 is unavailable.
     await jobs.finishJob(req.params.jobId, { status: 'done', url: out.url });
     res.json({ status: 'done', imageUrl: out.url });
   } catch (e) {
