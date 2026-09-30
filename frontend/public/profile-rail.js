@@ -259,7 +259,10 @@
       /* One tap straight into the published ScanGym custom GPT: a non-technical
          customer can ask for gyms immediately, with no connector setup. The
          /chatgpt guide page stays for people who want the raw MCP link. */
-      window.open(SCANGYM_GPT_URL, '_blank');
+      /* Task 28 (owner, 2026-09-30): the custom GPT only has gym Actions and
+         cannot create. The signed-in ScanGym app (/mcp/account, set up on the
+         /chatgpt guide) has create image/video/audio + library, like Claude. */
+      window.open('/chatgpt', '_blank');
     },
     claude: function () {
       // Claude connects via an MCP URL, which is far too technical for a normal

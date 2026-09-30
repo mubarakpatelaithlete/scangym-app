@@ -51,3 +51,13 @@ test('Task 26: Profile row has a Wallet door and the wallet page can withdraw', 
   const app = fs2.readFileSync(p2.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
   assert.ok(app.includes("_sgWalletGo('_sgWalletWithdraw')"));
 });
+
+test('Tasks 28/29: ChatGPT and Grok guides use the signed-in connector (create + library)', () => {
+  const fs = require('node:fs'); const path = require('node:path');
+  for (const p of ['chatgpt', 'grok']) {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', p, 'index.html'), 'utf8');
+    assert.match(html, /MCP_URL = 'https:\/\/www\.scangym\.com\/mcp\/account'/, p);
+  }
+  const rail = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'profile-rail.js'), 'utf8');
+  assert.match(rail, /window\.open\('\/chatgpt', '_blank'\)/);
+});
