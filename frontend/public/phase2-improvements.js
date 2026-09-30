@@ -106,20 +106,14 @@ if(typeof _origOpenGym==='function'){
 /* Add fade transition when switching between tabs */
 var _origSwitchTab=window.switchTab;
 if(typeof _origSwitchTab==='function'){
+  /* Task 13 (owner, 2026-09-30): "switching tab is slow". This wrapper used
+     to dim the page and wait 80 ms before switching, on every tap, so the
+     slowness was designed in. Fast apps switch on the tap and never add a
+     delay (Google RAIL: answer input within 100 ms). Now it switches at once. */
   window.switchTab=function(tab){
     var content=document.querySelector('.sg-tab-content');
-    if(content){
-      content.style.transition='opacity 0.15s ease';
-      content.style.opacity='0.7';
-      setTimeout(function(){
-        _origSwitchTab.call(window,tab);
-        requestAnimationFrame(function(){
-          content.style.opacity='1';
-        });
-      },80);
-    }else{
-      _origSwitchTab.call(window,tab);
-    }
+    if(content){ content.style.transition=''; content.style.opacity=''; }
+    return _origSwitchTab.apply(window,arguments);
   };
 }
 

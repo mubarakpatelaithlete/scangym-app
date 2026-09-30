@@ -245,6 +245,12 @@
       .creator-cta-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:500;}
 
       /* ── Action sidebar (right) ── */
+      /* One fixed home for the row of the reel on screen (pinActiveRow). Same
+         frame as a slide, so rails.css places the row exactly where it was. */
+      #sg-reel-row-host{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;
+        pointer-events:none;z-index:25;}
+      #sg-reel-row-host .reel-actions{pointer-events:auto;}
+      #reel-track .reel-actions{visibility:hidden !important;}
       .reel-actions{
         position:absolute;bottom:132px;right:10px;z-index:20;
         display:flex;flex-direction:column;align-items:center;gap:12px;
@@ -2134,6 +2140,35 @@
             renderedReels[i] = reel;
           }
         }
+        pinActiveRow();
+      }
+
+      /* Task 12 (owner, 2026-09-30): "when scrolling on home page - button also
+         scrolls or moves with reel". Each reel builds its own row, and the row
+         lived inside the slide, so it rode the track while you swiped. Now the
+         row of the reel in front of you is moved into one fixed host outside the
+         track (the same node, so its click handlers come with it) and goes back
+         to its slide when another reel takes over. Swiping moves the video; the
+         buttons stay put, as on TikTok, Shorts and Reels. */
+      var rowHost = null;
+      function pinActiveRow(){
+        if(!rowHost){
+          rowHost = document.createElement('div');
+          rowHost.id = 'sg-reel-row-host';
+          document.body.appendChild(rowHost);
+        }
+        var reel = renderedReels[currentIndex];
+        var held = rowHost.querySelector('.reel-actions');
+        if(held && held._sgHome === reel) return;
+        if(held){
+          if(held._sgHome && held._sgHome.isConnected) held._sgHome.appendChild(held);
+          else rowHost.removeChild(held);
+        }
+        if(!reel) return;
+        var row = reel.querySelector(':scope > .reel-actions');
+        if(!row) return;
+        row._sgHome = reel;
+        rowHost.appendChild(row);
       }
 
       // FIX #2: Smart preloading — preload current + next 3 fully (was 2)
