@@ -32,11 +32,13 @@
     var s = document.createElement('style');
     s.id = 'sg-sheet-dismiss-style';
     s.textContent =
-      '.sg-sheet-x{position:absolute;top:10px;right:12px;width:34px;height:34px;' +
-      'border-radius:17px;border:none;background:rgba(255,255,255,.08);color:#fff;' +
+      /* The one red ✕ every sheet in the app closes with (owner, 2026-09-30) —
+         same colours as sg-half-sheet.js .shs-x. */
+      '.sg-sheet-x{position:absolute;top:10px;right:12px;width:36px;height:36px;' +
+      'border-radius:18px;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#ef4444;' +
       'font-size:17px;line-height:1;cursor:pointer;z-index:5;display:flex;' +
       'align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}' +
-      '.sg-sheet-x:active{background:rgba(255,255,255,.16)}';
+      '.sg-sheet-x:active{background:rgba(239,68,68,.28)}';
     document.head.appendChild(s);
   }
 

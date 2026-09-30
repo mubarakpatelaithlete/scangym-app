@@ -294,7 +294,7 @@
        back to it, the red ✕ and a swipe down close it, and so does the phone's
        back button. Same shape as the chat sheet and sg-half-sheet.js. */
     '#sg-sv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9490;}',
-    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:#0b0f1a;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
+    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:#0b0f1a;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));will-change:transform;transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
     '#' + SHEET_ID + '.open{transform:translateY(0);}',
     '.sv-step-hidden{display:none !important;}',

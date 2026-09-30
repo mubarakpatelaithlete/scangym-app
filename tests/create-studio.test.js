@@ -82,7 +82,7 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=2\.0/);
+  a2.match(html, /squad-create\.js\?v=2\.1/);
   a2.match(html, /create-studio\.js\?v=1\.4/);
 });
 
@@ -102,11 +102,11 @@ t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕,
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /sgOpenSheet\([\s\S]{0,400}title: 'Share this reel'/, 'Share opens the sheet');
   a2.match(reels, /title: 'Save this reel'/, 'Save opens the sheet');
-  a2.match(reels, /sg-half-sheet\.js\?v=1\.3/, 'the Reels frame loads it');
+  a2.match(reels, /sg-half-sheet\.js\?v=1\.4/, 'the Reels frame loads it');
   const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
   a2.match(app, /if\(typeof window\.sgOpenSheet==='function'\) return window\.sgOpenSheet\(html,opts\|\|\{\}\)/, 'the Shop uses it');
   for (const f of ['index.html', 'scansquad/index.html']) {
-    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.3/, f + ' loads it');
+    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.4/, f + ' loads it');
   }
 });
 
@@ -170,4 +170,23 @@ t2('the fixed bars carry no backdrop blur and sheets open in 200 ms', () => {
   a2.doesNotMatch(app, /\.sg-tab-bar\{[^}]*backdrop-filter/, 'tab bar: no blur');
   a2.match(fs2.readFileSync(path2.join(pub, 'sg-half-sheet.js'), 'utf8'), /transition:transform \.2s cubic-bezier/);
   a2.match(fs2.readFileSync(path2.join(pub, 'squad-create.js'), 'utf8'), /transition:transform \.2s cubic-bezier/);
+});
+
+t2('the sign-in sheet is the same half sheet: 62vh, red ✕, ← back, no blur', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
+  a2.match(app, /\.sg-auth-panel\{[^}]*max-height:62vh/);
+  a2.doesNotMatch(app, /\.sg-auth-bg\{[^}]*backdrop-filter/);
+  a2.match(app, /class="sg-auth-backbtn" role="button" aria-label="Back" onclick="window\._sgAuthBack\(\)"/);
+  a2.match(app, /window\._sgAuthBack=function\(\)\{\n\s+if\(_sheetStep==='auth'\|\|_sheetStep==='done'\)\{window\._sgCloseAuthSheet\(\);return;\}/);
+  const sd = fs2.readFileSync(path2.join(pub, 'sheet-dismiss.js'), 'utf8');
+  a2.match(sd, /\.sg-sheet-x\{[^}]*color:#ef4444/, 'every legacy sheet closes with the red ✕');
+});
+
+t2('sheets animate on the compositor and a tab switch does not smooth-scroll', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  a2.match(fs2.readFileSync(path2.join(pub, 'sg-half-sheet.js'), 'utf8'), /will-change:transform;transform:translateY\(105%\)/);
+  a2.match(fs2.readFileSync(path2.join(pub, 'squad-create.js'), 'utf8'), /will-change:transform;transform:translateY\(105%\)/);
+  const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
+  a2.match(app, /\.sg-tab-content\{[^}]*scroll-behavior:auto/, 'scrollTop=0 on a tab switch must be instant');
 });
