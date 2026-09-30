@@ -552,7 +552,23 @@
     return !!(f && painted(f));
   }
 
+  /* Home and Create never show the floating Talk pill or the main bar (except a
+     sign-in bar): measured live 2026-09-30 while Home was still loading and on
+     the Create grid, where no row exists yet so the rules keyed on
+     `sg-cta-rides-row` never fired and "Find gyms near me", "Ask AI …" and
+     "Talk" floated over the tab. The same tabs that drop Book and Talk from
+     the row (hiddenKeys) are quiet here. */
+  var QUIET = 'sg-quiet-pills';
+  function quietPills() {
+    if (!document.body) return;
+    var quiet = !!hiddenKeys().talk;
+    document.body.classList.toggle(QUIET, quiet);
+    var cta = document.querySelector(CTA);
+    if (cta) cta.classList.toggle('sg-cb-quiet', quiet && !/continue|sign in|log in/i.test(ctaWords(cta)));
+  }
+
   function ride() {
+    quietPills();
     for (var i = 0; i < pills.length; i++) rescue(pills[i]);
     var row = activeRow();
     if (!row) {

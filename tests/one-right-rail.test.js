@@ -452,5 +452,21 @@ require('node:test').test('Home and Create rows drop Book and Talk, keep Ask AI'
   assert.match(fn, /\{ book: 1, talk: 1 \}/);
   assert.doesNotMatch(fn, /ai: 1/);
   assert.match(src, /if \(slot\.querySelector\('\.' \+ TRIO\)\) \{ paintTrio\(slot\); return; \}/, 'a row built on another tab is repainted, not trusted');
-  assert.match(fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8'), /rails\.js\?v=2\.6/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8'), /rails\.js\?v=2\.[6-9]/);
+});
+
+require('node:test').test('Home and Create keep the floating pills quiet even before a row exists', () => {
+  const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert');
+  const pub = (f) => fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', f), 'utf8');
+  const js = pub('rails.js'), css = pub('rails.css');
+  assert.match(js, /function quietPills\(\)/);
+  assert.match(js, /function ride\(\) \{\n\s*quietPills\(\);/, 'quiet is decided on every pass, not only when a row exists');
+  assert.match(js, /sg-cb-quiet', quiet && !\/continue\|sign in\|log in\/i/, 'the sign-in bar is never hidden');
+  assert.match(css, /html body\.sg-quiet-pills #bchat-fab#bchat-fab/);
+  assert.match(css, /#sg-continue-banner#sg-continue-banner\.sg-cb-quiet/);
+  const b2 = pub('batch2.js');
+  assert.match(b2, /_sgShowRatePrompt\(b\.gymName,b\.gymId\|\|b\.gym_id\|\|'',b\.id\)/, 'the rate prompt must carry the gym');
+  assert.doesNotMatch(b2, /setTimeout\(catchUpPrompt,6000\)/, 'the automatic rating modal is gone');
+  assert.match(b2, /window\._sgCatchUpPrompt=catchUpPrompt/);
+  assert.match(pub('index.html'), /batch2\.js\?v=1\.6/);
 });
