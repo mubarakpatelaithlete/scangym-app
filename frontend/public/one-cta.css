@@ -50,6 +50,14 @@ button[style*="background:#FF6D00"],
 button[style*="background: #FF6D00"] {
   display: none !important;
 }
+/* …but not inside a sheet the customer opened on purpose. The rule above also
+   matched the Shop's "Buy for £X" button (and the reel Shop sheet's day-pass
+   button), so a product sheet had no way to pay (found 2026-09-30, task 6).
+   A sheet is one decision, and its orange button IS the one CTA. */
+.shs-body button[style*="background:#FF6D00"],
+#sg-shop-sheet button[style*="background:#FF6D00"] {
+  display: block !important;
+}
 
 /* ─── ScanSquad: "Start Earning" and the affiliate-link chip ────────────────
    Both are reachable by saying so; the chip in particular was a second primary
