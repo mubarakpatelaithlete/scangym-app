@@ -73,19 +73,35 @@ input{font:inherit;color:#e9edef}
 .toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:#e9edef;color:#0b0b14;padding:8px 14px;border-radius:18px;font-size:14px;font-weight:600;z-index:9}
 .menu{position:absolute;z-index:8;background:#232333;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.5);overflow:hidden}
 .menu button{display:block;padding:12px 18px;width:100%;text-align:left}
+/* Task 24: WhatsApp parity — top sections, list filters, attach sheet, media bubbles */
+.seg{display:flex;margin:12px 0 0;background:#1d1d2b;border-radius:22px;padding:3px}
+.seg button{flex:1;padding:8px 0;border-radius:19px;color:#aeb7bf;font-weight:700;font-size:14px}
+.seg button.on{background:#FF6D00;color:#fff}
+.hic{display:flex;gap:4px;align-items:center}
+.hic button{font-size:20px;padding:4px 8px}
+.att{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;padding:6px 2px 10px}
+.att button{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:#cfd6db}
+.att .ai{width:56px;height:56px;border-radius:18px;border:1px solid #2a2a3a;background:#1d1d2b;display:flex;align-items:center;justify-content:center;font-size:24px}
+.b img.mm,.b video.mm{display:block;max-width:240px;max-height:300px;border-radius:8px;margin-bottom:2px}
+.b a.doc{display:flex;gap:8px;align-items:center;color:#e9edef;text-decoration:none;background:rgba(255,255,255,.06);padding:8px 10px;border-radius:8px}
+.fav{color:#FFB020;font-size:13px}
 </style>
 </head>
 <body>
 <!-- LIST VIEW -->
 <section id="vList" class="view">
   <div class="top">
-    <h1>Chats <button id="btnCam" title="Invite" aria-label="Invite a friend" style="font-size:20px">✉️</button></h1>
+    <h1>Chats <span class="hic"><button id="btnCam" title="Camera" aria-label="Send a photo">📷</button><button id="btnMore" title="More" aria-label="More options">⋮</button></span></h1>
     <div class="search"><span>🔍</span><input id="q" placeholder="Search chats or people" autocomplete="off"></div>
-    <div class="tabs" role="tablist">
-      <button data-tab="chats" class="on">Chats</button>
+    <div class="seg" role="tablist">
+      <button data-sec="chats" class="on">💬 Chats</button>
+      <button data-sec="calls">📞 Calls</button>
+      <button data-sec="tools">🧰 Tools</button>
+    </div>
+    <div class="tabs" id="filters" role="tablist">
+      <button data-tab="chats" class="on">All</button>
       <button data-tab="unread">Unread</button>
-      <button data-tab="calls">Calls</button>
-      <button data-tab="tools">Tools</button>
+      <button data-tab="fav">Favourites</button>
     </div>
   </div>
   <div id="list" class="list"></div>
@@ -107,7 +123,10 @@ input{font:inherit;color:#e9edef}
     <div class="inp">
       <button id="emoBtn" aria-label="Emoji">😊</button>
       <textarea id="txt" rows="1" placeholder="Message"></textarea>
+      <button id="attBtn" aria-label="Attach">📎</button>
+      <button id="camBtn" aria-label="Camera">📷</button>
     </div>
+    <input type="file" id="fPick" class="hidden">
     <button class="send" id="send" aria-label="Send">➤</button>
   </div>
 </section>
@@ -138,15 +157,18 @@ function renderList(){
   var box=$('list'),q=$('q').value.trim().toLowerCase();
   if(S.tab==='calls'){box.innerHTML='<div class="empty"><b>📞 Calls</b>Voice and video calls with your ScanGym friends are coming next. Your call history will show here.<br><br><span style="font-size:13px">Tip: tap 📞 or 📹 inside any chat.</span></div>';return;}
   if(S.tab==='tools'){renderTools();return;}
-  var list=S.threads.filter(function(t){return (S.tab!=='unread'||t.unread>0)&&(!q||t.name.toLowerCase().indexOf(q)>=0||(t.lastMessage||'').toLowerCase().indexOf(q)>=0);});
+  var list=S.threads.filter(function(t){return (S.tab!=='unread'||t.unread>0)&&(S.tab!=='fav'||FAV[t.id])&&(!q||t.name.toLowerCase().indexOf(q)>=0||(t.lastMessage||'').toLowerCase().indexOf(q)>=0);});
   var h='';
   list.forEach(function(t){
-    h+='<button class="row" data-id="'+t.id+'">'+avatar(t.name,t.online)+'<div class="rc"><div class="r1"><span class="nm">'+esc(t.name)+'</span><span class="tm'+(t.unread?' new':'')+'">'+(t.lastMessage?when(t.lastMessageAt):'')+'</span></div><div class="r2"><span class="pv">'+(t.lastFromMe&&t.lastMessage?'<span class="tick'+(t.lastRead?' read':'')+'">✓✓</span> ':'')+esc(t.lastMessage||'Tap to start chatting')+'</span>'+(t.unread?'<span class="badge">'+t.unread+'</span>':'')+'</div></div></button>';
+    h+='<button class="row" data-id="'+t.id+'">'+avatar(t.name,t.online)+'<div class="rc"><div class="r1"><span class="nm">'+(FAV[t.id]?'<span class="fav">★</span> ':'')+esc(t.name)+'</span><span class="tm'+(t.unread?' new':'')+'">'+(t.lastMessage?when(t.lastMessageAt):'')+'</span></div><div class="r2"><span class="pv">'+(t.lastFromMe&&t.lastMessage?'<span class="tick'+(t.lastRead?' read':'')+'">✓✓</span> ':'')+esc(preview(t.lastMessage)||'Tap to start chatting')+'</span>'+(t.unread?'<span class="badge">'+t.unread+'</span>':'')+'</div></div></button>';
   });
   if(q.length>=2){h+='<div id="people"></div>';}
-  if(!list.length&&q.length<2)h='<div class="empty"><b>'+(S.tab==='unread'?'No unread chats':'No chats yet')+'</b>'+(S.tab==='unread'?'You\'re all caught up.':'Tap 💬 to find a friend on ScanGym, or invite one by SMS.')+'</div>';
+  if(!list.length&&q.length<2)h='<div class="empty"><b>'+(S.tab==='unread'?'No unread chats':S.tab==='fav'?'No favourites yet':'No chats yet')+'</b>'+(S.tab==='unread'?'You\'re all caught up.':S.tab==='fav'?'Long-press a chat and tap ★ Add to favourites.':'Tap 💬 to find a friend on ScanGym, or invite one by SMS.')+'</div>';
   box.innerHTML=h;
-  Array.prototype.forEach.call(box.querySelectorAll('.row[data-id]'),function(b){b.onclick=function(){openChat(+b.dataset.id);};});
+  Array.prototype.forEach.call(box.querySelectorAll('.row[data-id]'),function(b){b.onclick=function(){if(b.__lp){b.__lp=false;return;}openChat(+b.dataset.id);};
+    b.oncontextmenu=function(e){e.preventDefault();rowMenu(b,e.clientX,e.clientY);};
+    var lt=null;b.addEventListener('touchstart',function(e){var t=e.touches[0];lt=setTimeout(function(){b.__lp=true;rowMenu(b,t.clientX,t.clientY);},500);},{passive:true});
+    ['touchend','touchmove'].forEach(function(ev){b.addEventListener(ev,function(){clearTimeout(lt);},{passive:true});});});
   if(q.length>=2)searchPeople(q,$('people'));
 }
 var searchT=null;
@@ -165,6 +187,9 @@ function renderTools(){
    ['🔗','Share my chat link','Copy a link friends can use to join','link'],
    ['🆕','New chat','Find anyone on ScanGym by name, email or phone','new'],
    ['🏋️','Find a gym buddy','Book a day pass together','buddy'],
+   ['🛍️','My catalogue · Add item','List a product in your ScanGym shop','catalogue'],
+   ['⚡','Quick replies','Saved messages you send in one tap','quick'],
+   ['★','Favourites','Your starred chats','favs'],
    ['📢','Broadcast to followers','For creators: announce to everyone who follows you','broadcast']
   ].forEach(function(t){h+='<button class="tool" data-t="'+t[3]+'"><div class="ti">'+t[0]+'</div><div><b>'+t[1]+'</b><small>'+t[2]+'</small></div></button>';});
   $('list').innerHTML=h;
@@ -175,6 +200,9 @@ function tool(t){
   if(t==='new')return newChatSheet();
   if(t==='link'){var u='https://www.scangym.com/chats';(navigator.share?navigator.share({title:'Chat with me on ScanGym',url:u}):navigator.clipboard.writeText(u).then(function(){toast('Link copied');})).catch(function(){});return;}
   if(t==='buddy')return goTop('/explore');
+  if(t==='catalogue'){try{if(window.top._sgShopOpenSell){window.top._sgShopOpenSell();return;}}catch(e){}return goTop('/shop');}
+  if(t==='quick')return quickSheet(null);
+  if(t==='favs'){document.querySelector('.seg button[data-sec="chats"]').click();document.querySelector('#filters button[data-tab="fav"]').click();return;}
   if(t==='broadcast')return goTop('/creator');
 }
 function openSheet(h){$('sheetIn').innerHTML=h;$('sheet').classList.remove('hidden');}
@@ -190,9 +218,35 @@ function newChatSheet(){
   var nq=$('nq');nq.focus();nq.oninput=function(){var v=nq.value.trim();if(v.length<2){$('nRes').innerHTML='';return;}searchPeople(v,$('nRes'));};
 }
 $('fab').onclick=newChatSheet;
-$('btnCam').onclick=inviteSheet;
+$('btnCam').onclick=function(){if(!S.threads.length){newChatSheet();return;}toast('Open a chat, then tap 📷 to send a photo');};
 $('q').oninput=renderList;
-Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b);});S.tab=b.dataset.tab;renderList();};});
+Array.prototype.forEach.call(document.querySelectorAll('#filters button'),function(b){b.onclick=function(){document.querySelectorAll('#filters button').forEach(function(x){x.classList.toggle('on',x===b);});S.tab=b.dataset.tab;renderList();};});
+Array.prototype.forEach.call(document.querySelectorAll('.seg button'),function(b){b.onclick=function(){
+  document.querySelectorAll('.seg button').forEach(function(x){x.classList.toggle('on',x===b);});
+  var sec=b.dataset.sec;$('filters').classList.toggle('hidden',sec!=='chats');$('q').parentNode.classList.toggle('hidden',sec==='tools');
+  if(sec==='chats'){var on=document.querySelector('#filters button.on');S.tab=on?on.dataset.tab:'chats';}else S.tab=sec;
+  $('fab').classList.toggle('hidden',sec==='tools');renderList();};});
+/* Favourites live on this device, like a WhatsApp list. */
+var FAV={};try{FAV=JSON.parse(localStorage.getItem('sgChatFav')||'{}')||{};}catch(e){}
+function saveFav(){try{localStorage.setItem('sgChatFav',JSON.stringify(FAV));}catch(e){}}
+function preview(b){b=b||'';if(b.indexOf('📎 /api/dm/file/')!==0)return b;var n=(b.split('|')[1]||'').toLowerCase();
+  return /\.(jpe?g|png|webp|gif|heic)$/.test(n)?'📷 Photo':/\.(mp4|mov|webm)$/.test(n)?'🎥 Video':/\.(mp3|m4a|ogg|wav|aac)$/.test(n)?'🎵 Audio':'📄 '+(b.split('|')[1]||'Document');}
+function rowMenu(b,x,y){
+  var id=+b.dataset.id;document.querySelectorAll('.menu').forEach(function(n){n.remove();});
+  var d=document.createElement('div');d.className='menu';d.style.left=Math.min(x,window.innerWidth-220)+'px';d.style.top=Math.min(y,window.innerHeight-120)+'px';
+  d.innerHTML='<button data-a="fav">'+(FAV[id]?'☆ Remove from favourites':'★ Add to favourites')+'</button><button data-a="open">💬 Open chat</button>';
+  d.onclick=function(e){var a=e.target.dataset.a;d.remove();if(a==='fav'){if(FAV[id])delete FAV[id];else FAV[id]=1;saveFav();renderList();toast(FAV[id]?'Added to favourites':'Removed from favourites');}if(a==='open')openChat(id);};
+  document.body.appendChild(d);setTimeout(function(){document.addEventListener('click',function c(){d.remove();document.removeEventListener('click',c);});},0);
+}
+$('btnMore').onclick=function(e){
+  e.stopPropagation();document.querySelectorAll('.menu').forEach(function(n){n.remove();});
+  var d=document.createElement('div');d.className='menu';d.style.right='12px';d.style.top='52px';
+  d.innerHTML='<button data-a="new">🆕 New chat</button><button data-a="invite">✉️ Invite a friend</button><button data-a="fav">★ Favourites</button><button data-a="unread">🔵 Unread chats</button><button data-a="quick">⚡ Quick replies</button>';
+  d.onclick=function(ev){var a=ev.target.dataset.a;d.remove();
+    if(a==='new')newChatSheet();if(a==='invite')inviteSheet();if(a==='quick')quickSheet(null);
+    if(a==='fav'||a==='unread'){document.querySelector('.seg button[data-sec="chats"]').click();var fb=document.querySelector('#filters button[data-tab="'+a+'"]');if(fb)fb.click();}};
+  document.body.appendChild(d);setTimeout(function(){document.addEventListener('click',function c(){d.remove();document.removeEventListener('click',c);});},0);
+};
 
 /* ── chat ── */
 function openChat(id){
@@ -224,11 +278,60 @@ function renderMsgs(){
   S.msgs.forEach(function(m){
     var d=new Date(m.at||Date.now()).toDateString();
     if(d!==day){day=d;var w=when(m.at||Date.now());h+='<div class="day"><span>'+(/:/.test(w)?'Today':w)+'</span></div>';}
-    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':linkify(m.body))+'<span class="meta">'+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>';
+    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':bodyHtml(m.body))+'<span class="meta">'+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>';
   });
   box.innerHTML=h;
   if(atBottom||S._forceBottom){box.scrollTop=box.scrollHeight;S._forceBottom=false;}
 }
+function bodyHtml(b){
+  if(!b||b.indexOf('📎 /api/dm/file/')!==0)return linkify(b);
+  var p=b.slice(2).trim().split('|'),u=p[0],n=p[1]||'file',l=n.toLowerCase();
+  if(!/^\/api\/dm\/file\/dm_\d+_[a-f0-9]{16}\.[a-z0-9]{1,5}$/.test(u))return linkify(b);
+  if(/\.(jpe?g|png|webp|gif|heic)$/.test(l))return '<a href="'+u+'" target="_blank" rel="noopener"><img class="mm" loading="lazy" alt="Photo" src="'+u+'"></a>';
+  if(/\.(mp4|mov|webm)$/.test(l))return '<video class="mm" controls playsinline preload="metadata" src="'+u+'"></video>';
+  if(/\.(mp3|m4a|ogg|wav|aac)$/.test(l))return '<audio controls preload="none" src="'+u+'" style="max-width:240px"></audio>';
+  return '<a class="doc" href="'+u+'" target="_blank" rel="noopener">📄 <span>'+esc(n)+'</span></a>';
+}
+/* Attach sheet — the WhatsApp grid: Document, Camera, Gallery, Audio, Location, Contact, Catalogue, Quick reply, Poll. */
+function pick(accept,capture){var f=$('fPick');f.value='';f.accept=accept;if(capture)f.setAttribute('capture','environment');else f.removeAttribute('capture');f.click();}
+$('fPick').onchange=function(){var f=this.files&&this.files[0];if(!f||!S.open)return;
+  if(f.size>25*1024*1024){toast('Max 25 MB');return;}
+  closeSheet();toast('Sending…');var fd=new FormData();fd.append('file',f);
+  fetch('/api/dm/threads/'+S.open+'/upload',{method:'POST',credentials:'same-origin',body:fd}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Upload failed');return j;});})
+  .then(function(){S._forceBottom=true;poll();}).catch(function(e){toast(e.message);});};
+function sendText(t){$('txt').value=t;send();}
+function sheetHead(t){return '<h3>'+t+' <button onclick="this.closest(\'.sheet\').classList.add(\'hidden\')">✕</button></h3>';}
+function field(id,ph,type){return '<div class="search" style="margin:0 0 8px"><input id="'+id+'" '+(type?'type="'+type+'" ':'')+'placeholder="'+ph+'"></div>';}
+function attachSheet(){
+  var items=[['📄','Document','doc'],['📷','Camera','cam'],['🖼️','Gallery','gal'],['🎧','Audio','aud'],['📍','Location','loc'],['👤','Contact','con'],['🛍️','Catalogue','cat'],['⚡','Quick reply','quick'],['📊','Poll','poll']];
+  openSheet(sheetHead('Share')+'<div class="att">'+items.map(function(i){return '<button data-k="'+i[2]+'"><span class="ai">'+i[0]+'</span>'+i[1]+'</button>';}).join('')+'</div>');
+  Array.prototype.forEach.call($('sheetIn').querySelectorAll('.att button'),function(b){b.onclick=function(){attach(b.dataset.k);};});
+}
+function attach(k){
+  if(k==='doc')return pick('application/pdf,text/plain,.doc,.docx');
+  if(k==='cam')return pick('image/*',true);
+  if(k==='gal')return pick('image/*,video/*');
+  if(k==='aud')return pick('audio/*');
+  if(k==='loc'){closeSheet();if(!navigator.geolocation){toast('Location is not available');return;}toast('Finding you…');
+    navigator.geolocation.getCurrentPosition(function(p){sendText('📍 My location: https://maps.google.com/?q='+p.coords.latitude.toFixed(5)+','+p.coords.longitude.toFixed(5));},function(){toast('Allow location to share it');},{timeout:10000});return;}
+  if(k==='con'){openSheet(sheetHead('Share a contact')+field('cN','Name')+field('cP','Phone','tel')+'<button class="cta" id="cGo" style="border:0">Send contact</button>');
+    $('cGo').onclick=function(){var n=$('cN').value.trim(),p=$('cP').value.trim();if(!n&&!p)return;closeSheet();sendText('👤 '+n+(p?'\n📞 '+p:''));};return;}
+  if(k==='cat'){closeSheet();return sendText('🛍️ My ScanGym shop: https://www.scangym.com/shop');}
+  if(k==='quick')return quickSheet(true);
+  if(k==='poll'){openSheet(sheetHead('Create poll')+field('pQ','Ask a question')+field('pA','Option 1')+field('pB','Option 2')+field('pC','Option 3 (optional)')+'<button class="cta" id="pGo" style="border:0">Send poll</button>');
+    $('pGo').onclick=function(){var q=$('pQ').value.trim(),o=[$('pA').value,$('pB').value,$('pC').value].map(function(x){return x.trim();}).filter(Boolean);if(!q||o.length<2){toast('Add a question and 2 options');return;}closeSheet();
+      sendText('📊 '+q+'\n'+o.map(function(x,i){return (i+1)+') '+x;}).join('\n')+'\nReply with a number to vote');};return;}
+}
+var QR_DEF=['On my way 🏃','Booked! See you at the gym 💪','Can we do tomorrow instead?','Thanks! 🙏'];
+function quickList(){try{var l=JSON.parse(localStorage.getItem('sgQuick')||'null');return Array.isArray(l)&&l.length?l:QR_DEF.slice();}catch(e){return QR_DEF.slice();}}
+function quickSheet(canSend){
+  var l=quickList();
+  openSheet(sheetHead('Quick replies')+'<div style="overflow-y:auto">'+l.map(function(q,i){return '<button class="tool" data-i="'+i+'"><div class="ti">⚡</div><div><b>'+esc(q)+'</b>'+(canSend&&S.open?'<small>Tap to send</small>':'')+'</div></button>';}).join('')+'</div>'+field('qN','Add a quick reply')+'<button class="cta" id="qAdd" style="border:0">Save</button>');
+  Array.prototype.forEach.call($('sheetIn').querySelectorAll('.tool[data-i]'),function(b){b.onclick=function(){if(canSend&&S.open){closeSheet();sendText(l[+b.dataset.i]);}};});
+  $('qAdd').onclick=function(){var v=$('qN').value.trim();if(!v)return;l.push(v);try{localStorage.setItem('sgQuick',JSON.stringify(l.slice(-30)));}catch(e){}quickSheet(canSend);};
+}
+$('attBtn').onclick=attachSheet;
+$('camBtn').onclick=function(){pick('image/*',true);};
 function send(){
   var ta=$('txt'),body=ta.value.trim();if(!body||!S.open)return;
   ta.value='';ta.style.height='38px';
