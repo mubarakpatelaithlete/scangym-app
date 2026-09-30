@@ -18,7 +18,7 @@ const PUBLIC = path.join(__dirname, '..', 'frontend', 'public');
 /** Documents that are served outside the SPA shell and so need the shared bar. */
 const STANDALONE = ['reels/index.html', 'scansquad/index.html'];
 
-const EXPECTED_TABS = ['Home', 'Create', 'Shop', 'Profile'];
+const EXPECTED_TABS = ['Home', 'Create', 'Shop', 'Chats', 'Profile'];
 
 for (const rel of STANDALONE) {
   test(`${rel} loads the shared tab bar`, () => {

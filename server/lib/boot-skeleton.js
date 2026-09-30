@@ -49,6 +49,12 @@ const TABS = [
     icon: '<path d="M3 9l1.5-5h15L21 9"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path>'
   },
   {
+    key: 'chats',
+    label: 'Chats',
+    href: '/chats',
+    icon: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20.5l1.5-4.6A8.4 8.4 0 1 1 21 11.5z"></path>'
+  },
+  {
     key: 'more',
     label: 'Profile',
     href: '/more/profile',
@@ -67,6 +73,7 @@ function tabForPath(pathname) {
   if (/^\/reels(\/|$)/.test(p)) return 'reels';
   if (/^\/(scansquad|creator|creator-hub)(\/|$)/.test(p)) return 'creator';
   if (/^\/shop(\/|$)/.test(p)) return 'shop';
+  if (/^\/chats(\/|$)/.test(p)) return 'chats';
   if (/^\/(partner|partners|list-your-gym)(\/|$)/.test(p)) return 'more';
   if (/^\/(more|profile|wallet|settings)(\/|$)/.test(p)) return 'more';
   if (/^\/(explore|nearby|search|checkout|booking-success|gym|r)(\/|$)/.test(p)) return 'more';
@@ -274,6 +281,7 @@ function bodyFor(pathname) {
   if (p === '/booking-success') return quietSkeleton('Confirming your booking…');
   if (/^\/(partner|partners)$/.test(p)) return partnerSkeleton();
   if (/^\/shop(\/|$)/.test(p)) return quietSkeleton('Browse the ScanGym shop');
+  if (/^\/chats(\/|$)/.test(p)) return quietSkeleton('Loading your chats…');
   if (p === '/list-your-gym') return quietSkeleton('List your gym');
   if (/^\/(creator|creator-hub|scansquad)$/.test(p)) return creatorSkeleton();
   if (/^\/(more|profile)(\/|$)/.test(p)) return profileSkeleton();
