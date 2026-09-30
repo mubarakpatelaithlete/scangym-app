@@ -13953,6 +13953,7 @@ window._sgShopLoad=async function(force){
       try{
         var mine=await fetch('/api/shop/my-orders',{credentials:'include'}).then(function(r){return r.json();});
         _sgShopState.owned={};
+        _sgShopState.orders=mine.orders||[];
         (mine.orders||[]).forEach(function(o){_sgShopState.owned[o.productId]=o.downloadUrl;});
       }catch(e){}
     }
@@ -13973,19 +13974,67 @@ window._sgShopRender=function(){
       +'<p style="max-width:340px;margin:0 auto;color:rgba(255,255,255,.55);font-size:13px">Be the first ScanSquad creator to list a product in this category.</p></div>';
     return;
   }
-  box.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">'+items.map(function(p){
+  /* Task 15 (Amazon patterns): Your downloads, Saved and Recently viewed rows
+     above the grid; sold count, Bestseller badge and a heart on every card. */
+  var rows='';
+  if(!_sgShopState.q&&_sgShopState.category==='All'){
+    var orders=(_sgShopState.orders||[]).slice(0,10);
+    if(orders.length)rows+=_sgShopRow('\uD83D\uDCE5 Your downloads \u00b7 buy again',orders.map(function(o){
+      return '<a href="'+o.downloadUrl+'" style="'+_sgShopPill+'">'+_sgShopEsc(o.title)+'<br><span style="color:#22c55e;font-size:11px">Download</span></a>';}).join(''));
+    var byId={};items.forEach(function(x){byId[x.id]=x;});
+    var saved=_sgShopLS('sg_shop_saved').map(function(id){return byId[id];}).filter(Boolean);
+    if(saved.length)rows+=_sgShopRow('\u2764\uFE0F Saved for later',saved.map(_sgShopMini).join(''));
+    var seen=_sgShopLS('sg_shop_seen').map(function(id){return byId[id];}).filter(Boolean);
+    if(seen.length)rows+=_sgShopRow('\uD83D\uDC40 Recently viewed',seen.map(_sgShopMini).join(''));
+  }
+  var topSales=items.reduce(function(m,x){return Math.max(m,x.salesCount||0);},0);
+  var savedIds=_sgShopLS('sg_shop_saved');
+  box.innerHTML=rows+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">'+items.map(function(p){
     var owned=!!_sgShopState.owned[p.id];
+    var hearted=savedIds.indexOf(p.id)>=0;
+    var sold=p.salesCount||0;
     var cover=p.coverImageUrl
       ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:118px;object-fit:cover;display:block">'
       : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:30px">📄</div>';
-    return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);color:#fff;padding:0;cursor:pointer">'
+    return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="position:relative;text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);color:#fff;padding:0;cursor:pointer">'
       +cover
+      +(sold&&sold===topSales?'<span style="position:absolute;top:8px;left:8px;background:#FF6D00;color:#fff;font-size:10px;font-weight:900;border-radius:6px;padding:3px 6px">\uD83D\uDD25 Bestseller</span>':'')
+      +'<span role="button" aria-label="Save for later" onclick="event.stopPropagation();window._sgShopHeart('+p.id+')" style="position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:15px">'+(hearted?'\u2764\uFE0F':'\uD83E\uDD0D')+'</span>'
       +'<div style="padding:10px 12px 12px">'
       +'<p style="margin:0 0 3px;font-size:14px;font-weight:800;line-height:1.25">'+_sgShopEsc(p.title)+'</p>'
       +'<p style="margin:0 0 7px;color:rgba(255,255,255,.45);font-size:11px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)+'</p>'
       +'<p style="margin:0;font-size:14px;font-weight:900;color:'+(owned?'#22c55e':'#FF6D00')+'">'+(owned?'Owned':_sgShopEsc(p.price))+'</p>'
+      +(sold?'<p style="margin:3px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
       +'</div></button>';
   }).join('')+'</div>';
+};
+
+var _sgShopPill='flex:none;width:130px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:left;cursor:pointer;white-space:normal';
+function _sgShopLS(key){try{var v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}}
+function _sgShopRow(title,inner){
+  return '<div style="margin:0 0 16px"><p style="margin:0 0 8px;font-size:14px;font-weight:800">'+title+'</p>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">'+inner+'</div></div>';
+}
+function _sgShopMini(p){
+  return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="'+_sgShopPill+'">'+_sgShopEsc(p.title)
+    +'<br><span style="color:#FF6D00;font-size:11px">'+(_sgShopState.owned[p.id]?'Owned':_sgShopEsc(p.price))+'</span></button>';
+}
+window._sgShopHeart=function(id){
+  var list=_sgShopLS('sg_shop_saved'),i=list.indexOf(id);
+  if(i>=0)list.splice(i,1);else list.unshift(id);
+  try{localStorage.setItem('sg_shop_saved',JSON.stringify(list.slice(0,30)));}catch(e){}
+  if(typeof sgToast==='function')sgToast(i>=0?'Removed from Saved':'Saved for later \u2764\uFE0F','success',1800);
+  window._sgShopRender();
+};
+window._sgShopAlso=async function(id){
+  var el=document.getElementById('sg-shop-also');
+  if(!el)return;
+  try{
+    var d=await fetch('/api/shop/products/'+id+'/also-bought',{credentials:'include'}).then(function(r){return r.json();});
+    var list=(d.products||[]);
+    list.forEach(function(x){ if(!_sgShopState.products.some(function(y){return y.id===x.id;}))_sgShopState.products.push(x); });
+    el.innerHTML=list.length?_sgShopRow('\uD83D\uDED2 Customers also bought',list.map(_sgShopMini).join('')):'';
+  }catch(e){ el.innerHTML=''; }
 };
 
 function _sgShopEsc(text){
@@ -13998,13 +14047,20 @@ window._sgShopOpen=function(productId){
   var p=_sgShopState.products.filter(function(x){return x.id===productId;})[0];
   if(!p)return;
   var owned=_sgShopState.owned[p.id];
+  var seen=_sgShopLS('sg_shop_seen').filter(function(x){return x!==p.id;});seen.unshift(p.id);
+  try{localStorage.setItem('sg_shop_seen',JSON.stringify(seen.slice(0,12)));}catch(e){}
+  setTimeout(function(){window._sgShopAlso(p.id);},0);
   var body='<div style="padding:4px 2px 8px">'
+    +(p.salesCount?'<p style="margin:0 0 8px;color:#FF6D00;font-size:12px;font-weight:800">\uD83D\uDD25 '+p.salesCount+' people bought this</p>':'')
     +(p.fileSizeKb?'<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:12px">'+p.fileSizeKb+' KB</p>':'')
     +'<p style="margin:0 0 16px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap">'+_sgShopEsc(p.description||'')+'</p>'
     +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
+    +'<div id="sg-shop-also"></div>'
+    +'<div style="position:sticky;bottom:0;background:#12141d;padding:10px 0 4px;z-index:2">'
     +(owned
       ? '<a href="'+owned+'" style="display:block;text-align:center;border-radius:14px;padding:15px;background:#22c55e;color:#fff;font-weight:800;text-decoration:none">Download again</a>'
-      : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">Buy for '+_sgShopEsc(p.price)+'</button>')
+      : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">\u26A1 Buy now \u00b7 '+_sgShopEsc(p.price)+' \u00b7 1 tap</button>')
+    +'</div>'
     +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
     +'</div>';
   window._sgShopSimpleSheet(body,{title:p.title,sub:'@'+p.creatorHandle+' \u00b7 '+p.category,icon:'\uD83D\uDCC4'});
