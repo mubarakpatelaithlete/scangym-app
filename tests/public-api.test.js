@@ -12,7 +12,7 @@ test('public API is mounted at /api/v1 and key management at /api/developer', ()
   assert.match(server, /\/developers/);
 });
 test('only a hash of the key is stored', () => {
-  assert.match(src, /key_hash TEXT NOT NULL UNIQUE/);
+  assert.match(fs.readFileSync(path.join(root, 'migrations/20260930_api_keys.sql'), 'utf8'), /key_hash\s+TEXT NOT NULL UNIQUE/);
   assert.match(src, /\[userId, name, hashKey\(key\), key\.slice\(0, 14\)\]/);
 });
 test('v1 is read-only, rate limited and CORS-enabled', () => {
