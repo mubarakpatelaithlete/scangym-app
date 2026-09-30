@@ -413,8 +413,26 @@
     location.href = '/book';
   }
 
+  /* Home (the Reels frame, or / and /reels in the parent) and Create (/creator,
+     /scansquad) drop Book and Talk: both already sit in the Profile tab, and on
+     these two tabs they were the third copy of a door the customer already had
+     (owner, 2026-09-30). Ask AI stays everywhere. */
+  function hiddenKeys() {
+    var p = location.pathname.replace(/\/$/, '');
+    if (FRAMED || p === '' || p === '/reels' || p === '/creator' || p === '/scansquad') return { book: 1, talk: 1 };
+    return {};
+  }
+
+  function paintTrio(slot) {
+    var hide = hiddenKeys();
+    var items = slot.querySelectorAll('.' + TRIO);
+    for (var i = 0; i < items.length; i++) {
+      items[i].style.display = hide[items[i].getAttribute('data-sg-row-act')] ? 'none' : '';
+    }
+  }
+
   function buildTrio(slot) {
-    if (slot.querySelector('.' + TRIO)) return;
+    if (slot.querySelector('.' + TRIO)) { paintTrio(slot); return; }
     for (var i = 0; i < ITEMS.length; i++) {
       var it = ITEMS[i];
       var item = document.createElement('div');
@@ -439,6 +457,7 @@
       })(it.key));
       slot.appendChild(item);
     }
+    paintTrio(slot);
   }
 
   /* The old floating pills are the same doors as Talk and Ask AI, so they are

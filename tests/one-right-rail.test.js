@@ -441,3 +441,16 @@ test('a rail already in the right place keeps its correction (no 500ms jump)', (
   assert.ok(!/landed - wantBottom\) <= 1\) \{ el\.style\.removeProperty\('bottom'\)/.test(dockJs),
     'sg-dock.js must not strip the correction from a rail that is already in place');
 });
+
+/* Owner, 2026-09-30: Book and Talk live in the Profile tab; Home and Create do
+   not repeat them. Ask AI stays on every tab. */
+require('node:test').test('Home and Create rows drop Book and Talk, keep Ask AI', () => {
+  const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'rails.js'), 'utf8');
+  const fn = src.slice(src.indexOf('function hiddenKeys'), src.indexOf('function paintTrio'));
+  assert.match(fn, /FRAMED \|\| p === '' \|\| p === '\/reels' \|\| p === '\/creator' \|\| p === '\/scansquad'/);
+  assert.match(fn, /\{ book: 1, talk: 1 \}/);
+  assert.doesNotMatch(fn, /ai: 1/);
+  assert.match(src, /if \(slot\.querySelector\('\.' \+ TRIO\)\) \{ paintTrio\(slot\); return; \}/, 'a row built on another tab is repainted, not trusted');
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8'), /rails\.js\?v=2\.6/);
+});

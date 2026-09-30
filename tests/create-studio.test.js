@@ -82,6 +82,6 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=1\.6/);
+  a2.match(html, /squad-create\.js\?v=1\.7/);
   a2.match(html, /create-studio\.js\?v=1\.3/);
 });
