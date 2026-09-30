@@ -125,6 +125,28 @@ router.get('/products', async (req, res) => {
   }
 });
 
+/* Task 15: "Customers also bought" — products bought by people who bought this
+   one (Amazon item-to-item), topped up with bestsellers from the same category. */
+router.get('/products/:id/also-bought', async (req, res) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10) || 0;
+    const { rows } = await pool.query(
+      `WITH buyers AS (SELECT buyer_user_id FROM shop_orders WHERE product_id = $1 AND status = 'paid'),
+            co AS (SELECT o.product_id, COUNT(*) AS n FROM shop_orders o JOIN buyers b ON b.buyer_user_id = o.buyer_user_id
+                    WHERE o.product_id <> $1 AND o.status = 'paid' GROUP BY o.product_id)
+       SELECT p.*, COALESCE(co.n, 0) AS co_n FROM shop_products p LEFT JOIN co ON co.product_id = p.id
+        WHERE p.status = 'active' AND p.id <> $1
+          AND (co.n IS NOT NULL OR p.category = (SELECT category FROM shop_products WHERE id = $1))
+        ORDER BY co_n DESC, p.sales_count DESC, p.created_at DESC LIMIT 8`, [id]
+    );
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ products: rows.map(publicProduct) });
+  } catch (err) {
+    console.error('[Shop] also-bought failed:', err.message);
+    res.json({ products: [] });
+  }
+});
+
 router.get('/products/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(

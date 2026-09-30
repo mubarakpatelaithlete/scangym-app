@@ -133,3 +133,13 @@ test('product text from a creator cannot inject markup into the page', () => {
   assert.ok(!/\+p\.title\+/.test(render), 'a title is concatenated into HTML unescaped');
   assert.match(render, /_sgShopEsc\(p\.title\)/, 'the title is not escaped');
 });
+
+test('Task 15: Amazon patterns are in the Shop (also bought, saved, recently viewed, 1-tap sticky buy)', () => {
+  const SHOP = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'server', 'routes', 'shop.js'), 'utf8');
+  assert.match(SHOP, /\/products\/:id\/also-bought/);
+  assert.match(APP, /Customers also bought/);
+  assert.match(APP, /sg_shop_saved/);
+  assert.match(APP, /sg_shop_seen/);
+  assert.match(APP, /Your downloads/);
+  assert.match(APP, /position:sticky;bottom:0/);
+});
