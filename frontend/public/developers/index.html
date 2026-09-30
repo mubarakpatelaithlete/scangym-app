@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ScanGym API for developers</title>
+<meta name="description" content="Put ScanGym reels, digital products and gyms into your own web app with the ScanGym API.">
+<meta name="theme-color" content="#127947">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f6f8f7;color:#334155;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(160deg,#127947,#0d5c36);color:#fff;text-align:center;padding:36px 20px 40px}
+header h1{font-size:28px;font-weight:800;letter-spacing:-.4px}
+header p{margin:8px auto 0;color:#d8ece2;max-width:460px}
+main{max-width:720px;margin:-20px auto 40px;padding:0 16px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 4px 14px rgba(15,23,42,.06)}
+h2{font-size:18px;color:#0f172a;margin-bottom:10px}
+code,pre{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:12px;overflow-x:auto;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:8px 4px;border-top:1px solid #eef2f1;vertical-align:top}
+td:first-child{white-space:nowrap;font-family:ui-monospace,Menlo,monospace;color:#127947;font-weight:600}
+button,.btn{background:#127947;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+button.ghost{background:#fff;color:#b91c1c;border:1px solid #fecaca;padding:6px 10px;font-size:13px}
+input{border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:15px;width:100%;max-width:260px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.key{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #eef2f1;font-size:14px}
+.new{background:#ecfdf3;border:1px solid #a7f3d0;border-radius:10px;padding:12px;margin-top:12px;word-break:break-all}
+.muted{color:#64748b;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ScanGym API</h1>
+  <p>Put ScanGym reels, digital products and gyms into your own web app.</p>
+</header>
+<main>
+  <section class="card" id="keys">
+    <h2>1. Get your API key</h2>
+    <div id="keysBody" class="muted">Loading…</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Call the API</h2>
+    <p>Send your key in the <code>X-API-Key</code> header. Base URL: <code>https://www.scangym.com/api/v1</code></p>
+<pre>fetch('https://www.scangym.com/api/v1/reels?limit=10', {
+  headers: { 'X-API-Key': 'sg_live_YOUR_KEY' }
+}).then(r =&gt; r.json()).then(console.log);</pre>
+<pre>curl -H "X-API-Key: sg_live_YOUR_KEY" https://www.scangym.com/api/v1/products</pre>
+  </section>
+
+  <section class="card">
+    <h2>Endpoints</h2>
+    <table>
+      <tr><td>GET /reels</td><td>Video feed. <code>limit</code>, <code>offset</code>, <code>category</code></td></tr>
+      <tr><td>GET /categories</td><td>Reel categories</td></tr>
+      <tr><td>GET /products</td><td>Digital products in the Shop. <code>category</code>, <code>q</code>, <code>limit</code></td></tr>
+      <tr><td>GET /products/:id</td><td>One product</td></tr>
+      <tr><td>GET /gyms</td><td>Gyms near <code>lat</code> &amp; <code>lng</code>, or by text <code>query</code></td></tr>
+    </table>
+    <p class="muted" style="margin-top:10px">Limit: 60 requests per minute per key (HTTP 429 when exceeded). Read-only. Works from browsers (CORS enabled). Prefer calling from your server so your key stays private.</p>
+  </section>
+</main>
+<script>
+(function(){
+  var tk = localStorage.getItem('sg_token');
+  var box = document.getElementById('keysBody');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function api(method, url, body){
+    return fetch(url,{method:method,headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
+      .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Error');return j;});});
+  }
+  if(!tk){
+    box.innerHTML='<p style="margin-bottom:10px">Sign in to ScanGym to create a free API key.</p><a class="btn" href="/login">Sign in</a>';
+    return;
+  }
+  function render(keys, fresh){
+    var h='<div class="row"><input id="kname" placeholder="App name (e.g. My gym site)" maxlength="60"><button id="kcreate">Create API key</button></div>';
+    if(fresh) h+='<div class="new"><b>Your new key — copy it now, it won\'t be shown again:</b><br><code id="kfresh">'+esc(fresh)+'</code><br><button id="kcopy" style="margin-top:8px">Copy</button></div>';
+    h+='<div style="margin-top:12px">';
+    if(!keys.length) h+='<p class="muted">No keys yet.</p>';
+    keys.forEach(function(k){
+      h+='<div class="key"><div><b>'+esc(k.name)+'</b> <code>'+esc(k.key_prefix)+'…</code><br><span class="muted">'+(k.requests||0)+' requests'+(k.last_used_at?' · last used '+new Date(k.last_used_at).toLocaleDateString():'')+'</span></div><button class="ghost" data-id="'+k.id+'">Revoke</button></div>';
+    });
+    box.innerHTML=h+'</div>';
+    document.getElementById('kcreate').onclick=function(){
+      api('POST','/api/developer/keys',{name:document.getElementById('kname').value}).then(function(j){load(j.key);}).catch(function(e){alert(e.message);});
+    };
+    var cp=document.getElementById('kcopy');
+    if(cp) cp.onclick=function(){navigator.clipboard&&navigator.clipboard.writeText(fresh);cp.textContent='Copied ✓';};
+    Array.prototype.forEach.call(box.querySelectorAll('button.ghost'),function(b){
+      b.onclick=function(){ if(confirm('Revoke this key? Apps using it will stop working.')) api('DELETE','/api/developer/keys/'+b.dataset.id).then(function(){load();}).catch(function(e){alert(e.message);}); };
+    });
+  }
+  function load(fresh){
+    api('GET','/api/developer/keys').then(function(j){render(j.keys||[],fresh);})
+      .catch(function(){box.innerHTML='<p style="margin-bottom:10px">Your session has expired. Please sign in again.</p><a class="btn" href="/login">Sign in</a>';});
+  }
+  load();
+})();
+</script>
+</body>
+</html>

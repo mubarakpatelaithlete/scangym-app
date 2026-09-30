@@ -74,6 +74,7 @@ const creatorDistributionRouter = require('./routes/creator-distribution');
 const creatorGrowthRouter = require('./routes/creator-growth');
 const creatorContentRouter = require('./routes/creator-content');
 const fanChatRouter = require('./routes/fan-chat');
+const { developerRouter, v1Router } = require('./routes/public-api');
 const analyticsMiddleware = require('./middleware/analytics');
 
 const app = express();
@@ -608,6 +609,8 @@ app.use('/api/creator-distribution', creatorDistributionRouter);
 app.use('/api/creator-growth', creatorGrowthRouter);
 app.use('/api/creator-content', creatorContentRouter);
 app.use('/api/fan-chat', fanChatRouter);
+app.use('/api/developer', developerRouter);  // Task 2: API keys
+app.use('/api/v1', v1Router);                 // Task 2: public API
 /* Second router on /api/pricing (gift, group, couple, compare, carry-forward).
    Checked: no path collides with routes/pricing.js (/prices, /gym-price). */
 app.use('/api/pricing', pricingExtRouter);
@@ -869,6 +872,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
   app.get('/grok', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'grok', 'index.html'));
+  });
+
+  // Task 2: ScanGym API docs + key management page (2026-09-30).
+  app.get(['/developers', '/developers/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'developers', 'index.html'));
   });
 
   // "Chat with ScanGym" hub for Snapchat / Pinterest / YouTube / LinkedIn bios (2026-09-28).
