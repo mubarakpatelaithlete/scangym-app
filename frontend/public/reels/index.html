@@ -261,6 +261,27 @@
         cursor:pointer;transition:transform .12s ease;text-decoration:none;
       }
       .reel-action:active{transform:scale(0.82);}
+      /* Task 52: liked = red heart, reposted = green, as on TikTok. */
+      .reel-action[data-action="like"].sg-on .icon svg{fill:#fe2c55;stroke:#fe2c55;}
+      .reel-action[data-action="repost"].sg-on .icon svg{stroke:#22c55e;}
+      #sg-cmt-sheet{position:fixed;inset:0;z-index:10050;}
+      #sg-cmt-sheet .sg-cmt-back{position:absolute;inset:0;background:rgba(0,0,0,.45);}
+      #sg-cmt-sheet .sg-cmt-panel{position:absolute;left:0;right:0;bottom:0;height:62%;background:#12121c;
+        border-radius:16px 16px 0 0;display:flex;flex-direction:column;color:#fff;transition:transform .15s;}
+      #sg-cmt-sheet .sg-cmt-head{display:flex;align-items:center;justify-content:center;position:relative;padding:14px;
+        border-bottom:1px solid rgba(255,255,255,.08);font-weight:700;font-size:14px;}
+      #sg-cmt-sheet .sg-cmt-x{position:absolute;right:10px;top:8px;width:32px;height:32px;border:0;border-radius:50%;
+        background:#ef4444;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
+      #sg-cmt-sheet .sg-cmt-list{flex:1;overflow-y:auto;padding:8px 16px;-webkit-overflow-scrolling:touch;}
+      #sg-cmt-sheet .sg-cmt-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+      #sg-cmt-sheet .sg-cmt-name{font-size:12px;color:rgba(255,255,255,.55);font-weight:600;margin-bottom:3px;}
+      #sg-cmt-sheet .sg-cmt-body{font-size:14px;line-height:1.35;word-wrap:break-word;}
+      #sg-cmt-sheet .sg-cmt-empty{color:rgba(255,255,255,.45);font-size:13px;text-align:center;margin-top:30px;}
+      #sg-cmt-sheet .sg-cmt-form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+        border-top:1px solid rgba(255,255,255,.08);}
+      #sg-cmt-sheet .sg-cmt-in{flex:1;background:rgba(255,255,255,.08);border:0;border-radius:20px;padding:10px 14px;
+        color:#fff;font-size:16px;outline:none;}
+      #sg-cmt-sheet .sg-cmt-send{border:0;background:#FF6D00;color:#fff;font-weight:700;border-radius:20px;padding:0 16px;}
       /* These two — Share and Save — are the buttons every other row in the app
          is now measured against, so their look is stated once in one-button.css
          and read from there. The fallbacks are the values they had on
@@ -577,7 +598,7 @@
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- The Reels feed is its own document, so it never got the row rails.css
        defines. Same file, same band: one place decides where rows live. -->
-  <link rel="stylesheet" href="/rails.css?v=3.8">
+  <link rel="stylesheet" href="/rails.css?v=3.9">
   <script>if(window.top!==window.self){document.documentElement.classList.add('sg-framed');}</script>
 </head>
   <body>
@@ -675,7 +696,10 @@
         save:   '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
         more:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="#fff" stroke="none"/></svg>',
         create: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-        shop:   '<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 016 0"/></svg>'
+        shop:   '<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 016 0"/></svg>',
+        like:   '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 000-7.8z"/></svg>',
+        comment:'<svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 01-9 8.4 8.6 8.6 0 01-3.8-.9L3 20.5l1.5-4.6A8.4 8.4 0 1121 11.5z"/></svg>',
+        repost: '<svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>'
       };
 
       /* Task 6 (owner, 2026-09-30): a Shop button on every reel, like the one on
@@ -684,6 +708,131 @@
       var SHOP_ACTION = '<div class="reel-action" data-action="shop"><div class="icon">' + ICONS.shop + '</div><span class="label">Shop</span></div>';
       function openReelShop(video){
         try { window.parent.postMessage({ sg: 'row-act', key: 'shop', category: (video && video.category) || '', title: (video && video.name) || '' }, '*'); } catch(e){}
+      }
+
+      /* ── Task 52 (owner, 2026-09-30): Like / Comment / Save / Share / Repost ──
+         TikTok's row, in TikTok's order. Save and Share were already here; Like,
+         Comment and Repost are stored by /api/reels/social (server/routes/
+         reel-social.js). Taps update the button at once and the server answer
+         corrects it (optimistic UI, as TikTok and Instagram do); a signed-out
+         tap opens the app's sign-in sheet like Share and Save already did. */
+      var social = {};          // key -> {likes, comments, reposts, liked, reposted}
+      var socialAsked = {};     // key -> true once requested
+      function socialKey(video){ return String((video && (video.cdnKey || video.id)) || ''); }
+      function fmtCount(n, word){
+        if(!n) return word;
+        return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'K' : String(n);
+      }
+      function socialButtons(video){
+        var k = escHtml(socialKey(video));
+        return {
+          lead: '<div class="reel-action" data-action="like" data-sk="' + k + '"><div class="icon">' + ICONS.like + '</div><span class="label">Like</span></div>'
+              + '<div class="reel-action" data-action="comment" data-sk="' + k + '"><div class="icon">' + ICONS.comment + '</div><span class="label">Comment</span></div>',
+          tail: '<div class="reel-action" data-action="repost" data-sk="' + k + '"><div class="icon">' + ICONS.repost + '</div><span class="label">Repost</span></div>'
+        };
+      }
+      function paintSocial(key){
+        var st = social[key]; if(!st) return;
+        var els = document.querySelectorAll('.reel-action[data-sk]');
+        for(var i = 0; i < els.length; i++){
+          var el = els[i]; if(el.getAttribute('data-sk') !== key) continue;
+          var a = el.getAttribute('data-action'), lbl = el.querySelector('.label');
+          if(a === 'like'){ el.classList.toggle('sg-on', !!st.liked); lbl.textContent = fmtCount(st.likes, 'Like'); }
+          else if(a === 'comment'){ lbl.textContent = fmtCount(st.comments, 'Comment'); }
+          else if(a === 'repost'){ el.classList.toggle('sg-on', !!st.reposted); lbl.textContent = fmtCount(st.reposts, 'Repost'); }
+        }
+      }
+      var socialTimer = null;
+      function loadSocialSoon(){
+        clearTimeout(socialTimer);
+        socialTimer = setTimeout(function(){
+          var keys = [];
+          Object.keys(renderedReels).forEach(function(i){
+            var k = renderedReels[i] && renderedReels[i].dataset.sk;
+            if(k && !socialAsked[k]){ socialAsked[k] = true; keys.push(k); }
+          });
+          if(!keys.length) return;
+          fetch('/api/reels/social/state?ids=' + keys.map(encodeURIComponent).join(','), {credentials:'same-origin'})
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){
+              if(!d || !d.items) return;
+              Object.keys(d.items).forEach(function(k){ social[k] = d.items[k]; paintSocial(k); });
+            }).catch(function(){ keys.forEach(function(k){ delete socialAsked[k]; }); });
+        }, 150);
+      }
+      function askSignIn(action, video){
+        try { window.parent.postMessage({type:'sg-auth-request', action:action, video:{id:video.id,name:video.name}}, '*'); } catch(e){}
+      }
+      function toggleSocial(kind, video, forceOn){
+        var key = socialKey(video); if(!key) return;
+        if(!_reelsUserLoggedIn && window.parent && window.parent !== window){ askSignIn(kind, video); return; }
+        var st = social[key] || (social[key] = {likes:0, comments:0, reposts:0, liked:false, reposted:false});
+        var flag = kind === 'like' ? 'liked' : 'reposted', cnt = kind === 'like' ? 'likes' : 'reposts';
+        var on = forceOn ? true : !st[flag];
+        if(on === st[flag]) return;
+        var before = {v: st[flag], n: st[cnt]};
+        st[flag] = on; st[cnt] = Math.max(0, st[cnt] + (on ? 1 : -1)); paintSocial(key);
+        if(navigator.vibrate) navigator.vibrate(10);
+        if(on && !forceOn) trackEvent(kind, currentIndex);
+        fetch('/api/reels/social/' + encodeURIComponent(key) + '/' + kind, {
+          method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({on:on})
+        }).then(function(r){
+          if(r.status === 401){ st[flag] = before.v; st[cnt] = before.n; paintSocial(key); askSignIn(kind, video); return null; }
+          return r.ok ? r.json() : Promise.reject();
+        }).then(function(d){
+          if(d){ social[key] = {likes:d.likes, comments:d.comments, reposts:d.reposts, liked:d.liked, reposted:d.reposted}; paintSocial(key); }
+          if(d && kind === 'repost' && on && typeof showToast === 'function') showToast('Reposted to your profile');
+        }).catch(function(){ st[flag] = before.v; st[cnt] = before.n; paintSocial(key); });
+      }
+
+      /* Comments: TikTok's half sheet — list on top, box at the bottom, red ×. */
+      function openComments(video){
+        var key = socialKey(video); if(!key) return;
+        var old = document.getElementById('sg-cmt-sheet'); if(old) old.remove();
+        var wrap = document.createElement('div');
+        wrap.id = 'sg-cmt-sheet';
+        wrap.innerHTML = '<div class="sg-cmt-back"></div><div class="sg-cmt-panel" role="dialog" aria-label="Comments">'
+          + '<div class="sg-cmt-head"><span class="sg-cmt-title">Comments</span><button type="button" class="sg-cmt-x" aria-label="Close">\u2715</button></div>'
+          + '<div class="sg-cmt-list"><p class="sg-cmt-empty">Loading\u2026</p></div>'
+          + '<form class="sg-cmt-form"><input class="sg-cmt-in" maxlength="500" placeholder="Add a comment\u2026" autocomplete="off"><button class="sg-cmt-send" type="submit">Post</button></form>'
+          + '</div>';
+        document.body.appendChild(wrap);
+        var list = wrap.querySelector('.sg-cmt-list'), input = wrap.querySelector('.sg-cmt-in');
+        function close(){ wrap.remove(); }
+        wrap.querySelector('.sg-cmt-back').addEventListener('click', close);
+        wrap.querySelector('.sg-cmt-x').addEventListener('click', close);
+        /* swipe the panel down to close */
+        var y0 = null, panel = wrap.querySelector('.sg-cmt-panel');
+        panel.addEventListener('touchstart', function(e){ if(list.scrollTop <= 0) y0 = e.touches[0].clientY; }, {passive:true});
+        panel.addEventListener('touchmove', function(e){ if(y0 !== null){ var dy = e.touches[0].clientY - y0; if(dy > 0) panel.style.transform = 'translateY(' + dy + 'px)'; } }, {passive:true});
+        panel.addEventListener('touchend', function(e){ if(y0 === null) return; var dy = e.changedTouches[0].clientY - y0; y0 = null; if(dy > 90) close(); else panel.style.transform = ''; });
+        function row(c){ return '<div class="sg-cmt-row"><div class="sg-cmt-name">' + escHtml(c.name) + '</div><div class="sg-cmt-body">' + escHtml(c.body) + '</div></div>'; }
+        fetch('/api/reels/social/' + encodeURIComponent(key) + '/comments', {credentials:'same-origin'})
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var cs = (d && d.comments) || [];
+            list.innerHTML = cs.length ? cs.map(row).join('') : '<p class="sg-cmt-empty">No comments yet. Be the first.</p>';
+          }).catch(function(){ list.innerHTML = '<p class="sg-cmt-empty">Could not load comments.</p>'; });
+        wrap.querySelector('.sg-cmt-form').addEventListener('submit', function(e){
+          e.preventDefault();
+          var text = input.value.trim(); if(!text) return;
+          if(!_reelsUserLoggedIn && window.parent && window.parent !== window){ close(); askSignIn('comment', video); return; }
+          input.disabled = true;
+          fetch('/api/reels/social/' + encodeURIComponent(key) + '/comments', {
+            method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({body:text})
+          }).then(function(r){
+            if(r.status === 401){ close(); askSignIn('comment', video); return null; }
+            return r.json();
+          }).then(function(d){
+            input.disabled = false;
+            if(!d || !d.comment) return;
+            input.value = '';
+            var empty = list.querySelector('.sg-cmt-empty'); if(empty) empty.remove();
+            list.insertAdjacentHTML('afterbegin', row(d.comment));
+            var st = social[key] || (social[key] = {likes:0, comments:0, reposts:0, liked:false, reposted:false});
+            st.comments++; paintSocial(key);
+          }).catch(function(){ input.disabled = false; });
+        });
       }
 
       // ── Constants ──
@@ -2162,6 +2311,7 @@
          buttons stay put, as on TikTok, Shorts and Reels. */
       var rowHost = null;
       function pinActiveRow(){
+        loadSocialSoon();
         if(!rowHost){
           rowHost = document.createElement('div');
           rowHost.id = 'sg-reel-row-host';
@@ -2786,17 +2936,23 @@
 
         var actions = document.createElement('div');
         actions.className = 'reel-actions';
-        actions.innerHTML = SHOP_ACTION
+        var _sb = socialButtons(video);
+        div.dataset.sk = socialKey(video);
+        actions.innerHTML = _sb.lead
+          + '<div class="reel-action" data-action="save">'
+          +   '<div class="icon">' + ICONS.save + '</div><span class="label">Save</span></div>'
           + '<div class="reel-action" data-action="share">'
           +   '<div class="icon">' + ICONS.share + '</div><span class="label">Share</span></div>'
-          + '<div class="reel-action" data-action="save">'
-          +   '<div class="icon">' + ICONS.save + '</div><span class="label">Save</span></div>';
+          + _sb.tail + SHOP_ACTION;
         div.appendChild(actions);
         actions.querySelectorAll('.reel-action').forEach(function(btn){
           btn.addEventListener('click', function(e){
             e.preventDefault();
             e.stopPropagation();
-            if(btn.dataset.action === 'shop') openReelShop(video);
+            if(btn.dataset.action === 'like') toggleSocial('like', video);
+            else if(btn.dataset.action === 'repost') toggleSocial('repost', video);
+            else if(btn.dataset.action === 'comment') openComments(video);
+            else if(btn.dataset.action === 'shop') openReelShop(video);
             else if(btn.dataset.action === 'share') handleShare(video);
             else if(btn.dataset.action === 'save') handleSave(video, video.url);
           });
@@ -3036,11 +3192,15 @@
         var _shareCheck = _isShared ? ' \u2713' : '';
         var _saveCheck = _isSaved ? ' \u2713' : '';
 
-        actions.innerHTML = SHOP_ACTION
-          + '<div class="reel-action" data-action="share"' + (_isShared?' style="color:#22c55e"':'') + '>'
-          +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + _shareCheck + '</span></div>'
+        /* Task 52: TikTok order — Like, Comment, Save, Share, Repost — then Shop. */
+        var _sb = socialButtons(video);
+        div.dataset.sk = socialKey(video);
+        actions.innerHTML = _sb.lead
           + '<div class="reel-action" data-action="save"' + (_isSaved?' style="color:#22c55e"':'') + '>'
           +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + _saveCheck + '</span></div>'
+          + '<div class="reel-action" data-action="share"' + (_isShared?' style="color:#22c55e"':'') + '>'
+          +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + _shareCheck + '</span></div>'
+          + _sb.tail + SHOP_ACTION
           ; /* Earn action removed — moved to Profile tab */
         div.appendChild(actions);
 
@@ -3090,7 +3250,10 @@
             if(action === 'create') return; // <a> navigates to /upload
             e.preventDefault();
             e.stopPropagation();
-            if(action === 'shop') openReelShop(video);
+            if(action === 'like') toggleSocial('like', video);
+            else if(action === 'repost') toggleSocial('repost', video);
+            else if(action === 'comment') openComments(video);
+            else if(action === 'shop') openReelShop(video);
             else if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);
             else if(action === 'more') window.location.href = '/more';
@@ -3105,6 +3268,12 @@
       // ═══════════════════════════════════════════════════════════
 
       function doubleTapLike(x, y){
+        /* Task 52: a double tap is a real Like now (never an unlike, as on TikTok). */
+        var _dt = renderedReels[currentIndex];
+        if(_dt && _dt.dataset.sk && _reelsUserLoggedIn){
+          var _st = social[_dt.dataset.sk];
+          if(!_st || !_st.liked){ toggleSocial('like', {cdnKey:_dt.dataset.sk}, true); }
+        }
         trackEvent('like', currentIndex); // G7 fix: track likes
         if(navigator.vibrate) navigator.vibrate([10, 30, 10]);
         var heart = document.createElement('div');
@@ -3942,6 +4111,6 @@
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.1" defer></script>
 <script src="/sg-half-sheet.js?v=1.4" defer></script>
-<script src="/rails.js?v=3.8" defer></script>
+<script src="/rails.js?v=3.9" defer></script>
 </body>
 </html>

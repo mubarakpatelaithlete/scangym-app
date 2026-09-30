@@ -567,8 +567,58 @@ async function submit(model, input) {
 
 /** Poll an asynchronous generation. */
 async function poll(model, op) {
-  if (model.provider === 'fal') return falPoll(model, op);
+  if (model.provider === 'fal') {
+    const out = await falPoll(model, op);
+    if (out && out.status === 'done' && out.url) out.url = await rehostToCdn(out.url, model.kind, op);
+    return out;
+  }
   throw new Error(`${model.provider} has no async poll path`);
+}
+
+/**
+ * Task 57 (owner, 2026-09-30): "Create image output URL - why does it show a
+ * fal URL instead of a cdn.scangym URL?" Every async creation (image, video,
+ * music, edit) finishes here, so this is the one place that copies fal's file
+ * to our own bucket and hands back https://cdn.scangym.com/... instead. fal
+ * also deletes outputs after about 7 days, so this is what keeps a creator's
+ * Library working.
+ *
+ * Never loses a result: no R2 credentials, a slow download or a failed upload
+ * all return fal's url unchanged, exactly as before. The key comes from the
+ * job id, so two polls racing on the same finished job write the same object.
+ */
+const FAL_HOST = /(^|\.)fal\.(media|run|ai)$/i;
+const REHOST_MAX_BYTES = 300 * 1024 * 1024;
+const REHOST_TIMEOUT_MS = 60 * 1000;
+async function rehostToCdn(url, kind, op, deps = {}) {
+  let host;
+  try { host = new URL(url).hostname; } catch (e) { return url; }
+  if (!FAL_HOST.test(host)) return url;
+  const r2 = deps.r2 || require('./r2-upload');
+  const fetchFn = deps.fetch || fetch;
+  if (!r2.r2Configured()) return url;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), REHOST_TIMEOUT_MS);
+    let buf, type;
+    try {
+      const r = await fetchFn(url, { signal: ctrl.signal });
+      if (!r.ok) return url;
+      const len = Number(r.headers.get('content-length') || 0);
+      if (len > REHOST_MAX_BYTES) return url;
+      type = r.headers.get('content-type') || 'application/octet-stream';
+      buf = Buffer.from(await r.arrayBuffer());
+    } finally { clearTimeout(timer); }
+    if (!buf.length || buf.length > REHOST_MAX_BYTES) return url;
+    const ext = (new URL(url).pathname.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || 'bin';
+    const safeOp = String(op || Date.now()).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || String(Date.now());
+    const key = `gen/${String(kind || 'media').replace(/[^a-z]/gi, '') || 'media'}/${safeOp}.${ext.toLowerCase()}`;
+    const up = await r2.uploadBufferToR2(buf, key, { contentType: type });
+    return (up && up.url) || url;
+  } catch (e) {
+    console.warn('[gen-provider] CDN re-host failed, keeping fal url:', e.message);
+    return url;
+  }
 }
 
 /** Run a synchronous generation and return bytes. */
@@ -596,5 +646,5 @@ module.exports = {
   cachedGenerationAccess,
   noteGenerationOutcome,
   invalidateCharacterQuota,
-  _internals: { falPoll, firstMediaUrl, falRouterText, openrouterText, falSpeech },
+  _internals: { falPoll, rehostToCdn, firstMediaUrl, falRouterText, openrouterText, falSpeech },
 };
