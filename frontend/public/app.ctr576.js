@@ -6912,7 +6912,7 @@ function WalletPage(){
 
   window._sgWalletGo=window._sgWalletGo||function(fn){
     if(typeof window[fn]==='function')return window[fn]();
-    var sc=document.createElement('script');sc.src='/wallet-withdraw.js?v=1.2';sc.onload=function(){if(typeof window[fn]==='function')window[fn]();};document.head.appendChild(sc);
+    var sc=document.createElement('script');sc.src='/wallet-withdraw.js?v=1.3';sc.onload=function(){if(typeof window[fn]==='function')window[fn]();};document.head.appendChild(sc);
   };
   // Load wallet + saved cards on render
   setTimeout(()=>_loadWalletScreen(),50);
