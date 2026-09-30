@@ -567,7 +567,7 @@
     <script src="/pass-math.js" defer></script>
     <script src="/pricing.js" defer></script>
     <link rel="stylesheet" href="/one-orange.css?v=1.0">
-  <link rel="stylesheet" href="/one-cta.css?v=1.0">
+  <link rel="stylesheet" href="/one-cta.css?v=1.1">
   <!-- One definition of what a strip button looks like; loaded before the
        rows that read it. -->
   <link rel="stylesheet" href="/one-button.css?v=1.0">
@@ -576,7 +576,7 @@
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- The Reels feed is its own document, so it never got the row rails.css
        defines. Same file, same band: one place decides where rows live. -->
-  <link rel="stylesheet" href="/rails.css?v=3.4">
+  <link rel="stylesheet" href="/rails.css?v=3.5">
   <script>if(window.top!==window.self){document.documentElement.classList.add('sg-framed');}</script>
 </head>
   <body>
@@ -673,8 +673,17 @@
         share:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>',
         save:   '<svg viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
         more:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#fff" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="#fff" stroke="none"/></svg>',
-        create: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+        create: '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        shop:   '<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 016 0"/></svg>'
       };
+
+      /* Task 6 (owner, 2026-09-30): a Shop button on every reel, like the one on
+         every TikTok video. The shop and its sheets live in the parent app, so
+         the frame asks the parent to open "Shop this reel" for this video. */
+      var SHOP_ACTION = '<div class="reel-action" data-action="shop"><div class="icon">' + ICONS.shop + '</div><span class="label">Shop</span></div>';
+      function openReelShop(video){
+        try { window.parent.postMessage({ sg: 'row-act', key: 'shop', category: (video && video.category) || '', title: (video && video.name) || '' }, '*'); } catch(e){}
+      }
 
       // ── Constants ──
       var SNAP_VELOCITY    = 0.04;   // Ultra-fast: was 0.15 — lighter flick triggers swipe (TikTok ~0.10)
@@ -2778,7 +2787,7 @@
 
         var actions = document.createElement('div');
         actions.className = 'reel-actions';
-        actions.innerHTML = ''
+        actions.innerHTML = SHOP_ACTION
           + '<div class="reel-action" data-action="share">'
           +   '<div class="icon">' + ICONS.share + '</div><span class="label">Share</span></div>'
           + '<div class="reel-action" data-action="save">'
@@ -2788,7 +2797,8 @@
           btn.addEventListener('click', function(e){
             e.preventDefault();
             e.stopPropagation();
-            if(btn.dataset.action === 'share') handleShare(video);
+            if(btn.dataset.action === 'shop') openReelShop(video);
+            else if(btn.dataset.action === 'share') handleShare(video);
             else if(btn.dataset.action === 'save') handleSave(video, video.url);
           });
         });
@@ -3027,7 +3037,7 @@
         var _shareCheck = _isShared ? ' \u2713' : '';
         var _saveCheck = _isSaved ? ' \u2713' : '';
 
-        actions.innerHTML = ''
+        actions.innerHTML = SHOP_ACTION
           + '<div class="reel-action" data-action="share"' + (_isShared?' style="color:#22c55e"':'') + '>'
           +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + _shareCheck + '</span></div>'
           + '<div class="reel-action" data-action="save"' + (_isSaved?' style="color:#22c55e"':'') + '>'
@@ -3081,7 +3091,8 @@
             if(action === 'create') return; // <a> navigates to /upload
             e.preventDefault();
             e.stopPropagation();
-            if(action === 'share') handleShare(video);
+            if(action === 'shop') openReelShop(video);
+            else if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);
             else if(action === 'more') window.location.href = '/more';
           });
@@ -3932,6 +3943,6 @@
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.1" defer></script>
 <script src="/sg-half-sheet.js?v=1.4" defer></script>
-<script src="/rails.js?v=3.4" defer></script>
+<script src="/rails.js?v=3.5" defer></script>
 </body>
 </html>

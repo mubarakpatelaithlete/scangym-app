@@ -303,6 +303,7 @@
     window.addEventListener('message', function (ev) {
       var d = ev.data;
       if (!d || d.sg !== 'row-act' || !d.key) return;
+      if (d.key === 'shop') { if (typeof window.sgReelShop === 'function') window.sgReelShop(d); return; }
       act(String(d.key));
     });
   }
