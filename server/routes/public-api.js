@@ -35,26 +35,8 @@ const PORT = process.env.PORT || 5000;
 const RATE_PER_MIN = 60;
 const MAX_KEYS_PER_USER = 5;
 
-let ready = null;
-function ensureTable() {
-  if (!ready) {
-    ready = pool.query(`
-      CREATE TABLE IF NOT EXISTS api_keys (
-        id SERIAL PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL DEFAULT 'My app',
-        key_hash TEXT NOT NULL UNIQUE,
-        key_prefix TEXT NOT NULL,
-        requests BIGINT NOT NULL DEFAULT 0,
-        last_used_at TIMESTAMPTZ,
-        revoked_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS api_keys_user_idx ON api_keys(user_id);
-    `).catch((e) => { ready = null; throw e; });
-  }
-  return ready;
-}
+// Table lives in migrations/20260930_api_keys.sql (applied on boot).
+const ensureTable = async () => {};
 
 const hashKey = (k) => crypto.createHash('sha256').update(k).digest('hex');
 function newKey() { return 'sg_live_' + crypto.randomBytes(24).toString('base64url'); }
