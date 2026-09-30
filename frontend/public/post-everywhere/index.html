@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Post everywhere · ScanGym</title>
+<meta name="description" content="Connect Instagram, YouTube, Facebook, Pinterest, X and LinkedIn once. Post from ScanGym to all of them in one tap.">
+<meta name="theme-color" content="#127947">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f6f8f7;color:#334155;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(160deg,#127947,#0d5c36);color:#fff;text-align:center;padding:36px 20px 40px}
+header h1{font-size:26px;font-weight:800;letter-spacing:-.4px}
+header p{margin:8px auto 0;color:#d8ece2;max-width:460px}
+main{max-width:620px;margin:-20px auto 40px;padding:0 16px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 4px 14px rgba(15,23,42,.06)}
+h2{font-size:18px;color:#0f172a;margin-bottom:10px}
+button,.btn{background:#127947;color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.6;cursor:default}
+button.ghost{background:#fff;color:#127947;border:1px solid #a7d7bd;padding:7px 12px;font-size:14px}
+button.x{background:#fff;color:#b91c1c;border:1px solid #fecaca;padding:6px 10px;font-size:13px}
+.net{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #eef2f1}
+.net:first-child{border-top:0}
+.net b{color:#0f172a}
+.ok{color:#127947;font-size:13px;font-weight:600}
+textarea,input,select{border:1px solid #cbd5e1;border-radius:10px;padding:10px;font:inherit;font-size:15px;width:100%}
+textarea{min-height:96px;resize:vertical}
+label{display:block;font-size:13px;color:#64748b;margin:10px 0 4px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.muted{color:#64748b;font-size:13px}
+.res{margin-top:12px;font-size:14px}
+.res div{padding:4px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Post everywhere</h1>
+  <p>Connect your socials once. Every post goes to all of them in one tap.</p>
+</header>
+<main>
+  <section class="card">
+    <h2>1. Connect your accounts</h2>
+    <div id="nets" class="muted">Loading…</div>
+  </section>
+  <section class="card" id="composer" hidden>
+    <h2>2. Post</h2>
+    <label for="text">Caption</label>
+    <textarea id="text" maxlength="2200" placeholder="What do you want to share?"></textarea>
+    <div class="row">
+      <div><label for="media">Photo or video link (optional)</label><input id="media" type="url" placeholder="https://…"></div>
+      <div style="flex:0 0 110px"><label for="mtype">Type</label><select id="mtype"><option value="image">Photo</option><option value="video">Video</option></select></div>
+    </div>
+    <label for="link">Link (optional)</label>
+    <input id="link" type="url" placeholder="https://www.scangym.com/…">
+    <p class="muted" style="margin-top:8px">Instagram needs a photo or video. Pinterest needs a photo. YouTube needs a video.</p>
+    <div style="margin-top:12px"><button id="go">Post to all connected</button></div>
+    <div id="res" class="res"></div>
+  </section>
+</main>
+<script>
+(function(){
+  var nets=document.getElementById('nets'), apps=[], accounts=[];
+  function j(url,opt){opt=opt||{};opt.credentials='same-origin';if(opt.body){opt.headers={'Content-Type':'application/json'};}
+    return fetch(url,opt).then(function(r){return r.json().then(function(d){if(!r.ok){var e=new Error(d.error||r.status);e.status=r.status;throw e;}return d;});});}
+  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function render(){
+    nets.className='';
+    nets.innerHTML=apps.map(function(a){
+      var mine=accounts.filter(function(x){return x.app===a.slug;});
+      var right=mine.length?mine.map(function(m){return '<span class="ok">✓ '+esc(m.name||'Connected')+'</span> <button class="x" data-del="'+esc(m.id)+'">Remove</button>';}).join(' ')
+        :'<button class="ghost" data-app="'+a.slug+'">Connect</button>';
+      return '<div class="net"><b>'+esc(a.name)+'</b><span>'+right+'</span></div>';
+    }).join('');
+    document.getElementById('composer').hidden=!accounts.length;
+  }
+  function load(){
+    return j('/api/post-everywhere/accounts').then(function(d){accounts=d.accounts;render();})
+      .catch(function(e){
+        if(e.status===401){nets.innerHTML='<p style="margin-bottom:10px">Sign in to ScanGym to connect your socials.</p><a class="btn" href="/login">Sign in</a>';}
+        else{nets.textContent='Could not load: '+e.message;}
+      });
+  }
+  j('/api/post-everywhere/apps').then(function(d){apps=d.apps;return load();}).catch(function(){nets.textContent='Could not load.';});
+  nets.addEventListener('click',function(ev){
+    var b=ev.target.closest('button');if(!b)return;
+    if(b.dataset.app){
+      var w=window.open('about:blank','pd_connect','width=520,height=720');
+      b.disabled=true;
+      j('/api/post-everywhere/connect',{method:'POST',body:JSON.stringify({app:b.dataset.app})}).then(function(d){
+        if(w){w.location=d.url;}else{location.href=d.url;return;}
+        var t=setInterval(function(){if(w.closed){clearInterval(t);load();}},1000);
+      }).catch(function(e){if(w)w.close();alert(e.message);}).then(function(){b.disabled=false;});
+    }else if(b.dataset.del){
+      if(!confirm('Disconnect this account?'))return;
+      j('/api/post-everywhere/accounts/'+encodeURIComponent(b.dataset.del),{method:'DELETE'}).then(load).catch(function(e){alert(e.message);});
+    }
+  });
+  window.addEventListener('focus',function(){if(apps.length)load();});
+  document.getElementById('go').addEventListener('click',function(){
+    var btn=this,res=document.getElementById('res');
+    btn.disabled=true;res.textContent='Posting…';
+    j('/api/post-everywhere/post',{method:'POST',body:JSON.stringify({
+      text:document.getElementById('text').value,mediaUrl:document.getElementById('media').value,
+      mediaType:document.getElementById('mtype').value,link:document.getElementById('link').value})})
+    .then(function(d){res.innerHTML=d.results.map(function(r){
+        var icon=r.status==='posted'?'✅':r.status==='skipped'?'⏭️':'❌';
+        return '<div>'+icon+' <b>'+esc(r.appName)+'</b> '+esc(r.status)+(r.note?' · '+esc(r.note):'')+'</div>';}).join('');})
+    .catch(function(e){res.textContent='❌ '+e.message;}).then(function(){btn.disabled=false;});
+  });
+})();
+</script>
+</body>
+</html>

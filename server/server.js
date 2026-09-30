@@ -75,6 +75,7 @@ const creatorGrowthRouter = require('./routes/creator-growth');
 const creatorContentRouter = require('./routes/creator-content');
 const fanChatRouter = require('./routes/fan-chat');
 const dmRouter = require('./routes/dm');
+const postEverywhereRouter = require('./routes/post-everywhere');
 const { developerRouter, v1Router } = require('./routes/public-api');
 const analyticsMiddleware = require('./middleware/analytics');
 
@@ -611,6 +612,7 @@ app.use('/api/creator-growth', creatorGrowthRouter);
 app.use('/api/creator-content', creatorContentRouter);
 app.use('/api/fan-chat', fanChatRouter);
 app.use('/api/dm', dmRouter);                 // Task 11: Chats tab
+app.use('/api/post-everywhere', postEverywhereRouter); // Task 4: Pipedream Connect
 app.use('/api/developer', developerRouter);  // Task 2: API keys
 app.use('/api/v1', v1Router);                 // Task 2: public API
 /* Second router on /api/pricing (gift, group, couple, compare, carry-forward).
@@ -874,6 +876,12 @@ if (fs.existsSync(FRONTEND_DIR)) {
   app.get('/grok', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'grok', 'index.html'));
+  });
+
+  // Task 4: connect socials + post everywhere (2026-09-30).
+  app.get(['/post-everywhere', '/post-everywhere/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'post-everywhere', 'index.html'));
   });
 
   // Task 2: ScanGym API docs + key management page (2026-09-30).
