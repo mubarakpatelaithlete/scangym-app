@@ -13985,9 +13985,7 @@ window._sgShopOpen=function(productId){
   if(!p)return;
   var owned=_sgShopState.owned[p.id];
   var body='<div style="padding:4px 2px 8px">'
-    +'<h2 style="margin:0 0 4px;font-size:19px;font-weight:900">'+_sgShopEsc(p.title)+'</h2>'
-    +'<p style="margin:0 0 12px;color:rgba(255,255,255,.5);font-size:12px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)
-    +(p.fileSizeKb?' · '+p.fileSizeKb+' KB':'')+'</p>'
+    +(p.fileSizeKb?'<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:12px">'+p.fileSizeKb+' KB</p>':'')
     +'<p style="margin:0 0 16px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap">'+_sgShopEsc(p.description||'')+'</p>'
     +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
     +(owned
@@ -13995,13 +13993,16 @@ window._sgShopOpen=function(productId){
       : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">Buy for '+_sgShopEsc(p.price)+'</button>')
     +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
     +'</div>';
-  if(typeof window.sgOpenSheet==='function') return window.sgOpenSheet(body);
-  window._sgShopSimpleSheet(body);
+  window._sgShopSimpleSheet(body,{title:p.title,sub:'@'+p.creatorHandle+' \u00b7 '+p.category,icon:'\uD83D\uDCC4'});
 };
 
 /* The app has several bespoke sheets and no shared one; this is the smallest
    correct thing rather than a sixth variant with its own dismiss bugs. */
-window._sgShopSimpleSheet=function(html){
+window._sgShopSimpleSheet=function(html,opts){
+  /* The shared half-screen sheet (sg-half-sheet.js): red ✕, swipe down, back
+     button. Owner, 2026-09-30. The inline fallback stays for a page that has
+     not loaded it. */
+  if(typeof window.sgOpenSheet==='function') return window.sgOpenSheet(html,opts||{});
   var old=document.getElementById('sg-shop-sheet');
   if(old)old.remove();
   var el=document.createElement('div');
@@ -14030,6 +14031,7 @@ window._sgShopBuy=async function(productId){
       _sgShopState.owned[productId]=r.downloadUrl;
       var sheet=document.getElementById('sg-shop-sheet');
       if(sheet)sheet.remove();
+      if(typeof window.sgCloseSheet==='function')window.sgCloseSheet();
       sgToast(r.alreadyOwned?'You already own this — downloading':'Paid! Your download is ready 🎉','success',4000);
       window.location.href=r.downloadUrl;
       window._sgShopRender();
@@ -14092,6 +14094,7 @@ window._sgShopSubmitProduct=async function(){
     if(r.success){
       var sheet=document.getElementById('sg-shop-sheet');
       if(sheet)sheet.remove();
+      if(typeof window.sgCloseSheet==='function')window.sgCloseSheet();
       sgToast('Listed! It is live in the Shop 🎉','success',4000);
       _sgShopState.loaded=false;
       window._sgShopLoad(true);
