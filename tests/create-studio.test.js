@@ -126,3 +126,10 @@ t2('a button inside a sheet opens the next step in the same sheet: ← one step 
   a2.match(sheet, /if \(sh\.__step\) exitSettings\(sh, mode\); else closeSheet\(\);/, '← leaves the Settings step before it closes the sheet');
   a2.match(sheet, /'Done \\u2713'/);
 });
+
+t2('an open app notices a new build and reloads itself on the next tab switch', () => {
+  const app = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  a2.match(app, /Stale-build watch/);
+  a2.match(app, /fetch\('\/\?sg_build='\+Date\.now\(\),\{cache:'no-store'/, 'asks the server, not the cache, which build is current');
+  a2.match(app, /document\.addEventListener\('sg:tabchange',function\(\)\{if\(stale\)/, 'reloads between tabs, never mid-task');
+});
