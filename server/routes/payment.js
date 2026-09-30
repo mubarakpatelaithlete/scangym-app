@@ -369,6 +369,15 @@ async function autoSaveCardFromIntent(userId, paymentIntentId) {
  * the fallback, regular users sharing scangym.com/r/{handle} links earned
  * commissions on paper but never received the wallet credit.
  */
+/** Task 25: affiliate handle from the sg_referral cookie (30-day, set on ?ref= links). */
+function refFromCookie(req) {
+  try {
+    const m = /(?:^|;\s*)sg_referral=([^;]+)/.exec(req.headers.cookie || '');
+    const h = m ? decodeURIComponent(m[1]) : '';
+    return /^[A-Za-z0-9_.-]{2,40}$/.test(h) ? h : null;
+  } catch (e) { return null; }
+}
+
 async function resolveReferralUserId(handle) {
   if (!handle) return null;
   try {
@@ -709,6 +718,8 @@ router.post('/quick-checkout', async (req, res) => {
     if (!req.session?.userId) return res.status(401).json({ error: 'Login required for 1-tap booking' });
 
     let { gymId, date, time, cardId, savedCardId, placeId, passType, gymName: reqGymName, gymAddress: reqGymAddr, referral_code } = req.body;
+    // Task 25: fall back to the sg_referral cookie set when the buyer opened an affiliate link
+    if (!referral_code) referral_code = refFromCookie(req);
     const effectiveCardId = cardId || savedCardId; // Frontend sends savedCardId
     if (!date) return res.status(400).json({ error: 'date required' });
     // C2 fix: Resolve 'anytime' / empty time to a sensible default
