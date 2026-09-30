@@ -452,6 +452,8 @@ require('node:test').test('Home and Create rows drop Book and Talk, keep Ask AI'
   assert.match(fn, /\{ book: 1, talk: 1 \}/);
   assert.doesNotMatch(fn, /ai: 1/);
   assert.match(src, /if \(slot\.querySelector\('\.' \+ TRIO\)\) \{ paintTrio\(slot\); return; \}/, 'a row built on another tab is repainted, not trusted');
+  assert.match(src, /classList\.toggle\('sg-row-hidden'/, 'inline display:none loses to the !important flex rule');
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'rails.css'), 'utf8'), /\.sg-row-slot \.tt-action\.sg-row-trio\.sg-row-hidden \{\s*display: none !important;/);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8'), /rails\.js\?v=2\.[6-9]/);
 });
 
