@@ -298,7 +298,9 @@
     head.appendChild(el('div', 'cs-title', 'Create'));
     var close = el('div', 'cs-close', '\u00d7');
     close.setAttribute('role', 'button'); close.setAttribute('aria-label', 'Close Create');
-    close.addEventListener('click', function () { dismissed = true; root.remove(); });
+    /* ✕ used to reveal the page underneath (the ScanSquad pitch). The studio is the
+       Create tab now, so ✕ leaves the tab instead. */
+    close.addEventListener('click', function () { if (typeof window.navigate === 'function') window.navigate('/'); else location.href = '/'; });
     head.appendChild(close);
     sticky.appendChild(head);
 
@@ -379,6 +381,13 @@
     style.textContent = css;
     document.head.appendChild(style);
     window.addEventListener('popstate', sync);
+    /* The app routes with pushState; the 800ms poll alone let the page under
+       the studio show first. Sync on the same tick instead. */
+    ['pushState', 'replaceState'].forEach(function (k) {
+      var orig = history[k];
+      if (typeof orig !== 'function') return;
+      history[k] = function () { var r = orig.apply(this, arguments); try { sync(); } catch (e) {} return r; };
+    });
     setInterval(sync, 800);
     sync();
   }

@@ -238,6 +238,34 @@ html body .sg-pr-host-capped {
   pointer-events: none;
 }
 
+/* The same arrow on the LEFT once the row has been scrolled (owner,
+   2026-09-30: "arrow only right side not left side"). Pulled out of the flow
+   with a negative margin so it appearing never shifts the buttons. Both arrows
+   are tappable: rails.js pages the row when a tap lands on either edge. */
+.tt-actions.sg-rail-scroll-left::before,
+.sg-rail-scroll-left::before {
+  content: '\2039';
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: -22px;
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 255, 255, .75);
+  background: rgba(13, 16, 25, .62);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+  pointer-events: none;
+}
+
 /* ── No half-built rail on screen ──────────────────────────────────────────
    A gym card renders with the app's raw rail: emoji icons, every item
    expanded. sg-rail-ui.js turns that into the white 4 + More rail and stamps
@@ -1006,6 +1034,10 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
   width: 24px !important;
   height: 24px !important;
   min-width: 0 !important;
+  /* app's tap-target rule `.tt-action-btn{min-height:44px}` kept the trio's
+     24px box 44px tall, so Ask AI / Book / Talk sat 14px lower than the row
+     (owner screenshot, 2026-09-30). The whole 56px button is the tap target. */
+  min-height: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   border: 0 !important;
@@ -1040,7 +1072,7 @@ html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
    sgRailCircle), the chatbot buttons (.sg-pr-circle, with live dots) and the
    in-row Sign in pill all take the flat tab-bar look. The row's own Book goes:
    the trio already has one (owner saw "Book Book"). */
-.sg-pr-host-capped > * > div:first-child,
+.sg-pr-host-capped > :not(#sg-profile-rail-ext) > div:first-child,
 .sg-pr-host-capped .sg-pr-circle,
 #sg-profile-rail .sg-pr-circle,
 #sg-profile-rail-ext .sg-pr-circle {
@@ -1054,7 +1086,7 @@ html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
   -webkit-backdrop-filter: none !important;
   font-size: 20px !important;
 }
-.sg-pr-host-capped > * > div:first-child svg,
+.sg-pr-host-capped > :not(#sg-profile-rail-ext) > div:first-child svg,
 .sg-pr-host-capped .sg-pr-circle svg,
 #sg-profile-rail .sg-pr-circle svg,
 #sg-profile-rail-ext .sg-pr-circle svg {

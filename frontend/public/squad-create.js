@@ -1299,7 +1299,7 @@
   // with a deferred script and the emoji stays as the last-resort fallback.
   var ICON_KEYS = {
     text: 'pen', image: 'image', video: 'film', audio: 'mic',
-    music: 'music', twin: 'person', clipping: 'scissors', ugc: 'phone'
+    music: 'music', edit: 'clapper', twin: 'person', clipping: 'scissors', ugc: 'phone'
   };
   function iconFor(mode) {
     var table = (typeof window !== 'undefined' && window.SG_ICONS) || {};

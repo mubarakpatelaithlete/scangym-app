@@ -15516,7 +15516,7 @@ window._requestPayNextVisit=async function(){
 // no referral link. Just what the programme is, what it pays, and one way in.
 // All figures resolve through the shared pricing service so they stay in step
 // with the rest of the app rather than drifting as hardcoded copy.
-/* CreatorSignedOutPage → sg-scansquad.js */
+/* CreatorSignedOutPage removed 2026-09-30: signed-out Create is the studio */
 
 // ═══ CREATOR TAB PAGE (OnlyFans-inspired) — Fixed fullscreen, no scrolling ═══
 /* CreatorFullPage → sg-scansquad.js */

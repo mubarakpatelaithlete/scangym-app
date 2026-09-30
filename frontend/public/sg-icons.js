@@ -56,6 +56,7 @@ var ICONS={
   pen:I('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
   image:I('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'),
   scissors:I('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>'),
+  clapper:I('<path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8z"/><path d="M4 11l-.9-3.5a1 1 0 0 1 .7-1.2L17 3a1 1 0 0 1 1.2.7L19 7z"/><line x1="8.5" y1="5.4" x2="10" y2="9.2"/><line x1="13.4" y1="4.2" x2="14.9" y2="8"/>'),
   phone:I('<rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5"/>')
 };
 /* The one icon table in the app. rails.js builds Book / Talk / Ask AI in a
