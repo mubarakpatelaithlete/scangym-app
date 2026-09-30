@@ -83,7 +83,7 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
   a2.match(html, /squad-create\.js\?v=2\.3/);
-  a2.match(html, /create-studio\.js\?v=1\.5/);
+  a2.match(html, /create-studio\.js\?v=1\.6/);
 });
 
 t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕, swipe down, back', () => {
@@ -142,7 +142,7 @@ t2('the button row is a solid rectangle on the tab bar and the reel ends above i
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
   a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
-  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.5/, f);
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.6/, f);
 });
 
 t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenly', () => {

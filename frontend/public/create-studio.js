@@ -296,12 +296,8 @@
     root.appendChild(sticky);
     var head = el('div', 'cs-head');
     head.appendChild(el('div', 'cs-title', 'Create'));
-    var close = el('div', 'cs-close', '\u00d7');
-    close.setAttribute('role', 'button'); close.setAttribute('aria-label', 'Close Create');
-    /* ✕ used to reveal the page underneath (the ScanSquad pitch). The studio is the
-       Create tab now, so ✕ leaves the tab instead. */
-    close.addEventListener('click', function () { if (typeof window.navigate === 'function') window.navigate('/'); else location.href = '/'; });
-    head.appendChild(close);
+    /* No ✕ (task 19, owner 2026-09-30): Create is a tab, not a popup — you leave
+       it with the tab bar, like Home / Shop / Chats / Profile. */
     sticky.appendChild(head);
 
     var libBox = el('div', 'cs-lib');

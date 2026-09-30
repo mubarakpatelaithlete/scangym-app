@@ -409,11 +409,12 @@
   var GROUPS = [
     // One Facebook chatbot button (it opens the ScanGym Messenger bot). The old
     // Social "Facebook" button opened the same chat, so it looked doubled.
-    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['tiktokbot', 'TikTok'], ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['googlechat', 'Google Chat']] },
+    { title: 'Chatbots', items: [['messenger', 'Facebook'], ['instagram', 'Instagram'], ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['sms', 'SMS'], ['telegram', 'Telegram'], ['discord', 'Discord'], ['slack', 'Slack'], ['googlechat', 'Google Chat']] },
     { title: 'AI', items: [['claude', 'Claude'], ['chatgpt', 'ChatGPT'], ['grok', 'Grok']] /* Teams and Gemini buttons removed from Profile (owner, 2026-09-29); /gemini page and Teams install stay reachable by URL. */ },
     // Apps group dropped: the host row's "Apps" button already opens MS Store
     // and Install (owner saw double buttons, 2026-09-25).
-    { title: 'Social', items: [['tiktok', 'TikTok']] },
+    // TikTok chatbot + TikTok social buttons removed (task 17, owner 2026-09-30):
+    // the TikTok bot is not working end to end and ScanGym shows no TikTok branding.
     // 'All' (/everything) button removed at the owner's request, 2026-09-25.
   ];
 
