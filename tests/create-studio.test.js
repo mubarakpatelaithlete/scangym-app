@@ -61,3 +61,27 @@ t2('the model price line never wraps into "Change model"', () => {
   const pill = src.slice(src.indexOf('var paintPill'), src.indexOf('pill.addEventListener'));
   a2.match(pill, /text-overflow:ellipsis;white-space:nowrap/, 'the price span can wrap onto two lines');
 });
+
+/* Higgsfield-style, one flow (owner, 2026-09-30): the create surface is a full
+   page with ← back, the type tabs and the history list are the grid's job,
+   "Change model" is the grid, and the Library strip leads the Create tab. */
+t2('the create surface is a full page, not a sheet stacked on the grid', () => {
+  const sheet = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'squad-create.js'), 'utf8');
+  a2.match(sheet, /'\.sv-back\{/, 'a back control is how the page is left');
+  a2.match(sheet, /sv-head-name/, 'the header names the model');
+  a2.doesNotMatch(sheet, /sh\.appendChild\(seg\)/, 'type tabs belong to the grid only');
+  a2.doesNotMatch(sheet, /hist\.id = 'sv-history'/, 'the page has no second history list');
+  a2.match(sheet, /function openGrid\(mode\)/);
+  a2.match(sheet, /pill\.addEventListener\('click', function \(\) \{ openGrid\(mode\); \}\)/, '"Change model" opens the grid');
+  a2.match(sheet, /state\[mode\.key\]\.__prompt = ta\.value/, 'the prompt survives the trip to the grid');
+});
+
+t2('the Create tab leads with a Library strip and can be shown filtered from the page', () => {
+  const studio = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'create-studio.js'), 'utf8');
+  a2.match(studio, /<b>Library<\/b>/);
+  a2.match(studio, /show: function \(kind\)/);
+  a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
+  const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
+  a2.match(html, /squad-create\.js\?v=1\.6/);
+  a2.match(html, /create-studio\.js\?v=1\.3/);
+});
