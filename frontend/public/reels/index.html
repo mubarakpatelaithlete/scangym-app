@@ -3260,6 +3260,32 @@
         }
         var sharePayload = text + '\n' + url;
 
+        /* Half-screen sheet first (owner, 2026-09-30): every button opens the
+           same bottom sheet with a red ✕ — the native share tray is one option
+           inside it, not the whole answer. Falls through to the old path when
+           the sheet script is not loaded. */
+        if(typeof window.sgOpenSheet === 'function'){
+          var earn = _viewerHandle ? '<p class="shs-note">\uD83D\uDCB0 You earn 25% when someone books from your link.</p>' : '';
+          var sh = window.sgOpenSheet(earn
+            + (navigator.share ? window.sgSheetOption('\uD83D\uDCE4', 'Share\u2026', true) : '')
+            + window.sgSheetOption('\uD83D\uDCAC', 'WhatsApp')
+            + window.sgSheetOption('\uD83D\uDD17', 'Copy link'),
+            { title: 'Share this reel', sub: displayName || 'ScanGym Reels', icon: '\uD83D\uDD17' });
+          var opts = sh.body.querySelectorAll('.shs-opt'), i = 0;
+          function done(){ sh.close(); _markReelShared(video.id); }
+          if(navigator.share){
+            opts[i++].addEventListener('click', function(){
+              navigator.share({title:'ScanGym Reels',text:text,url:url}).then(function(){ showToast('\u2705 Shared!'); done(); })
+                .catch(function(err){ if(err && err.name === 'AbortError') return; copyToClipboard(sharePayload); done(); });
+            });
+          }
+          opts[i++].addEventListener('click', function(){
+            window.open('https://wa.me/?text=' + encodeURIComponent(sharePayload), '_blank'); done();
+          });
+          opts[i++].addEventListener('click', function(){ copyToClipboard(sharePayload); done(); });
+          return;
+        }
+
         // Try native share sheet first (mobile)
         if(navigator.share){
           navigator.share({title:'ScanGym Reels',text:text,url:url})
@@ -3323,6 +3349,16 @@
 
       // ── Creative Commons free-to-use notice before download ──
       function showCCNotice(video, url, onConfirm){
+        /* Same half-screen sheet as Share (owner, 2026-09-30). */
+        if(typeof window.sgOpenSheet === 'function'){
+          var cName = (video.creator && video.creator.name) ? video.creator.name : 'the creator';
+          var sh = window.sgOpenSheet(
+            '<p class="shs-note">This video by <strong>' + escHtml(cName) + '</strong> is <strong>100% free to use</strong> under Creative Commons \u2014 download, share, repost, no permission needed.</p>'
+            + window.sgSheetOption('\u2B07\uFE0F', 'Download', true),
+            { title: 'Save this reel', sub: humanizeTitle(video.name) || 'Free to use', icon: '\uD83C\uDF89' });
+          sh.body.querySelector('.shs-opt').addEventListener('click', function(){ sh.close(); onConfirm(); });
+          return;
+        }
         var overlay = document.createElement('div');
         overlay.className = 'cc-modal-overlay';
         var creatorName = (video.creator && video.creator.name) ? video.creator.name : 'the creator';
@@ -3842,6 +3878,7 @@
   <script src="/sg-dock.js?v=1.8" defer></script>
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.0" defer></script>
+<script src="/sg-half-sheet.js?v=1.0" defer></script>
 <script src="/rails.js?v=2.8" defer></script>
 </body>
 </html>

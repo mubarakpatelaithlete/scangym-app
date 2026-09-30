@@ -65,7 +65,7 @@ t2('the model price line never wraps into "Change model"', () => {
 /* Higgsfield-style, one flow (owner, 2026-09-30): the create surface is a full
    page with ← back, the type tabs and the history list are the grid's job,
    "Change model" is the grid, and the Library strip leads the Create tab. */
-t2('the create surface is a full page, not a sheet stacked on the grid', () => {
+t2('the create surface has \u2190 back, no type tabs and no second history list', () => {
   const sheet = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'squad-create.js'), 'utf8');
   a2.match(sheet, /'\.sv-back\{/, 'a back control is how the page is left');
   a2.match(sheet, /sv-head-name/, 'the header names the model');
@@ -82,6 +82,30 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=1\.7/);
+  a2.match(html, /squad-create\.js\?v=1\.8/);
   a2.match(html, /create-studio\.js\?v=1\.3/);
+});
+
+t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕, swipe down, back', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const hs = fs2.readFileSync(path2.join(pub, 'sg-half-sheet.js'), 'utf8');
+  a2.match(hs, /window\.sgOpenSheet = openSheet/);
+  a2.match(hs, /\.shs-x\{[^}]*color:#ef4444/, 'the ✕ is red');
+  a2.match(hs, /history\.pushState\(\{ sgHalfSheet: 1 \}/, 'the phone back button closes the sheet, not the page');
+  a2.match(hs, /'touchmove'/, 'swipe down follows the finger');
+  a2.match(hs, /max-height:62vh/, 'half screen, page visible behind');
+  const sheet = fs2.readFileSync(path2.join(pub, 'squad-create.js'), 'utf8');
+  a2.match(sheet, /'\.sv-x\{[^}]*color:#ef4444/, 'the Create model sheet has the red ✕');
+  a2.match(sheet, /max-height:70vh/, 'the Create model page is a bottom sheet again');
+  a2.match(sheet, /window\.sgSheetDrag\(sh/, 'and swipes down');
+  a2.match(sheet, /ov\.id = 'sg-sv-overlay'/, 'with the grid dimmed behind it');
+  const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
+  a2.match(reels, /sgOpenSheet\([\s\S]{0,400}title: 'Share this reel'/, 'Share opens the sheet');
+  a2.match(reels, /title: 'Save this reel'/, 'Save opens the sheet');
+  a2.match(reels, /sg-half-sheet\.js\?v=1\.0/, 'the Reels frame loads it');
+  const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
+  a2.match(app, /if\(typeof window\.sgOpenSheet==='function'\) return window\.sgOpenSheet\(html,opts\|\|\{\}\)/, 'the Shop uses it');
+  for (const f of ['index.html', 'scansquad/index.html']) {
+    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.0/, f + ' loads it');
+  }
 });

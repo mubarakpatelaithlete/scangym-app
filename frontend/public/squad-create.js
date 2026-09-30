@@ -289,16 +289,17 @@
     '.sv-dot{position:absolute;top:1px;right:1px;width:8px;height:8px;border-radius:50%;border:1.5px solid #0b1424;}',
     '.sv-dot.live{background:#22c55e;}',
     '.sv-dot.soon{background:#94a3b8;}',
-    /* Higgsfield-style: the create surface is a full page, not a sheet stacked
-       on the grid. It slides in from the right and ← goes back to wherever the
-       creator came from (the model grid, or the ScanSquad home rail). Nothing
-       is dimmed underneath because nothing is meant to be seen underneath. */
-    '#sg-sv-overlay{display:none;}',
-    '#' + SHEET_ID + '{position:fixed;left:0;right:0;top:0;bottom:var(--sg-tab-height,56px);overflow-y:auto;background:#070b14;z-index:9491;padding:max(env(safe-area-inset-top,0px),8px) 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(100%);transition:transform .25s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
+    /* Half-screen sheet (owner, 2026-09-30): every button on Create opens a
+       sheet from the bottom — the grid stays visible dimmed behind it, ← goes
+       back to it, the red ✕ and a swipe down close it, and so does the phone's
+       back button. Same shape as the chat sheet and sg-half-sheet.js. */
+    '#sg-sv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9490;}',
+    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:#0b0f1a;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
-    '#' + SHEET_ID + '.open{transform:translateX(0);}',
-    '.sv-handle{display:none;}',
-    '.sv-head{display:flex;align-items:center;gap:12px;margin:2px 0 14px;padding-left:44px;}' /* brand-mark.css pins the orange S top-left; the back arrow starts after it, like .cs-head */,
+    '#' + SHEET_ID + '.open{transform:translateY(0);}',
+    '.sv-handle{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:10px auto 8px;}',
+    '.sv-x{width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.45);color:#ef4444;font-size:22px;line-height:34px;text-align:center;cursor:pointer;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}',
+    '.sv-head{display:flex;align-items:center;gap:12px;margin:0 0 14px;}',
     '.sv-back{width:36px;height:36px;border-radius:50%;background:#141b2b;border:1px solid #223050;color:#e5e7eb;font-size:20px;line-height:34px;text-align:center;cursor:pointer;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}',
     '.sv-head-t{flex:1;min-width:0;}',
     '.sv-head-t b{display:block;font-size:19px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;}',
@@ -432,6 +433,11 @@
     var ht = el('div', 'sv-head-t', '<b id="sv-head-name">' + mode.label + '</b><span id="sv-head-sub">' + (mode.gen || '') + '</span>');
     head.appendChild(ht);
     head.appendChild(el('div', 'sv-kind', mode.label));
+    var x = el('div', 'sv-x', '\u00d7');
+    x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'Close');
+    x.addEventListener('click', function () { closeSheet(); });
+    head.appendChild(x);
+    sh.appendChild(el('div', 'sv-handle'));
     sh.appendChild(head);
 
     var warn = el('div', 'sv-warn');
@@ -519,7 +525,12 @@
        runs for shareInfo (the referral link under every result). */
 
     refreshSummary(sh, mode);
+    var ov = el('div');
+    ov.id = 'sg-sv-overlay';
+    ov.addEventListener('click', function () { closeSheet(); });
+    document.body.appendChild(ov);
     document.body.appendChild(sh);
+    if (typeof window.sgSheetDrag === 'function') window.sgSheetDrag(sh, function () { closeSheet(); }, ov);
     requestAnimationFrame(function () { sh.classList.add('open'); });
 
     gateSheet(sh, mode);
