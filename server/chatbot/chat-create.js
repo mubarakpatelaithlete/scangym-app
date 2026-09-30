@@ -171,7 +171,7 @@ function refusalText(status, body, kind) {
   const msg = (body && body.error) || '';
   if (status === 401) return '🔒 Please link this chat to your ScanGym account first: https://www.scangym.com/profile → Chatbots.';
   if ((body && body.needsCard) || (!msg && status === 402) || /payment method|mandate/i.test(msg)) {
-    return `💳 Add a card once to create in chat: https://www.scangym.com/creator → Billing. Then say YES again.`;
+    return `💳 Add a card once to create in chat: https://www.scangym.com/wallet → Add payment method. Then say YES again.`;
   }
   return `😕 Couldn't make that ${LABEL[kind]}: ${msg || 'please try again in a minute.'}`;
 }
