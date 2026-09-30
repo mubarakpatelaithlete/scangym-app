@@ -42,6 +42,8 @@
             '<path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="1.5"></path>' },
     { key: 'shop', label: 'Shop', href: '/shop', match: /^\/shop(\/|$)/,
       icon: '<path d="M3 9l1.5-5h15L21 9"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"></path>' },
+    { key: 'chats', label: 'Chats', href: '/chats', match: /^\/chats(\/|$)/,
+      icon: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20.5l1.5-4.6A8.4 8.4 0 1 1 21 11.5z"></path>' },
     { key: 'more', label: 'Profile', href: '/more/profile', match: /^\/(more|profile|partners?|explore|nearby|search|checkout|booking-success|gym)(\/|$)/,
       icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>' +
             '<circle cx="12" cy="7" r="4"></circle>' }

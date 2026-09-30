@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ScanGym Chats</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0b0b14;color:#e9edef;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:#e9edef}
+.view{position:absolute;inset:0;display:flex;flex-direction:column}
+.hidden{display:none!important}
+/* header */
+.top{padding:14px 16px 0;background:#11111c}
+.top h1{font-size:22px;font-weight:800;letter-spacing:-.3px;display:flex;justify-content:space-between;align-items:center}
+.search{margin:12px 0 0;display:flex;align-items:center;gap:8px;background:#1d1d2b;border-radius:22px;padding:9px 14px}
+.search input{background:none;border:0;outline:0;flex:1}
+.tabs{display:flex;gap:8px;padding:12px 0 10px;overflow-x:auto}
+.tabs button{padding:7px 14px;border-radius:18px;background:#1d1d2b;color:#aeb7bf;font-weight:600;font-size:14px;white-space:nowrap}
+.tabs button.on{background:rgba(255,109,0,.16);color:#FF8A33}
+.list{flex:1;overflow-y:auto;padding-bottom:90px}
+.row{display:flex;gap:12px;align-items:center;padding:10px 16px;width:100%;text-align:left}
+.row:active{background:#171724}
+.av{width:48px;height:48px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;position:relative}
+.av .dot{position:absolute;right:1px;bottom:1px;width:12px;height:12px;border-radius:50%;background:#25d366;border:2px solid #0b0b14}
+.rc{flex:1;min-width:0;border-bottom:1px solid #1a1a26;padding-bottom:10px}
+.r1,.r2{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.nm{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-size:12px;color:#8696a0;flex:none}
+.tm.new{color:#25d366}
+.pv{color:#8696a0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{background:#25d366;color:#0b0b14;font-size:12px;font-weight:800;min-width:20px;height:20px;border-radius:10px;padding:0 6px;display:flex;align-items:center;justify-content:center;flex:none}
+.empty{padding:40px 24px;text-align:center;color:#8696a0}
+.empty b{display:block;color:#e9edef;font-size:17px;margin-bottom:6px}
+.fab{position:absolute;right:18px;bottom:22px;width:56px;height:56px;border-radius:16px;background:#FF6D00;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(255,109,0,.35)}
+.cta{display:inline-block;margin-top:14px;background:#FF6D00;color:#fff;font-weight:700;padding:10px 20px;border-radius:22px;text-decoration:none}
+/* chat */
+.ch{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#11111c}
+.ch .back{font-size:24px;padding:0 6px}
+.ch .av{width:40px;height:40px;font-size:15px}
+.ch .who{flex:1;min-width:0}
+.ch .sub{font-size:12px;color:#8696a0}
+.ch .sub.on{color:#25d366}
+.ch .ic{font-size:19px;padding:6px 8px;opacity:.85}
+.msgs{flex:1;overflow-y:auto;padding:12px 10px;background:#0b0b14 radial-gradient(circle at 1px 1px,rgba(255,255,255,.035) 1px,transparent 0) 0 0/22px 22px}
+.day{text-align:center;margin:10px 0}
+.day span{background:#1d1d2b;color:#aeb7bf;font-size:12px;padding:5px 10px;border-radius:8px}
+.b{max-width:80%;padding:6px 8px 4px 10px;border-radius:10px;margin:3px 0;word-wrap:break-word;white-space:pre-wrap;position:relative;font-size:15px;user-select:text}
+.b.me{margin-left:auto;background:#3a2412;border-top-right-radius:2px}
+.b.them{background:#1d1d2b;border-top-left-radius:2px}
+.b.del{font-style:italic;color:#8696a0}
+.meta{float:right;margin:6px 0 -2px 10px;font-size:11px;color:#9aa4ab;display:flex;gap:3px;align-items:center}
+.tick{font-size:12px;letter-spacing:-3px;color:#9aa4ab}
+.tick.read{color:#53bdeb}
+.bar{display:flex;align-items:flex-end;gap:8px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:#0b0b14}
+.inp{flex:1;display:flex;align-items:flex-end;background:#1d1d2b;border-radius:24px;padding:4px 6px 4px 4px}
+.inp textarea{flex:1;background:none;border:0;outline:0;color:#e9edef;font:inherit;resize:none;max-height:120px;padding:8px 4px;height:38px}
+.inp button{font-size:22px;padding:6px 8px}
+.send{width:46px;height:46px;border-radius:50%;background:#FF6D00;color:#fff;font-size:19px;flex:none;display:flex;align-items:center;justify-content:center}
+.emo{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;padding:8px;background:#11111c;max-height:200px;overflow-y:auto}
+.emo button{font-size:24px;padding:4px}
+.typing{color:#25d366}
+/* sheet */
+.sheet{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;z-index:5}
+.sheet .in{background:#161622;width:100%;border-radius:18px 18px 0 0;padding:16px;max-height:80%;display:flex;flex-direction:column}
+.sheet h3{font-size:17px;margin-bottom:10px;display:flex;justify-content:space-between}
+.tool{display:flex;gap:14px;align-items:center;padding:14px 16px;width:100%;text-align:left;border-bottom:1px solid #1a1a26}
+.tool .ti{width:42px;height:42px;border-radius:12px;background:#1d1d2b;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.tool small{display:block;color:#8696a0;font-size:13px}
+.toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:#e9edef;color:#0b0b14;padding:8px 14px;border-radius:18px;font-size:14px;font-weight:600;z-index:9}
+.menu{position:absolute;z-index:8;background:#232333;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.5);overflow:hidden}
+.menu button{display:block;padding:12px 18px;width:100%;text-align:left}
+</style>
+</head>
+<body>
+<!-- LIST VIEW -->
+<section id="vList" class="view">
+  <div class="top">
+    <h1>Chats <button id="btnCam" title="Invite" aria-label="Invite a friend" style="font-size:20px">✉️</button></h1>
+    <div class="search"><span>🔍</span><input id="q" placeholder="Search chats or people" autocomplete="off"></div>
+    <div class="tabs" role="tablist">
+      <button data-tab="chats" class="on">Chats</button>
+      <button data-tab="unread">Unread</button>
+      <button data-tab="calls">Calls</button>
+      <button data-tab="tools">Tools</button>
+    </div>
+  </div>
+  <div id="list" class="list"></div>
+  <button id="fab" class="fab" aria-label="New chat">💬</button>
+</section>
+
+<!-- CHAT VIEW -->
+<section id="vChat" class="view hidden">
+  <div class="ch">
+    <button class="back" id="back" aria-label="Back">‹</button>
+    <div class="av" id="cAv"></div>
+    <div class="who"><div class="nm" id="cName"></div><div class="sub" id="cSub"></div></div>
+    <button class="ic" id="cVideo" aria-label="Video call">📹</button>
+    <button class="ic" id="cCall" aria-label="Voice call">📞</button>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="emo" class="emo hidden"></div>
+  <div class="bar">
+    <div class="inp">
+      <button id="emoBtn" aria-label="Emoji">😊</button>
+      <textarea id="txt" rows="1" placeholder="Message"></textarea>
+    </div>
+    <button class="send" id="send" aria-label="Send">➤</button>
+  </div>
+</section>
+
+<div id="sheet" class="sheet hidden"><div class="in" id="sheetIn"></div></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var S={me:null,threads:[],tab:'chats',open:null,msgs:[],lastId:0,listT:null,chatT:null,typingSent:0};
+var COLORS=['#e67e22','#16a085','#8e44ad','#2980b9','#c0392b','#27ae60','#d35400','#7f8c8d'];
+function color(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return COLORS[Math.abs(h)%COLORS.length];}
+function initials(n){return (n||'?').split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function linkify(s){return esc(s).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:#53bdeb">$1</a>');}
+function api(m,u,b){return fetch('/api/dm'+u,{method:m,credentials:'same-origin',headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok){var e=new Error(j.error||'Error');e.status=r.status;throw e;}return j;});});}
+function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove();},2200);}
+function avatar(name,online){return '<div class="av" style="background:'+color(name)+'">'+esc(initials(name))+(online?'<span class="dot"></span>':'')+'</div>';}
+function hhmm(d){d=new Date(d);return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}
+function when(d){d=new Date(d);var now=new Date();if(d.toDateString()===now.toDateString())return hhmm(d);var y=new Date(now);y.setDate(now.getDate()-1);if(d.toDateString()===y.toDateString())return 'Yesterday';if(now-d<6*864e5)return d.toLocaleDateString([], {weekday:'long'});return d.toLocaleDateString();}
+function lastSeen(o){if(o.typing)return '<span class="typing">typing…</span>';if(o.online)return 'online';if(!o.lastSeen)return '';var d=new Date(o.lastSeen);return 'last seen '+(new Date().toDateString()===d.toDateString()?'today at '+hhmm(d):when(d)+' at '+hhmm(d));}
+function ticks(m){if(!m.mine||m.deleted)return '';if(m.pending)return '<span class="tick">🕓</span>';return '<span class="tick'+(m.read?' read':'')+'">'+(m.delivered||m.read?'✓✓':'✓')+'</span>';}
+function goTop(u){try{window.top.location.href=u;}catch(e){location.href=u;}}
+
+/* ── list ── */
+function renderList(){
+  var box=$('list'),q=$('q').value.trim().toLowerCase();
+  if(S.tab==='calls'){box.innerHTML='<div class="empty"><b>📞 Calls</b>Voice and video calls with your ScanGym friends are coming next. Your call history will show here.<br><br><span style="font-size:13px">Tip: tap 📞 or 📹 inside any chat.</span></div>';return;}
+  if(S.tab==='tools'){renderTools();return;}
+  var list=S.threads.filter(function(t){return (S.tab!=='unread'||t.unread>0)&&(!q||t.name.toLowerCase().indexOf(q)>=0||(t.lastMessage||'').toLowerCase().indexOf(q)>=0);});
+  var h='';
+  list.forEach(function(t){
+    h+='<button class="row" data-id="'+t.id+'">'+avatar(t.name,t.online)+'<div class="rc"><div class="r1"><span class="nm">'+esc(t.name)+'</span><span class="tm'+(t.unread?' new':'')+'">'+(t.lastMessage?when(t.lastMessageAt):'')+'</span></div><div class="r2"><span class="pv">'+(t.lastFromMe&&t.lastMessage?'<span class="tick'+(t.lastRead?' read':'')+'">✓✓</span> ':'')+esc(t.lastMessage||'Tap to start chatting')+'</span>'+(t.unread?'<span class="badge">'+t.unread+'</span>':'')+'</div></div></button>';
+  });
+  if(q.length>=2){h+='<div id="people"></div>';}
+  if(!list.length&&q.length<2)h='<div class="empty"><b>'+(S.tab==='unread'?'No unread chats':'No chats yet')+'</b>'+(S.tab==='unread'?'You\'re all caught up.':'Tap 💬 to find a friend on ScanGym, or invite one by SMS.')+'</div>';
+  box.innerHTML=h;
+  Array.prototype.forEach.call(box.querySelectorAll('.row[data-id]'),function(b){b.onclick=function(){openChat(+b.dataset.id);};});
+  if(q.length>=2)searchPeople(q,$('people'));
+}
+var searchT=null;
+function searchPeople(q,el){clearTimeout(searchT);searchT=setTimeout(function(){api('GET','/users?q='+encodeURIComponent(q)).then(function(j){
+  if(!el.isConnected)return;var h=j.users.length?'<div style="padding:12px 16px 4px;color:#FF8A33;font-size:13px;font-weight:700">PEOPLE ON SCANGYM</div>':'';
+  j.users.forEach(function(u){h+='<button class="row" data-u="'+esc(u.id)+'">'+avatar(u.name,u.online)+'<div class="rc"><div class="r1"><span class="nm">'+esc(u.name)+'</span></div><div class="r2"><span class="pv">'+(u.online?'online':'Tap to message')+'</span></div></div></button>';});
+  el.innerHTML=h;Array.prototype.forEach.call(el.querySelectorAll('[data-u]'),function(b){b.onclick=function(){startWith(b.dataset.u);};});
+}).catch(function(){});},250);}
+function startWith(uid){api('POST','/threads',{userId:uid}).then(function(j){closeSheet();$('q').value='';return loadThreads().then(function(){openChat(j.id);});}).catch(function(e){toast(e.message);});}
+function loadThreads(){return api('GET','/threads').then(function(j){S.threads=j.threads;if(!S.open)renderList();}).catch(function(e){if(e.status===401)signedOut();});}
+function signedOut(){clearInterval(S.listT);$('fab').classList.add('hidden');$('list').innerHTML='<div class="empty"><b>💬 Chat with friends on ScanGym</b>Sign in to message your gym buddies, trainers and creators.<br><a class="cta" href="/more/profile" target="_top">Sign in</a></div>';}
+
+function renderTools(){
+  var h='';
+  [['✉️','Invite a friend by SMS','Send a text with a link to chat on ScanGym','invite'],
+   ['🔗','Share my chat link','Copy a link friends can use to join','link'],
+   ['🆕','New chat','Find anyone on ScanGym by name, email or phone','new'],
+   ['🏋️','Find a gym buddy','Book a day pass together','buddy'],
+   ['📢','Broadcast to followers','For creators: announce to everyone who follows you','broadcast']
+  ].forEach(function(t){h+='<button class="tool" data-t="'+t[3]+'"><div class="ti">'+t[0]+'</div><div><b>'+t[1]+'</b><small>'+t[2]+'</small></div></button>';});
+  $('list').innerHTML=h;
+  Array.prototype.forEach.call($('list').querySelectorAll('.tool'),function(b){b.onclick=function(){tool(b.dataset.t);};});
+}
+function tool(t){
+  if(t==='invite')return inviteSheet();
+  if(t==='new')return newChatSheet();
+  if(t==='link'){var u='https://www.scangym.com/chats';(navigator.share?navigator.share({title:'Chat with me on ScanGym',url:u}):navigator.clipboard.writeText(u).then(function(){toast('Link copied');})).catch(function(){});return;}
+  if(t==='buddy')return goTop('/explore');
+  if(t==='broadcast')return goTop('/creator');
+}
+function openSheet(h){$('sheetIn').innerHTML=h;$('sheet').classList.remove('hidden');}
+function closeSheet(){$('sheet').classList.add('hidden');}
+$('sheet').onclick=function(e){if(e.target===$('sheet'))closeSheet();};
+function inviteSheet(){
+  openSheet('<h3>Invite by SMS <button onclick="this.closest(\'.sheet\').classList.add(\'hidden\')">✕</button></h3><p style="color:#8696a0;font-size:14px;margin-bottom:10px">We\'ll text them a link to chat with you on ScanGym.</p><div class="search" style="margin:0 0 12px"><input id="ph" type="tel" placeholder="+44 7700 900123"></div><button class="cta" id="phGo" style="border:0;margin:0">Send invite</button>');
+  $('ph').focus();$('phGo').onclick=function(){var p=$('ph').value.replace(/[\s()-]/g,'');api('POST','/invite',{phone:p}).then(function(){closeSheet();toast('Invite sent ✓');}).catch(function(e){toast(e.message);});};
+}
+function newChatSheet(){
+  openSheet('<h3>New chat <button onclick="this.closest(\'.sheet\').classList.add(\'hidden\')">✕</button></h3><div class="search" style="margin:0 0 8px"><span>🔍</span><input id="nq" placeholder="Name, email or phone"></div><button class="tool" id="nInv"><div class="ti">✉️</div><div><b>Invite a friend</b><small>Not on ScanGym yet? Send an SMS</small></div></button><div id="nRes" style="overflow-y:auto"></div>');
+  $('nInv').onclick=inviteSheet;
+  var nq=$('nq');nq.focus();nq.oninput=function(){var v=nq.value.trim();if(v.length<2){$('nRes').innerHTML='';return;}searchPeople(v,$('nRes'));};
+}
+$('fab').onclick=newChatSheet;
+$('btnCam').onclick=inviteSheet;
+$('q').oninput=renderList;
+Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b);});S.tab=b.dataset.tab;renderList();};});
+
+/* ── chat ── */
+function openChat(id){
+  var t=S.threads.find(function(x){return x.id===id;})||{name:'',online:false};
+  S.open=id;S.msgs=[];S.lastId=0;
+  $('cAv').outerHTML='<div class="av" id="cAv" style="background:'+color(t.name)+'">'+esc(initials(t.name))+'</div>';
+  $('cName').textContent=t.name;$('cSub').textContent='';$('msgs').innerHTML='';
+  $('vList').classList.add('hidden');$('vChat').classList.remove('hidden');
+  try{history.pushState({chat:id},'');}catch(e){}
+  poll();clearInterval(S.chatT);S.chatT=setInterval(poll,2000);
+}
+function closeChat(){S.open=null;clearInterval(S.chatT);$('emo').classList.add('hidden');$('vChat').classList.add('hidden');$('vList').classList.remove('hidden');loadThreads();}
+$('back').onclick=function(){if(history.state&&history.state.chat)history.back();else closeChat();};
+window.addEventListener('popstate',function(){if(S.open)closeChat();});
+function poll(){
+  var id=S.open;if(!id)return;
+  api('GET','/threads/'+id+'/messages?after='+S.lastId).then(function(j){
+    if(S.open!==id)return;
+    $('cName').textContent=j.other.name;var sub=$('cSub');sub.innerHTML=lastSeen(j.other);sub.className='sub'+(j.other.online&&!j.other.typing?' on':'');
+    var changed=false;
+    j.messages.forEach(function(m){var i=S.msgs.findIndex(function(x){return x.id===m.id;});if(i<0){S.msgs=S.msgs.filter(function(x){return !(x.pending&&x.body===m.body&&m.mine);});S.msgs.push(m);changed=true;}if(m.id>S.lastId)S.lastId=m.id;});
+    j.ticks.forEach(function(t){var m=S.msgs.find(function(x){return x.id===t.id;});if(m&&(m.read!==t.read||m.delivered!==t.delivered||m.deleted!==t.deleted)){m.read=t.read;m.delivered=t.delivered;if(t.deleted){m.deleted=true;m.body='';}changed=true;}});
+    if(changed||!$('msgs').children.length)renderMsgs();
+  }).catch(function(){});
+}
+function renderMsgs(){
+  var box=$('msgs'),atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80,h='',day='';
+  if(!S.msgs.length)h='<div class="day"><span>🔒 Say hi 👋 — messages are private to you two</span></div>';
+  S.msgs.forEach(function(m){
+    var d=new Date(m.at||Date.now()).toDateString();
+    if(d!==day){day=d;var w=when(m.at||Date.now());h+='<div class="day"><span>'+(/:/.test(w)?'Today':w)+'</span></div>';}
+    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':linkify(m.body))+'<span class="meta">'+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>';
+  });
+  box.innerHTML=h;
+  if(atBottom||S._forceBottom){box.scrollTop=box.scrollHeight;S._forceBottom=false;}
+}
+function send(){
+  var ta=$('txt'),body=ta.value.trim();if(!body||!S.open)return;
+  ta.value='';ta.style.height='38px';
+  var tmp={id:-Date.now(),mine:true,body:body,at:new Date().toISOString(),pending:true};S.msgs.push(tmp);S._forceBottom=true;renderMsgs();
+  api('POST','/threads/'+S.open+'/messages',{body:body}).then(function(j){tmp.id=j.id;tmp.pending=false;tmp.at=j.at;renderMsgs();poll();}).catch(function(e){S.msgs=S.msgs.filter(function(x){return x!==tmp;});renderMsgs();ta.value=body;toast(e.message);});
+}
+$('send').onclick=send;
+$('txt').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth>700){e.preventDefault();send();}});
+$('txt').addEventListener('input',function(){var ta=$('txt');ta.style.height='38px';ta.style.height=Math.min(ta.scrollHeight,120)+'px';if(S.open&&Date.now()-S.typingSent>3000){S.typingSent=Date.now();api('POST','/threads/'+S.open+'/typing').catch(function(){});}});
+var EMO='😀😂🥹😍😘😎🤩🥳😅😭😡👍👎👏🙏💪🔥💯❤️💔✨🎉🏋️🏃🥗🍎💧⏰📍✅❌👋🤝😴🤔🙌'.match(/(\p{Extended_Pictographic}\uFE0F?)/gu)||[];
+$('emo').innerHTML=EMO.map(function(e){return '<button>'+e+'</button>';}).join('');
+$('emo').onclick=function(e){if(e.target.tagName==='BUTTON'){var ta=$('txt');ta.value+=e.target.textContent;ta.focus();}};
+$('emoBtn').onclick=function(){$('emo').classList.toggle('hidden');};
+// Long-press / right-click my message → copy or delete for everyone.
+var pressT=null;
+function menuFor(el,x,y){
+  var id=+el.dataset.id,m=S.msgs.find(function(z){return z.id===id;});if(!m||m.deleted)return;
+  document.querySelectorAll('.menu').forEach(function(n){n.remove();});
+  var d=document.createElement('div');d.className='menu';d.style.left=Math.min(x,window.innerWidth-190)+'px';d.style.top=Math.min(y,window.innerHeight-120)+'px';
+  d.innerHTML='<button data-a="copy">📋 Copy</button>'+(m.mine&&id>0?'<button data-a="del">🗑️ Delete for everyone</button>':'');
+  d.onclick=function(e){var a=e.target.dataset.a;d.remove();if(a==='copy')navigator.clipboard&&navigator.clipboard.writeText(m.body).then(function(){toast('Copied');});if(a==='del')api('DELETE','/messages/'+id).then(function(){m.deleted=true;m.body='';renderMsgs();}).catch(function(err){toast(err.message);});};
+  document.body.appendChild(d);setTimeout(function(){document.addEventListener('click',function c(){d.remove();document.removeEventListener('click',c);});},0);
+}
+$('msgs').addEventListener('contextmenu',function(e){var b=e.target.closest('.b[data-id]');if(b){e.preventDefault();menuFor(b,e.clientX,e.clientY);}});
+$('msgs').addEventListener('touchstart',function(e){var b=e.target.closest('.b[data-id]');if(!b)return;var t=e.touches[0];pressT=setTimeout(function(){menuFor(b,t.clientX,t.clientY);},500);},{passive:true});
+['touchend','touchmove'].forEach(function(ev){$('msgs').addEventListener(ev,function(){clearTimeout(pressT);},{passive:true});});
+function callSoon(){toast('Voice & video calls are coming next 📞');}
+$('cCall').onclick=callSoon;$('cVideo').onclick=callSoon;
+
+/* ── boot ── */
+api('GET','/me').then(function(j){S.me=j;loadThreads();S.listT=setInterval(function(){if(!S.open&&!document.hidden)loadThreads();},5000);}).catch(signedOut);
+})();
+</script>
+</body>
+</html>

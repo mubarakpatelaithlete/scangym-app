@@ -74,6 +74,7 @@ const creatorDistributionRouter = require('./routes/creator-distribution');
 const creatorGrowthRouter = require('./routes/creator-growth');
 const creatorContentRouter = require('./routes/creator-content');
 const fanChatRouter = require('./routes/fan-chat');
+const dmRouter = require('./routes/dm');
 const { developerRouter, v1Router } = require('./routes/public-api');
 const analyticsMiddleware = require('./middleware/analytics');
 
@@ -609,6 +610,7 @@ app.use('/api/creator-distribution', creatorDistributionRouter);
 app.use('/api/creator-growth', creatorGrowthRouter);
 app.use('/api/creator-content', creatorContentRouter);
 app.use('/api/fan-chat', fanChatRouter);
+app.use('/api/dm', dmRouter);                 // Task 11: Chats tab
 app.use('/api/developer', developerRouter);  // Task 2: API keys
 app.use('/api/v1', v1Router);                 // Task 2: public API
 /* Second router on /api/pricing (gift, group, couple, compare, carry-forward).
