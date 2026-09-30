@@ -8,6 +8,7 @@ const pool = require('../middleware/db');
 const { authenticateUser, requireAdmin } = require('../middleware/auth');
 const { reconcileCommissionBackpay, creditWallet, reconcilePartnerRevenue } = require('../lib/wallet-credit');
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+const wise = require('../lib/wise-payout');
 
 router.use(authenticateUser);
 
@@ -587,6 +588,26 @@ router.post('/withdraw', async (req, res) => {
       console.warn('[WalletWithdraw] payout_requests insert skipped:', e.message);
     }
 
+    // Task 26: UK bank withdrawals are paid automatically through Wise.
+    // If Wise refuses (not configured, SCA key missing, low float) the request
+    // simply stays pending in the manual queue below — the wallet is never lost.
+    if (payoutStatus === 'pending' && payoutMethod === 'bank' && payoutRequestId && wise.isUkBank(savedMethod.details)) {
+      try {
+        const sent = await wise.payUkBank({
+          amountPence, bank: savedMethod.details, requestKey: payoutRequestId, reference: `ScanGym ${payoutRequestId}`,
+        });
+        await pool.query(
+          `UPDATE payout_requests SET status = 'paid', processed_at = NOW(),
+                  details = details || jsonb_build_object('wise_transfer_id', $2::text)
+            WHERE id = $1`, [payoutRequestId, String(sent.transferId)]
+        );
+        payoutStatus = 'paid';
+        message = amountDisp + ' sent to your bank \u2014 usually arrives within minutes.';
+      } catch (e) {
+        console.error(`[WalletWithdraw] Wise payout #${payoutRequestId} failed, left in manual queue:`, e.message);
+      }
+    }
+
     // Manual payouts sit in a queue a human must process — tell the admin NOW
     if (payoutStatus === 'pending') {
       notifyAdminQueuedPayout({
@@ -652,6 +673,27 @@ router.get('/admin/payout-requests', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('[WalletAdmin] List payout requests error:', err.message);
     res.status(500).json({ error: 'Failed to load payout requests' });
+  }
+});
+
+// POST /api/wallet/admin/payout-requests/:id/pay-wise — send a queued UK bank payout via Wise
+router.post('/admin/payout-requests/:id/pay-wise', requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(
+      "SELECT id, amount_pence, details FROM payout_requests WHERE id = $1 AND role = 'wallet' AND status = 'pending' AND method = 'bank'",
+      [req.params.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'No pending bank payout with that id' });
+    const row = r.rows[0];
+    const sent = await wise.payUkBank({ amountPence: row.amount_pence, bank: (row.details || {}).payout, requestKey: row.id, reference: `ScanGym ${row.id}` });
+    await pool.query(
+      `UPDATE payout_requests SET status = 'paid', processed_at = NOW(),
+              details = details || jsonb_build_object('wise_transfer_id', $2::text) WHERE id = $1`, [row.id, String(sent.transferId)]
+    );
+    res.json({ success: true, id: row.id, transferId: sent.transferId });
+  } catch (err) {
+    console.error('[WalletAdmin] pay-wise error:', err.message);
+    res.status(502).json({ error: err.message });
   }
 });
 

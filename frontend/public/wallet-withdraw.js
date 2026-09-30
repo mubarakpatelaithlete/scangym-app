@@ -65,6 +65,10 @@ function closeSheet(id){if(typeof window._sgCloseSheet==='function')window._sgCl
    ════════════════════════════════════════════════════════════════════ */
 window._sgWalletWithdraw=async function(){
   if(!requireAuth())return;
+  try{
+    var pre=await fetch('/api/wallet/withdraw-method'+(creatorHandle()?('?creatorHandle='+encodeURIComponent(creatorHandle())):''),{credentials:'include'}).then(function(r){return r.json();});
+    if(pre&&!pre.saved&&!pre.stripeReady){ window._sgWalletAddMethod(); return; }
+  }catch(e){}
   var html=''
     +'<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 14px">💸 Withdraw from ScanGym Wallet</h2>'
     +'<div style="background:linear-gradient(135deg,#FF6D00,#ff8f3f);border-radius:16px;padding:18px;margin-bottom:14px;text-align:center">'
@@ -92,6 +96,7 @@ window._sgWalletWithdraw=async function(){
     window._sgWWBalance=parseInt(w.balancePence)||Math.round((parseFloat(w.balance)||0)*100);
     var el=document.getElementById('sg-ww-balance');
     if(el)el.textContent='£'+(window._sgWWBalance/100).toFixed(2);
+    if(window._sgWWBalance>=100)window._sgWWMax();
   }catch(e){}
   try{
     var qs=creatorHandle()?('?creatorHandle='+encodeURIComponent(creatorHandle())):'';
@@ -103,7 +108,7 @@ window._sgWalletWithdraw=async function(){
       }else if(m.saved){
         var s=m.summary||{};
         var desc=s.type==='paypal'?('PayPal · '+(s.email||'')):('Bank ····'+(s.last4||''));
-        box.innerHTML='<span style="font-size:18px">🏦</span><div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">'+desc+'</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Payouts arrive in 2-5 business days</p></div>';
+        box.innerHTML='<span style="font-size:18px">🏦</span><div><p style="color:#fff;font-size:13px;font-weight:700;margin:0">'+desc+'</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">'+(s.type==='paypal'?'Payouts arrive in 2-5 business days':'Arrives in minutes ⚡')+'</p></div>';
       }else{
         box.innerHTML='<span style="font-size:18px">⚠️</span><div><p style="color:#fbbf24;font-size:13px;font-weight:700;margin:0">No withdraw method yet</p><p style="color:rgba(255,255,255,.4);font-size:11px;margin:2px 0 0">Add one below to withdraw your balance</p></div>';
       }
@@ -164,19 +169,21 @@ window._sgWalletAddMethod=function(){
   var html=''
     +'<h2 style="font-size:20px;font-weight:800;color:#fff;margin:0 0 4px">🏦 Add Withdraw Method</h2>'
     +'<p style="color:rgba(255,255,255,.4);font-size:13px;margin:0 0 16px">Choose how your ScanGym wallet balance gets paid out</p>'
-    +opt('stripe','S','linear-gradient(135deg,#635BFF,#7A73FF)','Stripe Connect','Instant transfers to your bank · Recommended',true)
-    +opt('paypal','PP','linear-gradient(135deg,#003087,#009cde)','PayPal','Withdraw to your PayPal account',false)
-    +opt('bank','🏦','linear-gradient(135deg,#22c55e,#16a34a)','Bank Transfer','UK sort code & account number',false)
+    /* Task 26: one simple rail first — UK bank, paid automatically via Wise.
+       The Stripe Connect sign-up (merchant-branded, asked for a Stripe
+       password) is no longer offered here. */
+    +opt('bank','🏦','linear-gradient(135deg,#22c55e,#16a34a)','Bank Transfer','UK bank · arrives in minutes · Recommended',true)
+    +opt('paypal','PP','linear-gradient(135deg,#003087,#009cde)','PayPal','Withdraw to your PayPal account (2-5 days)',false)
     +'<div id="sg-wm-form" style="margin-top:14px"></div>'
     +'<p id="sg-wm-error" style="color:#ef4444;font-size:13px;margin:8px 0 0;display:none"></p>'
-    +'<button id="sg-wm-save" onclick="window._sgWMSave()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:14px;box-shadow:0 4px 20px rgba(255,109,0,.3)">Connect with Stripe →</button>';
+    +'<button id="sg-wm-save" onclick="window._sgWMSave()" style="width:100%;background:linear-gradient(135deg,#FF6D00,#E66200);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;margin-top:14px;box-shadow:0 4px 20px rgba(255,109,0,.3)">Save Bank Details →</button>';
   if(!openSheet('sg-wallet-method-sheet',html)){toast('Unavailable right now','error');return;}
-  window._sgWMType='stripe';
-  renderMethodForm('stripe');
+  window._sgWMType='bank';
+  renderMethodForm('bank');
 };
 window._sgWMSelect=function(type){
   window._sgWMType=type;
-  ['stripe','paypal','bank'].forEach(function(t){
+  ['paypal','bank'].forEach(function(t){
     var o=document.getElementById('sg-wm-opt-'+t),d=document.getElementById('sg-wm-dot-'+t);
     var on=t===type;
     if(o){o.style.borderColor=on?'rgba(255,109,0,.3)':'rgba(255,255,255,.08)';o.style.background=on?'rgba(255,109,0,.06)':'rgba(255,255,255,.03)';}
@@ -251,7 +258,8 @@ window._sgWMSave=async function(){
     var res=await r.json();
     if(res.success){
       closeSheet('sg-wallet-method-sheet');
-      toast('Withdraw method saved ✓','success',3000);
+      toast('Saved ✓ — now tap Withdraw','success',3000);
+      window._sgWalletWithdraw(); // straight back to one-tap withdraw
       return;
     }
     fail(res.error||'Could not save method');
