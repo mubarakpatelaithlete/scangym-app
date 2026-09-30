@@ -153,7 +153,7 @@ var PROVIDERS = [
   { id:'ezfacility',  name:'EZFacility',                logo:'🏃', desc:'Facility management with door integrations',     conn:'request', cat:'gymsw', pop:false, tag:'Open API',  tagClass:'slf-tag-request' },
 
   // ── 🔗 CATCH-ALL ──────────────────────────────────────────────
-  { id:'seam',        name:'Other / Not Listed',        logo:'🔗', desc:'60+ more brands — auto-detect via Seam Connect', conn:'seam',    cat:'other', pop:false, tag:'Auto-detect', tagClass:'slf-tag-seam' },
+  { id:'seam',        name:'Other / Not Listed',        logo:'🔗', desc:'60+ more brands — auto-detect via ScanGym Connect', conn:'seam',    cat:'other', pop:false, tag:'Auto-detect', tagClass:'slf-tag-seam' },
 ];
 
 // ── Get gym ID helper ───────────────────────────────────────────────

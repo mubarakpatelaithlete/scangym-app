@@ -1108,6 +1108,11 @@ html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
 }
 .sg-pr-host-capped > *,
 .sg-pr-host-capped .sg-pr-btn,
+/* Task 18 (owner, 2026-09-30): Book / Talk / Ask AI kept the generic
+   `flex:1 1 0; min-width:0` rule, so in the scrolling Profile row they shrank
+   to 8px and piled onto Facebook. Same box as every other Profile button. */
+#sg-profile-rail .sg-row-slot .tt-action.sg-row-trio,
+.sg-pr-host-capped .sg-row-slot .tt-action.sg-row-trio,
 #sg-profile-rail .sg-pr-btn,
 #sg-profile-rail-ext .sg-pr-btn {
   flex: 0 0 auto !important;

@@ -576,7 +576,7 @@
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- The Reels feed is its own document, so it never got the row rails.css
        defines. Same file, same band: one place decides where rows live. -->
-  <link rel="stylesheet" href="/rails.css?v=3.5">
+  <link rel="stylesheet" href="/rails.css?v=3.6">
   <script>if(window.top!==window.self){document.documentElement.classList.add('sg-framed');}</script>
 </head>
   <body>
@@ -2705,7 +2705,7 @@
 
         var iframe = document.createElement('iframe');
         iframe.src = src;
-        iframe.title = video.name || 'YouTube video';
+        iframe.title = video.name || 'ScanGym reel';
         iframe.setAttribute('frameborder', '0');
         iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
         iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
@@ -2766,8 +2766,7 @@
 
         var badge = document.createElement('div');
         badge.className = 'reel-social-badge';
-        badge.textContent = video.source === 'tiktok' ? 'TikTok' : 'YouTube';
-        div.appendChild(badge);
+        // No TikTok / YouTube badge (task 22, owner 2026-09-30): ScanGym branding only.
 
         // No progress bar: we get no timeupdate from an iframe, and a bar that
         // never moves reads as a broken player. Swipe is the only control here.
@@ -2776,8 +2775,7 @@
         info.className = 'reel-info';
         info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
           + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
-          + (video.author ? '<span class="reel-social-source">' + escHtml(video.author) + ' \u00b7 on '
-              + (video.source === 'tiktok' ? 'TikTok' : 'YouTube') + '</span>' : '')
+          + (video.author ? '<span class="reel-social-source">' + escHtml(video.author) + '</span>' : '')
           // Same CTA an uncredited catalog reel gets, so the tab behaves the same.
           + '<a class="creator-cta" href="/explore" onclick="event.preventDefault();_ctaNavigate(\'/explore\')">'
           + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
@@ -3470,7 +3468,7 @@
         // Social (YouTube/TikTok/IG) reels are embedded, not hosted by us —
         // they can't be saved to the gallery. Say so instead of silently opening a tab.
         if(!video.cdnKey && /youtu\.be|youtube\.com|tiktok\.com|instagram\.com/i.test(url)){
-          showToast('\uD83C\uDFAC This reel is hosted on YouTube \u2014 opening it there');
+          showToast('\uD83C\uDFAC This reel can\u2019t be saved here \u2014 opening the original');
           setTimeout(function(){ window.open(url, '_blank'); }, 600);
           return;
         }
@@ -3943,6 +3941,6 @@
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.1" defer></script>
 <script src="/sg-half-sheet.js?v=1.4" defer></script>
-<script src="/rails.js?v=3.5" defer></script>
+<script src="/rails.js?v=3.6" defer></script>
 </body>
 </html>
