@@ -433,7 +433,15 @@ async function accountCreate({ kind, prompt, confirmed }, ctx) {
   }
   const out = await chat.startCreation(ctx.user.userId, k, idea, { syncMs: 20000 });
   await rememberFor(ctx, { text: `create ${k}: ${idea}`, reply: out.url || out.error || 'creating', create: { kind: k, prompt: idea } });
-  if (out.error) return { error: out.error };
+  if (out.error) {
+    /* Task 27: the card lives on ONE ScanGym account. Say which account this
+       chatbot is linked to, so a customer with cards on another login knows to
+       reconnect instead of adding a card again. */
+    if (/card/i.test(out.error) && ctx.user.email) {
+      return { error: `${out.error} This chatbot is connected to the ScanGym account ${ctx.user.email}. If your card is saved on a different ScanGym login, disconnect ScanGym in this app's connector settings and sign in again with that account.` };
+    }
+    return { error: out.error };
+  }
   if (out.done) return { success: true, kind: k, url: out.url, message: 'Ready. Show the url. It is saved to their library, shared with every ScanGym chatbot.' };
   return { success: true, kind: k, status: 'running', jobId: String(out.jobId), etaSeconds: out.etaSeconds || null, message: 'Still being made. Call check_creation with this jobId in a minute. It will also appear in my_library and we email the link.' };
 }
