@@ -164,7 +164,7 @@
          also what makes the loop obvious: you see what produced the clip you just
          watched. Long prompts scroll on their own like TikTok's sound title. */
       .reel-prompt{
-        position:absolute; right:10px; bottom:calc(96px + env(safe-area-inset-bottom,0px));
+        position:absolute; right:10px; bottom:calc(var(--sg-band-height,76px) + 12px);
         z-index:18; max-width:62%; display:flex; align-items:center; gap:8px;
         padding:8px 12px 8px 10px; border-radius:999px;
         background:rgba(13,16,25,.62); border:1px solid rgba(255,255,255,.14);
@@ -205,8 +205,14 @@
       /* ── Video info (bottom-left) ── */
       /* bottom:132px — the Talk bar (#rchat-fab) sits at bottom:69px, 52px tall,
          so anything below 121px is hidden under it. Rail + info clear it by 11px. */
+      /* The band (rails.css) is a solid rectangle now: the media, the title, the
+         progress line and the prompt chip all end above it. */
+      .reel video, .reel canvas.frame-preview, .reel iframe, .reel .reel-poster{
+        height:calc(100% - var(--sg-band-height,76px)) !important;
+      }
+      .reel-progress{ bottom:var(--sg-band-height,76px) !important; }
       .reel-info{
-        position:absolute;bottom:132px;left:16px;right:72px;z-index:20;
+        position:absolute;bottom:calc(var(--sg-band-height,76px) + 60px);left:16px;right:72px;z-index:20;
         color:#fff;
       }
       .reel-info .reel-title{
@@ -564,7 +570,7 @@
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- The Reels feed is its own document, so it never got the row rails.css
        defines. Same file, same band: one place decides where rows live. -->
-  <link rel="stylesheet" href="/rails.css?v=2.8">
+  <link rel="stylesheet" href="/rails.css?v=2.9">
   <script>if(window.top!==window.self){document.documentElement.classList.add('sg-framed');}</script>
 </head>
   <body>
@@ -3891,6 +3897,6 @@
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.0" defer></script>
 <script src="/sg-half-sheet.js?v=1.2" defer></script>
-<script src="/rails.js?v=2.8" defer></script>
+<script src="/rails.js?v=2.9" defer></script>
 </body>
 </html>

@@ -133,3 +133,14 @@ t2('an open app notices a new build and reloads itself on the next tab switch', 
   a2.match(app, /fetch\('\/\?sg_build='\+Date\.now\(\),\{cache:'no-store'/, 'asks the server, not the cache, which build is current');
   a2.match(app, /document\.addEventListener\('sg:tabchange',function\(\)\{if\(stale\)/, 'reloads between tabs, never mid-task');
 });
+
+t2('the button row is a solid rectangle on the tab bar and the reel ends above it', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const css = fs2.readFileSync(path2.join(pub, 'rails.css'), 'utf8');
+  a2.match(css, /--sg-band-gap: 0px;/, 'the band touches the tab bar');
+  a2.match(css, /\.reel-actions,\n#sg-reels-rail,\n#sg-sv-rail\.sv-float,\n#sg-profile-rail,\n\.sg-pr-host-capped \{\n  background: rgba\(8, 8, 18, \.98\) !important;/, 'solid, like the tab bar');
+  const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
+  a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
+  a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=2\.9/, f);
+});
