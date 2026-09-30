@@ -473,12 +473,30 @@
     sh.appendChild(picker);
 
     var row = el('div', 'sv-row');
-    var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
-    setChip.addEventListener('click', function () { enterSettings(sh, mode); });
-    row.appendChild(setChip);
+    var inline = (mode.settings || []).length > 0 && (mode.settings || []).length <= 3;
     var summary = el('div', 'sv-mchip');
     summary.id = 'sv-summary';
     summary.style.cssText = 'background:transparent;border:none;color:#b6c2d6;padding-left:0;cursor:default;';
+    if (inline) {
+      /* Task 23: Higgsfield/CapCut show aspect ratio and style as pills right
+         under the prompt, one tap each. A separate Settings screen for two
+         values was an extra screen and a Done tap for nothing. */
+      row.style.flexWrap = 'wrap';
+      (mode.settings || []).forEach(function (st) {
+        var p = el('div', 'sv-mchip sv-pill');
+        p.setAttribute('role', 'button');
+        p.setAttribute('aria-label', st.label);
+        p.__paint = function () { p.textContent = shown(mode, st) + ' ▾'; p.title = st.label; };
+        p.__paint();
+        p.addEventListener('click', function () { cycle(mode, st); p.__paint(); repaintSettings(sh, mode); });
+        row.appendChild(p);
+      });
+      summary.style.display = 'none';
+    } else {
+      var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
+      setChip.addEventListener('click', function () { enterSettings(sh, mode); });
+      row.appendChild(setChip);
+    }
     row.appendChild(summary);
     sh.appendChild(row);
 
@@ -759,6 +777,7 @@
   }
 
   function refreshSummary(sh, mode) {
+    Array.prototype.forEach.call(sh.querySelectorAll('.sv-pill'), function (p) { if (p.__paint) p.__paint(); });
     var n = sh.querySelector('#sv-summary');
     if (!n) return;
     if (mode.summary) { n.textContent = mode.summary(state[mode.key]); return; }
@@ -1218,6 +1237,52 @@
       row.appendChild(copyCap);
     }
     out.appendChild(row);
+    out.appendChild(nextRow(url, mode));
+  }
+
+  /* Task 20: what to do after a result lands, the way Higgsfield/CapCut do it:
+     Post, Edit, Recreate, More versions, Extend. Every one reuses a path that
+     already exists (the Edit mode, the Generate button, /post-everywhere). */
+  function nextRow(url, mode) {
+    var abs = url.indexOf('http') === 0 ? url : location.origin + url;
+    var isVid = mode.resultKind === 'video';
+    var row = el('div', 'sv-row sv-next');
+    function chip(label, fn) { var c = el('div', 'sv-mchip', label); c.setAttribute('role', 'button'); c.addEventListener('click', fn); row.appendChild(c); }
+    function sheetBits() {
+      var sh = document.getElementById(SHEET_ID);
+      return { sh: sh, ta: sh && sh.querySelector('.sv-prompt'), gen: sh && sh.querySelector('#sv-gen') };
+    }
+    chip('🚀 Post', function () {
+      var q = '?media=' + encodeURIComponent(abs) + '&type=' + (isVid ? 'video' : 'image') +
+        '&text=' + encodeURIComponent((shareInfo && shareInfo.shareText) || 'Made with ScanGym');
+      window.open('/post-everywhere/' + q, '_blank', 'noopener');
+    });
+    chip('✏️ Edit', function () {
+      if (isVid) { window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs }); return; }
+      var b = sheetBits();
+      if (b.ta) { b.ta.focus(); b.ta.select(); toast('Change the words, then tap Generate.', 'info', 2500); }
+    });
+    chip('🔁 Recreate', function () {
+      var b = sheetBits();
+      if (b.gen && !b.gen.disabled) b.gen.click();
+    });
+    chip('➕ More versions', function () {
+      var b = sheetBits();
+      if (!b.sh || !b.gen || b.gen.disabled) return;
+      var keep = b.sh.querySelector('#sv-versions');
+      if (!keep) { keep = el('div', 'sv-chips'); keep.id = 'sv-versions'; keep.style.cssText = 'margin-top:8px;gap:6px;'; b.sh.querySelector('#sv-out').before(keep); }
+      var t = el('a', 'sv-ver');
+      t.href = abs; t.target = '_blank'; t.rel = 'noopener';
+      t.style.cssText = 'display:block;width:56px;height:56px;border-radius:10px;overflow:hidden;flex:0 0 auto;';
+      t.innerHTML = isVid ? '<video muted playsinline preload="metadata" src="' + abs + '#t=0.1" style="width:100%;height:100%;object-fit:cover"></video>'
+        : '<img alt="" src="' + abs + '" style="width:100%;height:100%;object-fit:cover">';
+      keep.appendChild(t);
+      b.gen.click();
+    });
+    if (isVid) chip('⏩ Extend', function () {
+      window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs, model: 'ltx-extend' });
+    });
+    return row;
   }
 
   // ── My Creations ────────────────────────────────────────────────────────
@@ -1400,6 +1465,10 @@
       if (!sh) return false;
       var ta = sh.querySelector('.sv-prompt');
       if (ta && prompt) ta.value = prompt;
+      if (opts && opts.sourceUrl) {
+        state[mode.key].__sourceUrl = opts.sourceUrl;
+        var src = sh.querySelector('#sv-source-url'); if (src) src.value = opts.sourceUrl;
+      }
       if (result) { var out = sh.querySelector('#sv-out'); if (out) showText(out, result); }
       return true;
     },

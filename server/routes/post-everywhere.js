@@ -1,9 +1,14 @@
 /**
  * Post everywhere (Task 4) — ScanGym users connect their social accounts once,
- * then one post goes out to all of them. Built on Pipedream Connect (the same
- * 3,000+ app connector tech Viktor uses). Pipedream hosts the OAuth screens and
- * stores the tokens; ScanGym stores nothing but the user id mapping
- * (external_user_id = ScanGym user id), so no new tables.
+ * then one post goes out to all of them.
+ *
+ * Provider: Composio (free plan works in production; Pipedream Connect's free
+ * plan blocks live actions). Composio hosts the OAuth screens and stores the
+ * tokens with its own managed apps for Facebook, Instagram, LinkedIn,
+ * Pinterest and YouTube. X has no Composio-managed app, so X stays on
+ * Pipedream Connect. ScanGym stores nothing but the user id mapping
+ * (user_id / external_user_id = ScanGym user id), so no new tables.
+ * Account ids are prefixed "cx:" (Composio) or "pd:" (Pipedream).
  *
  *   GET    /api/post-everywhere/apps              supported networks
  *   GET    /api/post-everywhere/accounts          my connected accounts
@@ -11,7 +16,7 @@
  *   DELETE /api/post-everywhere/accounts/:id      disconnect
  *   POST   /api/post-everywhere/post {text, mediaUrl, mediaType, link, apps?}
  *
- * Env: PIPEDREAM_CLIENT_ID, PIPEDREAM_CLIENT_SECRET, PIPEDREAM_PROJECT_ID,
+ * Env: COMPOSIO_API_KEY; for X: PIPEDREAM_CLIENT_ID, PIPEDREAM_CLIENT_SECRET, PIPEDREAM_PROJECT_ID,
  *      PIPEDREAM_PROJECT_ENVIRONMENT (development | production).
  */
 const express = require('express');
@@ -22,17 +27,119 @@ router.use(express.json({ limit: '64kb' }));
 
 const PD_API = 'https://api.pipedream.com/v1';
 const env = () => process.env.PIPEDREAM_PROJECT_ENVIRONMENT || 'development';
-const configured = () => !!(process.env.PIPEDREAM_CLIENT_ID && process.env.PIPEDREAM_CLIENT_SECRET && process.env.PIPEDREAM_PROJECT_ID);
+const pdConfigured = () => !!(process.env.PIPEDREAM_CLIENT_ID && process.env.PIPEDREAM_CLIENT_SECRET && process.env.PIPEDREAM_PROJECT_ID);
+const cxConfigured = () => !!process.env.COMPOSIO_API_KEY;
+const configured = () => cxConfigured() || pdConfigured();
 
 // Supported networks. `needs` = what the post must contain for that network.
+// `toolkit` = Composio toolkit slug; apps without one use Pipedream.
 const APPS = {
   twitter:            { name: 'X (Twitter)',     needs: 'text' },
-  facebook_pages:     { name: 'Facebook Page',   needs: 'text' },
-  linkedin:           { name: 'LinkedIn',        needs: 'text' },
-  instagram_business: { name: 'Instagram',       needs: 'media' },
-  pinterest:          { name: 'Pinterest',       needs: 'image' },
-  youtube_data_api:   { name: 'YouTube',         needs: 'video' },
+  facebook_pages:     { name: 'Facebook Page',   needs: 'text',  toolkit: 'facebook' },
+  linkedin:           { name: 'LinkedIn',        needs: 'text',  toolkit: 'linkedin' },
+  instagram_business: { name: 'Instagram',       needs: 'media', toolkit: 'instagram' },
+  pinterest:          { name: 'Pinterest',       needs: 'image', toolkit: 'pinterest' },
+  youtube_data_api:   { name: 'YouTube',         needs: 'video', toolkit: 'youtube' },
 };
+const BY_TOOLKIT = Object.fromEntries(Object.entries(APPS).filter(([, a]) => a.toolkit).map(([slug, a]) => [a.toolkit, slug]));
+const available = (slug) => (APPS[slug].toolkit ? cxConfigured() : pdConfigured());
+
+// ── Composio ────────────────────────────────────────────────────────────────
+const CX_API = 'https://backend.composio.dev/api/v3';
+async function cx(method, path, body, query) {
+  const url = new URL(CX_API + path);
+  Object.entries(query || {}).forEach(([k, v]) => url.searchParams.set(k, v));
+  const r = await fetch(url, {
+    method,
+    headers: { 'x-api-key': process.env.COMPOSIO_API_KEY, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await r.text();
+  let j; try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
+  if (!r.ok) { const e = new Error((j.error && (j.error.message || j.error)) || j.message || `Composio ${r.status}`); e.status = r.status; throw e; }
+  return j;
+}
+const authConfigs = {};
+async function authConfigId(toolkit) {
+  if (authConfigs[toolkit]) return authConfigs[toolkit];
+  const j = await cx('GET', '/auth_configs', null, { toolkit_slug: toolkit });
+  const hit = (j.items || []).find(a => (a.toolkit && a.toolkit.slug) === toolkit && !a.is_disabled && a.status !== 'DISABLED');
+  const id = hit ? hit.id : (await cx('POST', '/auth_configs', { toolkit: { slug: toolkit }, auth_config: { type: 'use_composio_managed_auth' } })).auth_config.id;
+  authConfigs[toolkit] = id;
+  return id;
+}
+async function cxAccounts(userId) {
+  if (!cxConfigured()) return [];
+  const j = await cx('GET', '/connected_accounts', null, { user_ids: String(userId), limit: '100' });
+  return (j.items || [])
+    .filter(a => a.status === 'ACTIVE' && a.toolkit && BY_TOOLKIT[a.toolkit.slug] && String(a.user_id) === String(userId))
+    .map(a => ({ id: 'cx:' + a.id, raw: a.id, provider: 'cx', slug: BY_TOOLKIT[a.toolkit.slug], name: a.alias || a.word_id || '', healthy: !a.is_disabled }));
+}
+async function tool(userId, account, slug, args) {
+  const j = await cx('POST', `/tools/execute/${slug}`, { connected_account_id: account.raw, user_id: String(userId), arguments: args });
+  if (j.successful === false || j.error) throw new Error(String(j.error || 'failed').slice(0, 200));
+  return j.data;
+}
+// First object in a tool response that has an id (page, board, profile...).
+function firstId(o, depth = 0) {
+  if (!o || typeof o !== 'object' || depth > 6) return null;
+  if (Array.isArray(o)) { for (const x of o) { const v = firstId(x, depth + 1); if (v) return v; } return null; }
+  if (o.id && (typeof o.id === 'string' || typeof o.id === 'number')) return String(o.id);
+  for (const k of Object.keys(o)) { const v = firstId(o[k], depth + 1); if (v) return v; }
+  return null;
+}
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+async function cxPost(userId, account, p) {
+  const isVideo = p.mediaType === 'video';
+  const text = [p.text, p.link].filter(Boolean).join('\n').trim();
+  switch (account.slug) {
+    case 'facebook_pages': {
+      const page_id = firstId(await tool(userId, account, 'FACEBOOK_GET_USER_PAGES', { fields: 'id,name' }));
+      if (!page_id) throw new Error('No Facebook Page on this account');
+      if (p.mediaUrl && isVideo) return tool(userId, account, 'FACEBOOK_CREATE_VIDEO_POST', { page_id, file_url: p.mediaUrl, description: text, published: true });
+      if (p.mediaUrl) return tool(userId, account, 'FACEBOOK_CREATE_PHOTO_POST', { page_id, url: p.mediaUrl, message: text, published: true });
+      return tool(userId, account, 'FACEBOOK_CREATE_POST', { page_id, message: p.text || text, link: p.link || undefined, published: true });
+    }
+    case 'linkedin': {
+      const me = await tool(userId, account, 'LINKEDIN_GET_MY_INFO', {});
+      const d = (me && (me.response_dict || me)) || {};
+      const aid = String(d.author_id || d.sub || '');
+      if (!aid) throw new Error('Could not read the LinkedIn profile');
+      const author = aid.startsWith('urn:') ? aid : `urn:li:person:${aid}`;
+      return tool(userId, account, 'LINKEDIN_CREATE_LINKED_IN_POST', { author, commentary: text || p.mediaUrl, visibility: 'PUBLIC', lifecycleState: 'PUBLISHED' });
+    }
+    case 'instagram_business': {
+      if (!p.mediaUrl) return { skipped: 'Instagram needs a photo or video' };
+      const info = await tool(userId, account, 'INSTAGRAM_GET_USER_INFO', {});
+      const ig_user_id = firstId(info);
+      if (!ig_user_id) throw new Error('No Instagram business account found');
+      const c = await tool(userId, account, 'INSTAGRAM_CREATE_MEDIA_CONTAINER', isVideo
+        ? { ig_user_id, video_url: p.mediaUrl, media_type: 'REELS', caption: text }
+        : { ig_user_id, image_url: p.mediaUrl, caption: text });
+      const creation_id = firstId(c);
+      if (!creation_id) throw new Error('Instagram did not accept the media');
+      // Videos need processing before they can be published.
+      for (let i = 0; ; i++) {
+        try { return await tool(userId, account, 'INSTAGRAM_CREATE_POST', { ig_user_id, creation_id }); } catch (e) {
+          if (!isVideo || i >= 8) throw e;
+          await sleep(6000);
+        }
+      }
+    }
+    case 'pinterest': {
+      if (!p.mediaUrl || isVideo) return { skipped: 'Pinterest needs a photo' };
+      const board_id = firstId(await tool(userId, account, 'PINTEREST_LIST_BOARDS', { page_size: 1 }));
+      if (!board_id) throw new Error('Create a Pinterest board first');
+      return tool(userId, account, 'PINTEREST_CREATE_PIN', { board_id, title: (p.text || 'ScanGym').slice(0, 100), description: (p.text || '').slice(0, 800), link: p.link || 'https://www.scangym.com', media_source: { source_type: 'image_url', url: p.mediaUrl } });
+    }
+    case 'youtube_data_api': {
+      if (!p.mediaUrl || !isVideo) return { skipped: 'YouTube needs a video' };
+      return tool(userId, account, 'YOUTUBE_UPLOAD_VIDEO', { title: (p.text || 'ScanGym').slice(0, 100), description: text || 'Posted from ScanGym', tags: ['ScanGym'], categoryId: '17', privacyStatus: 'public', videoFilePath: p.mediaUrl });
+    }
+    default:
+      return { skipped: 'not supported' };
+  }
+}
 
 let tokenCache = { value: null, exp: 0 };
 async function pdToken() {
@@ -61,9 +168,16 @@ async function pd(method, path, body, query) {
   return j;
 }
 
-async function myAccounts(userId) {
+async function pdAccounts(userId) {
+  if (!pdConfigured()) return [];
   const j = await pd('GET', '/accounts', null, { external_user_id: String(userId), limit: '100' });
-  return (j.data || []).filter(a => a.app && APPS[a.app.name_slug]);
+  return (j.data || []).filter(a => a.app && APPS[a.app.name_slug] && !APPS[a.app.name_slug].toolkit)
+    .map(a => ({ id: 'pd:' + a.id, raw: a.id, provider: 'pd', slug: a.app.name_slug, name: a.name || '', healthy: a.healthy !== false, pd: a }));
+}
+async function myAccounts(userId) {
+  const [c, p] = await Promise.all([cxAccounts(userId).catch(e => { console.error('[post-everywhere] composio', e.message); return []; }),
+    pdAccounts(userId).catch(e => { console.error('[post-everywhere] pipedream', e.message); return []; })]);
+  return c.concat(p);
 }
 
 // First option of a remote-options prop (Facebook page, IG account, Pinterest board).
@@ -84,7 +198,9 @@ async function run(userId, id, props) {
 }
 
 // One network, one post. Returns { ok, skipped?, error? }.
-async function postTo(userId, account, p) {
+async function postTo(userId, acc, p) {
+  if (acc.provider === 'cx') return cxPost(userId, acc, p);
+  const account = acc.pd;
   const slug = account.app.name_slug;
   const auth = { authProvisionId: account.id };
   const isVideo = p.mediaType === 'video';
@@ -125,7 +241,7 @@ async function postTo(userId, account, p) {
 }
 
 router.get('/apps', (req, res) => {
-  res.json({ configured: configured(), environment: env(), apps: Object.entries(APPS).map(([slug, a]) => ({ slug, ...a })) });
+  res.json({ configured: configured(), environment: env(), apps: Object.entries(APPS).filter(([slug]) => available(slug)).map(([slug, a]) => ({ slug, name: a.name, needs: a.needs, provider: a.toolkit ? 'composio' : 'pipedream' })) });
 });
 
 router.use(authenticateUser);
@@ -134,14 +250,21 @@ router.use((req, res, next) => configured() ? next() : res.status(503).json({ er
 router.get('/accounts', async (req, res) => {
   try {
     const list = await myAccounts(req.user.id);
-    res.json({ accounts: list.map(a => ({ id: a.id, app: a.app.name_slug, appName: APPS[a.app.name_slug].name, name: a.name || '', healthy: a.healthy !== false })) });
+    res.json({ accounts: list.map(a => ({ id: a.id, app: a.slug, appName: APPS[a.slug].name, name: a.name, healthy: a.healthy })) });
   } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
 router.post('/connect', async (req, res) => {
   const app = String((req.body || {}).app || '');
-  if (!APPS[app]) return res.status(400).json({ error: 'Unknown app' });
+  if (!APPS[app] || !available(app)) return res.status(400).json({ error: 'Unknown app' });
   try {
+    if (APPS[app].toolkit) {
+      const j = await cx('POST', '/connected_accounts/link', {
+        auth_config_id: await authConfigId(APPS[app].toolkit), user_id: String(req.user.id),
+        callback_url: 'https://www.scangym.com/post-everywhere/?connected=' + app,
+      });
+      return res.json({ url: j.redirect_url, expiresAt: j.expires_at });
+    }
     const origin = `${req.protocol}://${req.get('host')}`;
     const j = await pd('POST', '/tokens', { external_user_id: String(req.user.id), allowed_origins: [origin, 'https://www.scangym.com', 'https://scangym.com'] });
     const url = new URL(j.connect_link_url);
@@ -153,8 +276,10 @@ router.post('/connect', async (req, res) => {
 router.delete('/accounts/:id', async (req, res) => {
   try {
     const mine = await myAccounts(req.user.id);
-    if (!mine.some(a => a.id === req.params.id)) return res.status(404).json({ error: 'Not found' });
-    await pd('DELETE', `/accounts/${encodeURIComponent(req.params.id)}`);
+    const a = mine.find(x => x.id === req.params.id);
+    if (!a) return res.status(404).json({ error: 'Not found' });
+    if (a.provider === 'cx') await cx('DELETE', `/connected_accounts/${encodeURIComponent(a.raw)}`);
+    else await pd('DELETE', `/accounts/${encodeURIComponent(a.raw)}`);
     res.json({ ok: true });
   } catch (e) { res.status(502).json({ error: e.message }); }
 });
@@ -175,10 +300,10 @@ router.post('/post', async (req, res) => {
   buckets.set(k, bk);
   try {
     let accounts = await myAccounts(req.user.id);
-    if (Array.isArray(b.apps) && b.apps.length) accounts = accounts.filter(a => b.apps.includes(a.app.name_slug));
+    if (Array.isArray(b.apps) && b.apps.length) accounts = accounts.filter(a => b.apps.includes(a.slug));
     if (!accounts.length) return res.status(400).json({ error: 'Connect at least one account first' });
     const results = await Promise.all(accounts.map(async a => {
-      const base = { app: a.app.name_slug, appName: APPS[a.app.name_slug].name, account: a.name || '' };
+      const base = { app: a.slug, appName: APPS[a.slug].name, account: a.name || '' };
       try {
         const r = await postTo(req.user.id, a, p);
         if (r && r.skipped) return { ...base, status: 'skipped', note: r.skipped };

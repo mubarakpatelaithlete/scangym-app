@@ -97,6 +97,12 @@ label{display:block;font-size:13px;color:#64748b;margin:10px 0 4px}
     }
   });
   window.addEventListener('focus',function(){if(apps.length)load();});
+  /* Task 20: Create's Post button hands over the result. */
+  (function(){var q=new URLSearchParams(location.search);
+    if(q.get('connected')&&window.opener){try{window.close();}catch(e){}}
+    if(q.get('media'))document.getElementById('media').value=q.get('media');
+    if(q.get('type'))document.getElementById('mtype').value=q.get('type')==='video'?'video':'image';
+    if(q.get('text'))document.getElementById('text').value=q.get('text');})();
   document.getElementById('go').addEventListener('click',function(){
     var btn=this,res=document.getElementById('res');
     btn.disabled=true;res.textContent='Posting…';

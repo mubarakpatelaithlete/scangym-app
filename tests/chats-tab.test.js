@@ -29,5 +29,5 @@ test('dm tables live in /migrations', () => {
 });
 test('chat page has the WhatsApp basics: ticks, typing, last seen, delete, calls & tools tabs', () => {
   const html = read('frontend/public/chats/app.html');
-  for (const s of ['✓✓', 'typing…', 'last seen', 'Delete for everyone', 'data-tab="calls"', 'data-tab="tools"']) assert.ok(html.includes(s), s);
+  for (const s of ['✓✓', 'typing…', 'last seen', 'Delete for everyone', 'data-sec="calls"', 'data-sec="tools"', 'data-tab="fav"', 'attachSheet', '/upload']) assert.ok(html.includes(s), s);
 });

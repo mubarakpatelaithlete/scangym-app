@@ -145,6 +145,56 @@ router.post('/threads/:id/messages', async (req, res) => {
   } catch (e) { console.error('[dm] send', e.message); res.status(500).json({ error: 'Could not send' }); }
 });
 
+/* Task 24: WhatsApp-style attachments (photo, video, document, audio).
+   Files sit on the Railway volume next to review media; the name is random
+   and the file is only served to signed-in users. The message body carries
+   "📎 <url>|<original name>" so no table change is needed. */
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const DM_DIR = process.env.RAILWAY_ENVIRONMENT ? '/data/uploads/dm' : path.join(__dirname, '..', 'uploads', 'dm');
+const DM_FILE_RE = /^dm_\d+_[a-f0-9]{16}\.[a-z0-9]{1,5}$/;
+const dmUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => { try { fs.mkdirSync(DM_DIR, { recursive: true }); } catch (e) {} cb(null, DM_DIR); },
+    filename: (req, file, cb) => {
+      const ext = (path.extname(file.originalname || '').toLowerCase().replace(/[^.a-z0-9]/g, '') || '.bin').slice(0, 6);
+      cb(null, `dm_${Date.now()}_${crypto.randomBytes(8).toString('hex')}${ext}`);
+    },
+  }),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /^(image\/|video\/|audio\/|application\/pdf|text\/plain|application\/(msword|vnd\.openxmlformats))/i.test(file.mimetype || '');
+    cb(ok ? null : new Error('That file type cannot be sent'), ok);
+  },
+});
+
+router.post('/threads/:id/upload', (req, res) => {
+  dmUpload.single('file')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No file' });
+      const t = await threadFor(req, req.params.id);
+      if (!t) { fs.unlink(req.file.path, () => {}); return res.status(404).json({ error: 'Chat not found' }); }
+      const name = String(req.file.originalname || 'file').replace(/[|\n\r]/g, ' ').slice(0, 120);
+      const body = `📎 /api/dm/file/${req.file.filename}|${name}`;
+      const { rows: [m] } = await pool.query(
+        'INSERT INTO dm_messages (thread_id, sender_id, body) VALUES ($1,$2,$3) RETURNING id, created_at', [t.id, me(req), body]);
+      await pool.query('UPDATE dm_threads SET last_message_at=NOW() WHERE id=$1', [t.id]);
+      res.status(201).json({ id: Number(m.id), at: m.created_at, body });
+    } catch (e) { console.error('[dm] upload', e.message); res.status(500).json({ error: 'Could not send' }); }
+  });
+});
+
+router.get('/file/:name', (req, res) => {
+  if (!DM_FILE_RE.test(req.params.name)) return res.status(400).json({ error: 'Invalid file' });
+  const fp = path.join(DM_DIR, req.params.name);
+  if (!fs.existsSync(fp)) return res.status(404).json({ error: 'File not found' });
+  res.set('Cache-Control', 'private, max-age=86400');
+  res.sendFile(fp);
+});
+
 router.post('/threads/:id/typing', async (req, res) => {
   const t = await threadFor(req, req.params.id).catch(() => null);
   if (!t) return res.status(404).json({ error: 'Chat not found' });
