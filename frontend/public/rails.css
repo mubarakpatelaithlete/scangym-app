@@ -915,7 +915,9 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
   background: rgba(8, 8, 18, .98) !important;
   border-top: 1px solid rgba(255, 255, 255, .08) !important;
   box-sizing: border-box !important;
-  z-index: 40 !important;
+  /* Above the tab pages (Create Studio is fixed at 8995 and used to cover the
+     type row completely), below the bottom bar (8999) and the tab bar (9000). */
+  z-index: 8996 !important;
 }
 
 /* ── AND IT LOOKS LIKE THE TAB BAR (owner, 2026-09-30, second pass) ──────────
@@ -969,4 +971,63 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
   letter-spacing: .2px !important;
   color: rgba(255, 255, 255, .62) !important;
   text-shadow: none !important;
+}
+
+/* ── EVERY BUTTON IN THE BAR IS FLAT, AND EVERY PAGE ENDS ABOVE THE BARS ─────
+   (owner, 2026-09-30, third pass). Ask AI / Book / Talk (rails.js trio), the
+   Create type buttons (squad-create.js) and the Profile rail all drop their
+   circles and take the tab-bar look; the page underneath stops at the top of
+   the button bar on every tab that has one. */
+.tt-actions .sg-row-slot,
+.reel-actions .sg-row-slot,
+#sg-reels-rail .sg-row-slot,
+#sg-sv-rail.sv-float .sg-row-slot,
+#sg-profile-rail .sg-row-slot,
+.sg-pr-host-capped .sg-row-slot {
+  display: contents !important;
+}
+.sg-row-slot .tt-action.sg-row-trio,
+#sg-sv-rail.sv-float .sg-sv-btn,
+#sg-profile-rail > *,
+.sg-pr-host-capped > * {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  gap: 2px !important;
+  padding: 6px 4px !important;
+}
+.sg-row-slot .sg-row-trio > .tt-action-btn,
+.reel-actions .tt-action-btn,
+#sg-sv-rail.sv-float .sv-circle,
+#sg-profile-rail .sg-rr-circle,
+.sg-pr-host-capped .sg-pr-circle {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  font-size: 20px !important;
+  animation: none !important;
+}
+.sg-row-slot .sg-row-trio > .tt-action-btn svg,
+#sg-sv-rail.sv-float .sv-circle svg,
+#sg-profile-rail .sg-rr-circle svg,
+.sg-pr-host-capped .sg-pr-circle svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+#sg-sv-rail.sv-float .sv-dot { display: none !important; }
+.sg-row-slot .sg-row-trio > .tt-action-label,
+#sg-sv-rail.sv-float .sv-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px !important;
+  color: rgba(255, 255, 255, .62) !important;
+  text-shadow: none !important;
+}
+html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
+  bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px) + var(--sg-band-height, 56px)) !important;
 }
