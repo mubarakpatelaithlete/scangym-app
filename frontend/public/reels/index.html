@@ -54,6 +54,10 @@
       #reels-search-panel{position:fixed;inset:0;z-index:80;background:#090b13;color:white;
         padding:calc(22px + env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;touch-action:pan-y}
       #reels-search-panel[hidden]{display:none}
+      /* Inside the half sheet (owner, 2026-09-30: the 🔍 button opens the same
+         sheet as every other button) the panel is plain flow content. */
+      #sg-half-sheet #reels-search-panel{position:static;inset:auto;padding:0;background:transparent;overflow:visible;z-index:auto}
+      #sg-half-sheet #reels-search-close{display:none}
       .reels-search-head{display:flex;gap:8px;align-items:center}
       #reels-search-input{min-width:0;flex:1;padding:12px 14px;border:1px solid #2a2d3a;border-radius:24px;
         background:#171925;color:white;font:16px system-ui}
@@ -891,16 +895,24 @@
           });
       }
 
+      var searchHome = searchPanel.parentNode, searchSheet = null;
       function closeReelsSearch(){
         clearTimeout(searchTimer);
-        searchPanel.hidden = true;
         if(searchRequest) searchRequest.abort();
+        if(searchSheet){ var sh = searchSheet; searchSheet = null; sh.close(); return; }
+        searchPanel.hidden = true;
       }
 
       function openReelsSearch(){
         searchPanel.hidden = false;
         showDiscover(true);
         renderDiscover();
+        /* Same half sheet as Share and Save: ✕, swipe down, phone back. The
+           panel moves into the sheet and back home when it closes. */
+        if(typeof window.sgOpenSheet === 'function'){
+          searchSheet = window.sgOpenSheet(searchPanel, { title: 'Search reels', sub: 'Recent · You may like · Trending', icon: '\uD83D\uDD0D', height: '75vh',
+            onClose: function(){ searchSheet = null; searchPanel.hidden = true; searchHome.appendChild(searchPanel); if(searchRequest) searchRequest.abort(); } });
+        }
         searchInput.focus();
       }
 
@@ -3878,7 +3890,7 @@
   <script src="/sg-dock.js?v=1.8" defer></script>
   <script src="/voice-always.js?v=1.1" defer></script>
   <script src="/sg-icons.js?v=1.0" defer></script>
-<script src="/sg-half-sheet.js?v=1.1" defer></script>
+<script src="/sg-half-sheet.js?v=1.2" defer></script>
 <script src="/rails.js?v=2.8" defer></script>
 </body>
 </html>

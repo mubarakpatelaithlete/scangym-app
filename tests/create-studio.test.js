@@ -82,7 +82,7 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=1\.8/);
+  a2.match(html, /squad-create\.js\?v=1\.9/);
   a2.match(html, /create-studio\.js\?v=1\.3/);
 });
 
@@ -102,10 +102,34 @@ t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕,
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /sgOpenSheet\([\s\S]{0,400}title: 'Share this reel'/, 'Share opens the sheet');
   a2.match(reels, /title: 'Save this reel'/, 'Save opens the sheet');
-  a2.match(reels, /sg-half-sheet\.js\?v=1\.1/, 'the Reels frame loads it');
+  a2.match(reels, /sg-half-sheet\.js\?v=1\.2/, 'the Reels frame loads it');
   const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
   a2.match(app, /if\(typeof window\.sgOpenSheet==='function'\) return window\.sgOpenSheet\(html,opts\|\|\{\}\)/, 'the Shop uses it');
   for (const f of ['index.html', 'scansquad/index.html']) {
-    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.1/, f + ' loads it');
+    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.2/, f + ' loads it');
   }
+});
+
+t2('a button inside a sheet opens the next step in the same sheet: ← one step back, ✕ closes all', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const hs = fs2.readFileSync(path2.join(pub, 'sg-half-sheet.js'), 'utf8');
+  a2.match(hs, /window\.sgSheetPush = pushStep/);
+  a2.match(hs, /window\.sgSheetPop = popStep/);
+  a2.match(hs, /current\.stack\.push\(\{ head: head, body: body/, 'the previous step is kept, not rebuilt');
+  a2.match(hs, /nh\.querySelector\('\.shs-x'\)\.addEventListener\('click', function \(\) \{ closeSheet\(\); \}\)/, '✕ on a step closes the whole sheet');
+  const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
+  a2.match(reels, /searchSheet = window\.sgOpenSheet\(searchPanel, \{ title: 'Search reels'/, 'the Home 🔍 opens the half sheet, not a full page');
+  a2.match(reels, /#sg-half-sheet #reels-search-panel\{position:static/);
+  const sheet = fs2.readFileSync(path2.join(pub, 'squad-create.js'), 'utf8');
+  a2.doesNotMatch(sheet, /function toggleSettings/, 'Settings no longer unfolds under the prompt');
+  a2.match(sheet, /function enterSettings\(sh, mode\)/);
+  a2.match(sheet, /if \(sh\.__step\) exitSettings\(sh, mode\); else closeSheet\(\);/, '← leaves the Settings step before it closes the sheet');
+  a2.match(sheet, /'Done \\u2713'/);
+});
+
+t2('an open app notices a new build and reloads itself on the next tab switch', () => {
+  const app = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  a2.match(app, /Stale-build watch/);
+  a2.match(app, /fetch\('\/\?sg_build='\+Date\.now\(\),\{cache:'no-store'/, 'asks the server, not the cache, which build is current');
+  a2.match(app, /document\.addEventListener\('sg:tabchange',function\(\)\{if\(stale\)/, 'reloads between tabs, never mid-task');
 });

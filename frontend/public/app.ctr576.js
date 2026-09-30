@@ -22179,3 +22179,26 @@ window._sgShareGymLink=function(gymId,gymName,affiliate){
  * lowest priority so the code is already parsed before the visitor taps.
  * The gate in _renderInner is the correctness path; this is the speed path. */
 if(typeof sgPrefetchChunks==='function')sgPrefetchChunks(['sg-scansquad']);
+
+/* ── Stale-build watch (owner, 2026-09-30) ──
+ * The site is a single page that can stay open on a phone for days, so a fix
+ * that is live on the server is invisible until the visitor happens to reload.
+ * The served index.html names the current hashed app file; when that name no
+ * longer matches the one running here, reload on the next tab switch (never
+ * mid-task) or when the app comes back to the foreground. */
+(function(){
+  var running=(function(){var s=document.querySelector('script[src*="app.ctr576"]');var m=s&&s.src.match(/app\.ctr576(\.[a-f0-9]{8})?\.js/);return m?m[0]:'';})();
+  if(!running)return;
+  var stale=false,busy=false;
+  function check(){
+    if(stale||busy)return;busy=true;
+    fetch('/?sg_build='+Date.now(),{cache:'no-store',credentials:'same-origin',headers:{'Accept':'text/html'}})
+      .then(function(r){return r.ok?r.text():'';})
+      .then(function(t){var m=t.match(/app\.ctr576(\.[a-f0-9]{8})?\.js/);if(m&&m[0]!==running)stale=true;})
+      .catch(function(){}).then(function(){busy=false;});
+  }
+  setInterval(check,5*60*1000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
+  document.addEventListener('sg:tabchange',function(){if(stale){try{sessionStorage.setItem('sg_reloaded_for_build',running);}catch(e){}location.reload();}});
+  window.__sgBuildCheck=check;
+})();

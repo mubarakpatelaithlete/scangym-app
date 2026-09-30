@@ -13,6 +13,11 @@
  *     opts.onBack  — shows ← and calls it (after closing) when tapped
  *     opts.onClose — called once, however the sheet was dismissed
  *     opts.height  — css max-height, default 62vh
+ *   window.sgSheetPush(html, opts)  → { root, body, close, back }
+ *       a step *inside* the open sheet (owner, 2026-09-30: "button behind
+ *       button" opens in the same sheet). ← goes one step back with the
+ *       previous step kept as it was; the red ✕ and a swipe close everything.
+ *   window.sgSheetPop()               — leave the current step
  *   window.sgCloseSheet()             — closes whatever this file opened
  *   window.sgSheetDrag(panel, close, scrim) — swipe-down for a sheet built
  *     elsewhere (the Create model sheet keeps its own DOM and borrows this).
@@ -156,6 +161,40 @@
     return { root: root, body: body, close: function () { closeSheet(); } };
   }
 
+  function pushStep(html, opts) {
+    if (!current) return openSheet(html, opts);
+    opts = opts || {};
+    var root = current.root;
+    var heads = root.querySelectorAll('.shs-head'), bodies = root.querySelectorAll('.shs-body');
+    var head = heads[heads.length - 1], body = bodies[bodies.length - 1];
+    current.stack = current.stack || [];
+    current.stack.push({ head: head, body: body, scroll: body.scrollTop });
+    head.style.display = 'none'; body.style.display = 'none';
+    var nh = document.createElement('div');
+    nh.className = 'shs-head';
+    nh.innerHTML = '<div class="shs-back" role="button" aria-label="Back">\u2190</div>'
+      + (opts.icon ? '<div class="shs-icon">' + opts.icon + '</div>' : '')
+      + '<div class="shs-t"><b>' + esc(opts.title || '') + '</b>' + (opts.sub ? '<span>' + esc(opts.sub) + '</span>' : '') + '</div>'
+      + '<div class="shs-x" role="button" aria-label="Close">\u00d7</div>';
+    var nb = document.createElement('div');
+    nb.className = 'shs-body';
+    if (typeof html === 'string') nb.innerHTML = html; else if (html) nb.appendChild(html);
+    root.appendChild(nh); root.appendChild(nb);
+    nh.querySelector('.shs-x').addEventListener('click', function () { closeSheet(); });
+    nh.querySelector('.shs-back').addEventListener('click', function () { popStep(); });
+    return { root: root, body: nb, close: function () { closeSheet(); }, back: function () { popStep(); } };
+  }
+
+  function popStep() {
+    if (!current || !current.stack || !current.stack.length) { closeSheet(); return; }
+    var root = current.root;
+    var heads = root.querySelectorAll('.shs-head'), bodies = root.querySelectorAll('.shs-body');
+    heads[heads.length - 1].remove(); bodies[bodies.length - 1].remove();
+    var prev = current.stack.pop();
+    prev.head.style.display = ''; prev.body.style.display = '';
+    prev.body.scrollTop = prev.scroll || 0;
+  }
+
   window.addEventListener('popstate', function () {
     if (!current) return;
     closingFromPop = true;
@@ -167,6 +206,8 @@
 
   window.sgOpenSheet = openSheet;
   window.sgCloseSheet = function () { closeSheet(); };
+  window.sgSheetPush = pushStep;
+  window.sgSheetPop = popStep;
   window.sgSheetDrag = sheetDrag;
   window.sgSheetOption = function (icon, label, primary) {
     return '<button type="button" class="shs-opt' + (primary ? ' shs-primary' : '') + '"><span class="shs-oi">' + icon + '</span><span>' + esc(label) + '</span></button>';
