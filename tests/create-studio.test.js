@@ -83,7 +83,7 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
   a2.match(html, /squad-create\.js\?v=1\.9/);
-  a2.match(html, /create-studio\.js\?v=1\.3/);
+  a2.match(html, /create-studio\.js\?v=1\.4/);
 });
 
 t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕, swipe down, back', () => {
@@ -142,7 +142,7 @@ t2('the button row is a solid rectangle on the tab bar and the reel ends above i
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
   a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
-  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.0/, f);
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.1/, f);
 });
 
 t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenly', () => {
@@ -150,4 +150,14 @@ t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenl
   a2.match(css, /--sg-band-height: 56px;/);
   a2.match(css, /justify-content: space-around !important;/);
   a2.match(css, /\.reel-actions \.icon \{\n  width: 24px !important;[\s\S]{0,200}background: transparent !important;/, 'no circles');
+});
+
+t2('every page ends above the two bars and the Create type row is no longer covered by the grid', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const studio = fs2.readFileSync(path2.join(pub, 'create-studio.js'), 'utf8');
+  a2.match(studio, /bottom:calc\(var\(--sg-tab-height,56px\) \+ var\(--sg-band-height,56px\)\);z-index:8995/, 'the grid stops at the top of the type row');
+  const css = fs2.readFileSync(path2.join(pub, 'rails.css'), 'utf8');
+  a2.match(css, /z-index: 8996 !important;/, 'the row sits above the tab pages');
+  a2.match(css, /html body\.sg-cta-rides-row \.sg-tab-content:not\(\.reels-active\) \{\n  bottom: calc\(var\(--sg-nav-h, 56px\) \+ var\(--sg-safe-b, 0px\) \+ var\(--sg-band-height, 56px\)\)/, 'so does every other tab page');
+  a2.match(css, /#sg-sv-rail\.sv-float \.sv-circle,\n[\s\S]{0,160}width: 24px !important;/, 'Create type buttons are flat like the tab bar');
 });

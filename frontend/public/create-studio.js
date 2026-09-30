@@ -37,7 +37,7 @@
   function kindByKey(k) { for (var i = 0; i < KINDS.length; i++) if (KINDS[i].key === k) return KINDS[i]; return null; }
 
   var css = [
-    '#' + ID + '{position:fixed;left:0;right:0;top:0;bottom:var(--sg-tab-height,56px);z-index:8995;background:#070b14;color:#e5e7eb;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(env(safe-area-inset-top,0px),10px) 12px 24px;box-sizing:border-box;font-family:inherit;}',
+    '#' + ID + '{position:fixed;left:0;right:0;top:0;bottom:calc(var(--sg-tab-height,56px) + var(--sg-band-height,56px));z-index:8995;background:#070b14;color:#e5e7eb;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(env(safe-area-inset-top,0px),10px) 12px 24px;box-sizing:border-box;font-family:inherit;}',
     '#' + ID + '::-webkit-scrollbar{display:none;}',
     /* brand-mark.css pins the orange S top-left at ~44px; the title starts after it. */
     '.cs-head{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 10px;padding-left:44px;}',
