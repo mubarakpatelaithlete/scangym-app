@@ -82,8 +82,8 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=2\.1/);
-  a2.match(html, /create-studio\.js\?v=1\.4/);
+  a2.match(html, /squad-create\.js\?v=2\.2/);
+  a2.match(html, /create-studio\.js\?v=1\.5/);
 });
 
 t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕, swipe down, back', () => {
@@ -142,7 +142,7 @@ t2('the button row is a solid rectangle on the tab bar and the reel ends above i
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
   a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
-  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.3/, f);
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.4/, f);
 });
 
 t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenly', () => {
@@ -193,7 +193,7 @@ t2('sheets animate on the compositor and a tab switch does not smooth-scroll', (
 
 t2('the Profile row matches every other row: flat icons, no dots, no second Book', () => {
   const css = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'rails.css'), 'utf8');
-  a2.match(css, /\.sg-pr-host-capped > \* > div:first-child,\n\.sg-pr-host-capped \.sg-pr-circle,[\s\S]{0,160}width: 24px !important;/);
+  a2.match(css, /\.sg-pr-host-capped > :not\(#sg-profile-rail-ext\) > div:first-child,\n\.sg-pr-host-capped \.sg-pr-circle,[\s\S]{0,160}width: 24px !important;/);
   a2.match(css, /#sg-profile-rail-ext \.sg-pr-dot \{ display: none !important; \}/);
   a2.match(css, /\.sg-pr-host-capped > button\[aria-label="Book a gym"\] \{ display: none !important; \}/);
 });

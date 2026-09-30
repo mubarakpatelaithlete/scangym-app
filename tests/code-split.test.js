@@ -33,7 +33,7 @@ const INDEX = read('index.html');
 // expecting an HTML string back. Must match `pages` in tools/split-bundle.js.
 const CHUNK_PAGES = [
   'CreatorsPage', 'CreatorFullPage', 'CreatorDashboardPage',
-  'CreatorEarningsPage', 'CreatorSignedOutPage', 'CreatorReelsPage',
+  'CreatorEarningsPage', 'CreatorReelsPage', // CreatorSignedOutPage removed 2026-09-30 (owner task 8)
 ];
 
 /* ── 1. the chunk really is out of core, and complete ─────────────────────── */
