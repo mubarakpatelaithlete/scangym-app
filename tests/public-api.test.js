@@ -20,8 +20,8 @@ test('v1 is read-only, rate limited and CORS-enabled', () => {
   assert.match(src, /RATE_PER_MIN = 60/);
   assert.match(src, /Access-Control-Allow-Origin/);
 });
-test('docs page exists and uses the app session token', () => {
+test('docs page exists and uses the signed-in session cookie', () => {
   const html = fs.readFileSync(path.join(root, 'frontend/public/developers/index.html'), 'utf8');
-  assert.match(html, /sg_token/);
+  assert.match(html, /credentials:'same-origin'/);
   assert.match(html, /\/api\/developer\/keys/);
 });
