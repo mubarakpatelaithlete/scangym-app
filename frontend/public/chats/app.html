@@ -13,6 +13,8 @@ input{font:inherit;color:#e9edef}
 .hidden{display:none!important}
 /* header */
 .top{padding:14px 16px 0;background:#11111c}
+/* the fixed orange "S" brand mark (brand-mark.css) sits at top-left of every tab: keep headers clear of it */
+.top h1{padding-left:36px;min-height:28px}
 .top h1{font-size:22px;font-weight:800;letter-spacing:-.3px;display:flex;justify-content:space-between;align-items:center}
 .search{margin:12px 0 0;display:flex;align-items:center;gap:8px;background:#1d1d2b;border-radius:22px;padding:9px 14px}
 .search input{background:none;border:0;outline:0;flex:1}
@@ -36,7 +38,7 @@ input{font:inherit;color:#e9edef}
 .fab{position:absolute;right:18px;bottom:22px;width:56px;height:56px;border-radius:16px;background:#FF6D00;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(255,109,0,.35)}
 .cta{display:inline-block;margin-top:14px;background:#FF6D00;color:#fff;font-weight:700;padding:10px 20px;border-radius:22px;text-decoration:none}
 /* chat */
-.ch{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#11111c}
+.ch{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 46px;background:#11111c}
 .ch .back{font-size:24px;padding:0 6px}
 .ch .av{width:40px;height:40px;font-size:15px}
 .ch .who{flex:1;min-width:0}
