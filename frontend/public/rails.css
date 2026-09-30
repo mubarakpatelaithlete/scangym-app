@@ -875,3 +875,16 @@ html body main.sg-tab-content.sg-tab-content.sg-tab-content:has(.tt-card) {
 html body.sg-cta-frame-owns #sg-continue-banner#sg-continue-banner {
   display: none !important;
 }
+
+/* Home and Create: the floating Talk pill and the main bar stay hidden whether
+   or not a row has been built yet (rails.js#quietPills). The sign-in bar is
+   the one exception and never gets .sg-cb-quiet. */
+html body.sg-quiet-pills #sg-continue-banner#sg-continue-banner.sg-cb-quiet,
+html body.sg-quiet-pills #bchat-fab#bchat-fab,
+html body.sg-quiet-pills #pchat-fab#pchat-fab,
+html body.sg-quiet-pills #schat-fab#schat-fab,
+html body.sg-quiet-pills #rchat-fab#rchat-fab,
+html body.sg-quiet-pills #mchat-fab#mchat-fab,
+html body.sg-quiet-pills #chat-fab#chat-fab {
+  display: none !important;
+}

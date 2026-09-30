@@ -98,13 +98,20 @@ function catchUpPrompt(){
         try{seen=localStorage.getItem('sg_rated_'+b.id)||localStorage.getItem('sg_rateskip_'+b.id);}catch(e){}
         if(seen)continue;
         if(document.getElementById('sg-rate-overlay'))return;
+        /* Not over Home: the reels are playing and a modal on top of them read as
+           a bug (owner screenshot, 2026-09-30). Ask on the next tab instead. */
+        var onHome=/^\/(reels)?\/?$/.test(location.pathname);
+        if(onHome){setTimeout(catchUpPrompt,15000);return;}
         try{localStorage.setItem('sg_rateskip_'+b.id,'1');}catch(e){} // ask once per visit
-        if(typeof window._sgShowRatePrompt==='function')window._sgShowRatePrompt(b.gymName,'',b.id);
+        /* gymId used to be '' here, so "Rate" posted to /api/reviews without a gym and could not save. */
+        if(typeof window._sgShowRatePrompt==='function')window._sgShowRatePrompt(b.gymName,b.gymId||b.gym_id||'',b.id);
         return;
       }
     }).catch(function(){});
 }
-setTimeout(catchUpPrompt,6000);
+/* Owner, 2026-09-30: no automatic "How was your workout?" modal at all — it popped
+   over Home. Rating stays where the customer chooses it: the booking page. */
+window._sgCatchUpPrompt=catchUpPrompt; // kept callable, never scheduled
 
 /* ════════════════════════════════════════════════════════════════════
    2) ZOMATO-STYLE GYM ONLINE/OFFLINE SWITCH (Partner tab)
