@@ -298,7 +298,7 @@
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
     '#' + SHEET_ID + '.open{transform:translateX(0);}',
     '.sv-handle{display:none;}',
-    '.sv-head{display:flex;align-items:center;gap:12px;margin:2px 0 14px;}',
+    '.sv-head{display:flex;align-items:center;gap:12px;margin:2px 0 14px;padding-left:44px;}' /* brand-mark.css pins the orange S top-left; the back arrow starts after it, like .cs-head */,
     '.sv-back{width:36px;height:36px;border-radius:50%;background:#141b2b;border:1px solid #223050;color:#e5e7eb;font-size:20px;line-height:34px;text-align:center;cursor:pointer;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}',
     '.sv-head-t{flex:1;min-width:0;}',
     '.sv-head-t b{display:block;font-size:19px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;}',
