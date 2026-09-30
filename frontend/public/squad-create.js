@@ -297,6 +297,8 @@
     '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:#0b0f1a;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .3s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
     '#' + SHEET_ID + '.open{transform:translateY(0);}',
+    '.sv-step-hidden{display:none !important;}',
+    '.sv-done{margin-top:16px;}',
     '.sv-handle{width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);margin:10px auto 8px;}',
     '.sv-x{width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.45);color:#ef4444;font-size:22px;line-height:34px;text-align:center;cursor:pointer;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}',
     '.sv-head{display:flex;align-items:center;gap:12px;margin:0 0 14px;}',
@@ -428,7 +430,7 @@
     var head = el('div', 'sv-head');
     var back = el('div', 'sv-back', '\u2190');
     back.setAttribute('role', 'button'); back.setAttribute('aria-label', 'Back');
-    back.addEventListener('click', function () { closeSheet(); });
+    back.addEventListener('click', function () { if (sh.__step) exitSettings(sh, mode); else closeSheet(); });
     head.appendChild(back);
     var ht = el('div', 'sv-head-t', '<b id="sv-head-name">' + mode.label + '</b><span id="sv-head-sub">' + (mode.gen || '') + '</span>');
     head.appendChild(ht);
@@ -472,7 +474,7 @@
 
     var row = el('div', 'sv-row');
     var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
-    setChip.addEventListener('click', function () { toggleSettings(sh); });
+    setChip.addEventListener('click', function () { enterSettings(sh, mode); });
     row.appendChild(setChip);
     var summary = el('div', 'sv-mchip');
     summary.id = 'sv-summary';
@@ -699,9 +701,39 @@
       .catch(function () { modeStatus = {}; return modeStatus; });
   }
 
-  function toggleSettings(sh) {
+  /* Settings is a step inside the sheet, not a list that unfolds under the
+     prompt (owner, 2026-09-30: no button that reveals a pile of buttons). ←
+     and Done return to the prompt exactly as it was. */
+  function enterSettings(sh, mode) {
+    if (sh.__step) return;
+    sh.__step = true;
+    Array.prototype.forEach.call(sh.children, function (c) {
+      if (c.classList.contains('sv-handle') || c.classList.contains('sv-head') || c.id === 'sv-settings') return;
+      c.classList.add('sv-step-hidden');
+    });
     var m = sh.querySelector('#sv-settings');
-    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    m.style.display = 'block';
+    if (!m.querySelector('.sv-done')) {
+      var done = el('button', 'sv-gen sv-done', 'Done \u2713');
+      done.addEventListener('click', function () { exitSettings(sh, mode); });
+      m.appendChild(done);
+    }
+    var name = sh.querySelector('#sv-head-name'), sub = sh.querySelector('#sv-head-sub');
+    sh.__head = [name.innerHTML, sub.innerHTML];
+    name.textContent = 'Settings';
+    sub.textContent = mode.label + ' \u00b7 tap a value to change it';
+    sh.scrollTop = 0;
+  }
+
+  function exitSettings(sh, mode) {
+    if (!sh.__step) return;
+    sh.__step = false;
+    Array.prototype.forEach.call(sh.querySelectorAll('.sv-step-hidden'), function (c) { c.classList.remove('sv-step-hidden'); });
+    sh.querySelector('#sv-settings').style.display = 'none';
+    var name = sh.querySelector('#sv-head-name'), sub = sh.querySelector('#sv-head-sub');
+    if (sh.__head) { name.innerHTML = sh.__head[0]; sub.innerHTML = sh.__head[1]; }
+    refreshSummary(sh, mode);
+    stopPreview();
   }
 
   function refreshSummary(sh, mode) {
