@@ -904,7 +904,7 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
    so nothing is ever behind or on top of a button. */
 :root {
   --sg-band-gap: 0px;
-  --sg-band-height: 76px;
+  --sg-band-height: 56px;
 }
 .tt-actions,
 .reel-actions,
@@ -916,4 +916,57 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
   border-top: 1px solid rgba(255, 255, 255, .08) !important;
   box-sizing: border-box !important;
   z-index: 40 !important;
+}
+
+/* ── AND IT LOOKS LIKE THE TAB BAR (owner, 2026-09-30, second pass) ──────────
+   Same height (56px), same glass, buttons spread evenly as flat icon + label —
+   a second tab bar, not a cluster of circles on a dark strip. */
+.tt-actions,
+.reel-actions,
+#sg-reels-rail,
+#sg-sv-rail.sv-float,
+#sg-profile-rail,
+.sg-pr-host-capped {
+  justify-content: space-around !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+}
+.tt-actions > *,
+.reel-actions .reel-action,
+#sg-reels-rail > *,
+#sg-profile-rail > *,
+.sg-pr-host-capped > * {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  gap: 2px !important;
+  padding: 6px 4px !important;
+}
+.tt-actions .tt-action-btn,
+.reel-actions .icon {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  font-size: 20px !important;
+}
+.tt-actions .tt-action-btn svg,
+.reel-actions .icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+.tt-actions .tt-action-label,
+.reel-actions .label,
+#sg-reels-rail .sg-rr-label,
+#sg-profile-rail .sg-rr-label,
+.sg-pr-host-capped .sg-pr-label {
+  font-size: 11px !important;
+  letter-spacing: .2px !important;
+  color: rgba(255, 255, 255, .62) !important;
+  text-shadow: none !important;
 }
