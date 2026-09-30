@@ -932,8 +932,11 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
   justify-content: space-around !important;
   gap: 0 !important;
   padding: 0 !important;
-  backdrop-filter: blur(24px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+  /* No blur: the bar is 98% opaque, and a 24px backdrop blur over a playing
+     video is the single most expensive effect a phone GPU can be asked for
+     (owner, 2026-09-30: "switching tabs is very slow"). */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 .tt-actions > *,
 .reel-actions .reel-action,

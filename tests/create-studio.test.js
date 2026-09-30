@@ -82,7 +82,7 @@ t2('the Create tab leads with a Library strip and can be shown filtered from the
   a2.match(studio, /show: function \(kind\)/);
   a2.ok(studio.indexOf("'cs-lib'") < studio.indexOf("el('div', 'cs-grid')"), 'the Library strip is built before the grid');
   const html = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'index.html'), 'utf8');
-  a2.match(html, /squad-create\.js\?v=1\.9/);
+  a2.match(html, /squad-create\.js\?v=2\.0/);
   a2.match(html, /create-studio\.js\?v=1\.4/);
 });
 
@@ -102,11 +102,11 @@ t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕,
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /sgOpenSheet\([\s\S]{0,400}title: 'Share this reel'/, 'Share opens the sheet');
   a2.match(reels, /title: 'Save this reel'/, 'Save opens the sheet');
-  a2.match(reels, /sg-half-sheet\.js\?v=1\.2/, 'the Reels frame loads it');
+  a2.match(reels, /sg-half-sheet\.js\?v=1\.3/, 'the Reels frame loads it');
   const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
   a2.match(app, /if\(typeof window\.sgOpenSheet==='function'\) return window\.sgOpenSheet\(html,opts\|\|\{\}\)/, 'the Shop uses it');
   for (const f of ['index.html', 'scansquad/index.html']) {
-    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.2/, f + ' loads it');
+    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.3/, f + ' loads it');
   }
 });
 
@@ -142,7 +142,7 @@ t2('the button row is a solid rectangle on the tab bar and the reel ends above i
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
   a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
-  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.1/, f);
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.2/, f);
 });
 
 t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenly', () => {
@@ -160,4 +160,14 @@ t2('every page ends above the two bars and the Create type row is no longer cove
   a2.match(css, /z-index: 8996 !important;/, 'the row sits above the tab pages');
   a2.match(css, /html body\.sg-cta-rides-row \.sg-tab-content:not\(\.reels-active\) \{\n  bottom: calc\(var\(--sg-nav-h, 56px\) \+ var\(--sg-safe-b, 0px\) \+ var\(--sg-band-height, 56px\)\)/, 'so does every other tab page');
   a2.match(css, /#sg-sv-rail\.sv-float \.sv-circle,\n[\s\S]{0,160}width: 24px !important;/, 'Create type buttons are flat like the tab bar');
+});
+
+t2('the fixed bars carry no backdrop blur and sheets open in 200 ms', () => {
+  const pub = path2.join(__dirname, '..', 'frontend', 'public');
+  const css = fs2.readFileSync(path2.join(pub, 'rails.css'), 'utf8');
+  a2.match(css, /backdrop-filter: none !important;\n  -webkit-backdrop-filter: none !important;\n\}/, 'button bar: no blur');
+  const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
+  a2.doesNotMatch(app, /\.sg-tab-bar\{[^}]*backdrop-filter/, 'tab bar: no blur');
+  a2.match(fs2.readFileSync(path2.join(pub, 'sg-half-sheet.js'), 'utf8'), /transition:transform \.2s cubic-bezier/);
+  a2.match(fs2.readFileSync(path2.join(pub, 'squad-create.js'), 'utf8'), /transition:transform \.2s cubic-bezier/);
 });
