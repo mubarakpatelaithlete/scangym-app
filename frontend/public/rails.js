@@ -66,13 +66,27 @@
   /* `.sg-pr-host-capped` is the app's own Profile rail, which profile-rail.js
      extends instead of floating its own when it exists (see rails.css). */
   var ROWS = '.tt-actions, .reel-actions, #sg-reels-rail, #sg-sv-rail.sv-float, #sg-profile-rail, .sg-pr-host-capped';
+  var LEFT = 'sg-rail-scroll-left';
   function markRow(row) {
     if (!row) return;
     var more = row.scrollWidth - row.clientWidth - row.scrollLeft > 8;
+    var back = row.scrollLeft > 8;
     if (more !== row.classList.contains(SCROLLABLE)) row.classList.toggle(SCROLLABLE, more);
+    if (back !== row.classList.contains(LEFT)) row.classList.toggle(LEFT, back);
     if (!row.getAttribute('data-sg-scroll-watch')) {
       row.setAttribute('data-sg-scroll-watch', '1');
       row.addEventListener('scroll', function () { markRow(row); }, { passive: true });
+      /* The arrows are pseudo-elements (no events), so a tap on either edge
+         while its arrow shows pages the row that way instead of pressing the
+         half-hidden button under it — the carousel pattern YouTube/Netflix use. */
+      row.addEventListener('click', function (ev) {
+        var r = row.getBoundingClientRect(), x = ev.clientX - r.left, dir = 0;
+        if (x > r.width - 30 && row.classList.contains(SCROLLABLE)) dir = 1;
+        else if (x < 30 && row.classList.contains(LEFT)) dir = -1;
+        if (!dir) return;
+        ev.preventDefault(); ev.stopPropagation();
+        row.scrollBy({ left: dir * Math.max(120, row.clientWidth * 0.7), behavior: 'smooth' });
+      }, true);
     }
   }
   function markScroll(card) {

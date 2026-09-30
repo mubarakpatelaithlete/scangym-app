@@ -14,7 +14,6 @@
  *   CreatorFullPage
  *   CreatorDashboardPage
  *   CreatorEarningsPage
- *   CreatorSignedOutPage
  *   CreatorReelsPage
  */
 'use strict';
@@ -2203,28 +2202,6 @@ window._loadCreatorDash=async function(handle){
   }catch(e){}
 };
 
-function CreatorSignedOutPage(){
-  var commission=(typeof sgCommissionRange==='function')?sgCommissionRange():'';
-  var facts=[
-    {icon:'\uD83D\uDCB0',title:'25% commission',desc:'On every booking made through your link'+(commission?' ('+commission+' each)':'')+'. No caps.'},
-    {icon:'\uD83D\uDD17',title:'Your own referral link',desc:'A 30-day cookie tracks anyone who clicks it \u2014 they don\u2019t have to book straight away.'},
-    {icon:'\uD83D\uDCC5',title:'Weekly payouts',desc:'Withdraw whenever you like. Free to join, no minimum follower count.'}
-  ].map(function(f){
-    return '<div style="display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px">'
-      +'<div style="font-size:20px;line-height:1;flex-shrink:0">'+f.icon+'</div>'
-      +'<div><div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:2px">'+f.title+'</div>'
-      +'<div style="color:rgba(255,255,255,.45);font-size:12px;line-height:1.45">'+f.desc+'</div></div></div>';
-  }).join('');
-  return '<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#0a0a16;overflow-y:auto;-webkit-overflow-scrolling:touch">'
-    +'<div style="max-width:480px;margin:0 auto;padding:28px 20px 32px">'
-      +'<div style="display:inline-block;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);color:#a855f7;font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;padding:5px 10px;border-radius:999px;margin-bottom:14px">ScanSquad</div>'
-      +'<h1 style="color:#fff;font-size:26px;line-height:1.2;font-weight:900;margin:0 0 8px">Get paid to share gyms you already love.</h1>'
-      +'<p style="color:rgba(255,255,255,.5);font-size:14px;line-height:1.5;margin:0 0 22px">ScanGym\u2019s creator programme. Share a link, earn a cut of every day pass booked through it.</p>'
-      +'<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">'+facts+'</div>'
-      +'<div id=\"sg-how-it-works\" onclick="navigate(\'/scansquad\')" style="text-align:center;color:rgba(255,255,255,.4);font-size:13px;margin-top:14px;cursor:pointer;padding:8px">See how it works \u2192</div>'
-    +'</div></div>';
-}
-
 function CreatorFullPage(){
   var u=state&&state.user;
   // Signed-out visitors used to fall through to the dashboard below, which then
@@ -2232,7 +2209,11 @@ function CreatorFullPage(){
   // and a grid of "—" metrics — i.e. a logged-in creator dashboard belonging to
   // nobody. It read as broken/fake to anyone landing on the tab. Show them what
   // ScanSquad actually is and one way in instead.
-  if(!u) return CreatorSignedOutPage();
+  /* Signed out, the Create tab IS the Create studio (create-studio.js draws it
+     over this route). The old ScanSquad pitch that used to sit here ("Get paid
+     to share gyms you already love") showed first and after ✕, so it was
+     removed (owner, 2026-09-30). A plain backdrop keeps the route valid. */
+  if(!u) return '<div style="position:fixed;top:0;left:0;right:0;bottom:56px;background:#070b14"></div>';
   var name=u.full_name||u.email||'ScanSquad';
   /* The server is the source of truth and calls it referralHandle (see
      /api/auth/user); this page read only the snake_case field, found nothing,
