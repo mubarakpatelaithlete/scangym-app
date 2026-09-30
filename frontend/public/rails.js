@@ -427,7 +427,10 @@
     var hide = hiddenKeys();
     var items = slot.querySelectorAll('.' + TRIO);
     for (var i = 0; i < items.length; i++) {
-      items[i].style.display = hide[items[i].getAttribute('data-sg-row-act')] ? 'none' : '';
+      /* A class, not style.display: `.sg-row-slot .tt-action.sg-row-trio` is
+         `display:flex !important` in rails.css and beat the inline none —
+         measured live 2026-09-30 00:30, Book and Talk still on Home. */
+      items[i].classList.toggle('sg-row-hidden', !!hide[items[i].getAttribute('data-sg-row-act')]);
     }
   }
 

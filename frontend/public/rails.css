@@ -888,3 +888,9 @@ html body.sg-quiet-pills #mchat-fab#mchat-fab,
 html body.sg-quiet-pills #chat-fab#chat-fab {
   display: none !important;
 }
+
+/* rails.js#paintTrio: an item this tab does not show. Same specificity as the
+   flex rule above plus the class, and later, so it wins. */
+.sg-row-slot .tt-action.sg-row-trio.sg-row-hidden {
+  display: none !important;
+}
