@@ -51,6 +51,9 @@ async function threadFor(req, id) {
   return t || null;
 }
 
+// Task 11 step 2: voice & video calls (WebRTC signalling).
+require('./dm-calls').mount(router, { me, threadFor, displayName });
+
 router.get('/me', (req, res) => res.json({ id: me(req), name: req.user.name || displayName(req.user) }));
 
 router.get('/threads', async (req, res) => {

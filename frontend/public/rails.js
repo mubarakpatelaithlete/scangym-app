@@ -386,7 +386,9 @@
   var ITEMS = [
     { key: 'book', ico: 'calendar', emoji: '\uD83D\uDCB3', cap: 'Book' },
     { key: 'talk', ico: 'mic',      emoji: '\uD83C\uDFA4', cap: 'Talk' },
-    { key: 'ai',   ico: 'sparkle',  emoji: '\u2728',       cap: 'Ask AI' }
+    { key: 'ai',   ico: 'sparkle',  emoji: '\u2728',       cap: 'Ask AI' },
+    /* Task 26: the wallet (earnings + withdraw) was only reachable via More → Payment. */
+    { key: 'wallet', ico: 'wallet', emoji: '\uD83D\uDCB0',   cap: 'Wallet' }
   ];
 
   /** The chat this tab owns. Built by its own script, so it is already there. */
@@ -416,6 +418,7 @@
     }
     if (key === 'talk') return openChat('talk');
     if (key === 'ai') return openChat('ai');
+    if (key === 'wallet') { if (typeof window.navigate === 'function') return window.navigate('/wallet'); location.href = '/wallet'; return; }
     /* Book: the card in front of the customer has its own book button, with the
        gym and the price already bound to it. Only when there is none — Profile,
        ScanSquad, Reels — does this become "go to the Book tab". */
@@ -434,12 +437,15 @@
      (owner, 2026-09-30). Ask AI stays everywhere. */
   function hiddenKeys() {
     var p = location.pathname.replace(/\/$/, '');
+    /* Wallet lives on Profile only (Task 26). */
+    var w = FRAMED || (p.indexOf('/profile') !== 0 && p.indexOf('/more') !== 0);
     if (FRAMED || p === '' || p === '/reels' || p === '/creator' || p === '/scansquad') return { book: 1, talk: 1 };
-    return {};
+    return w ? { wallet: 1 } : {};
   }
 
   function paintTrio(slot) {
     var hide = hiddenKeys();
+    hide.wallet = hide.wallet || hide.book;
     var items = slot.querySelectorAll('.' + TRIO);
     for (var i = 0; i < items.length; i++) {
       /* A class, not style.display: `.sg-row-slot .tt-action.sg-row-trio` is
