@@ -1034,3 +1034,59 @@ html body.sg-quiet-pills #chat-fab#chat-fab {
 html body.sg-cta-rides-row .sg-tab-content:not(.reels-active) {
   bottom: calc(var(--sg-nav-h, 56px) + var(--sg-safe-b, 0px) + var(--sg-band-height, 56px)) !important;
 }
+
+/* ── PROFILE ROW, SAME LOOK AS EVERY OTHER ROW (owner, 2026-09-30) ──────────
+   The app's own Book / Partner / Help circles (inline styles from
+   sgRailCircle), the chatbot buttons (.sg-pr-circle, with live dots) and the
+   in-row Sign in pill all take the flat tab-bar look. The row's own Book goes:
+   the trio already has one (owner saw "Book Book"). */
+.sg-pr-host-capped > * > div:first-child,
+.sg-pr-host-capped .sg-pr-circle,
+#sg-profile-rail .sg-pr-circle,
+#sg-profile-rail-ext .sg-pr-circle {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  font-size: 20px !important;
+}
+.sg-pr-host-capped > * > div:first-child svg,
+.sg-pr-host-capped .sg-pr-circle svg,
+#sg-profile-rail .sg-pr-circle svg,
+#sg-profile-rail-ext .sg-pr-circle svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+.sg-pr-host-capped .sg-pr-dot,
+#sg-profile-rail .sg-pr-dot,
+#sg-profile-rail-ext .sg-pr-dot { display: none !important; }
+.sg-pr-host-capped > * > span,
+.sg-pr-host-capped .sg-pr-label,
+#sg-profile-rail .sg-pr-label,
+#sg-profile-rail-ext .sg-pr-label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px !important;
+  color: rgba(255, 255, 255, .62) !important;
+  text-shadow: none !important;
+}
+.sg-pr-host-capped > *,
+.sg-pr-host-capped .sg-pr-btn,
+#sg-profile-rail .sg-pr-btn,
+#sg-profile-rail-ext .sg-pr-btn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 64px !important;
+  gap: 2px !important;
+  padding: 6px 4px !important;
+}
+.sg-pr-host-capped > button[aria-label="Book a gym"] { display: none !important; }
+.sg-row-slot > #sg-continue-banner.sg-cb-in-strip {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
