@@ -388,7 +388,10 @@
     { key: 'talk', ico: 'mic',      emoji: '\uD83C\uDFA4', cap: 'Talk' },
     { key: 'ai',   ico: 'sparkle',  emoji: '\u2728',       cap: 'Ask AI' },
     /* Task 26: the wallet (earnings + withdraw) was only reachable via More → Payment. */
-    { key: 'wallet', ico: 'wallet', emoji: '\uD83D\uDCB0',   cap: 'Wallet' }
+    { key: 'wallet', ico: 'wallet', emoji: '\uD83D\uDCB0',   cap: 'Wallet' },
+    /* Task 4: "Post everywhere" (connect Instagram/YouTube/Facebook/Pinterest/X/LinkedIn)
+       was only reachable from the Post chip after a creation finished. */
+    { key: 'connect', ico: 'share', emoji: '\uD83D\uDD17', cap: 'Connect' }
   ];
 
   /** The chat this tab owns. Built by its own script, so it is already there. */
@@ -418,6 +421,7 @@
     }
     if (key === 'talk') return openChat('talk');
     if (key === 'ai') return openChat('ai');
+    if (key === 'connect') { location.href = '/post-everywhere/'; return; }
     if (key === 'wallet') { if (typeof window.navigate === 'function') return window.navigate('/wallet'); location.href = '/wallet'; return; }
     /* Book: the card in front of the customer has its own book button, with the
        gym and the price already bound to it. Only when there is none — Profile,
@@ -446,6 +450,7 @@
   function paintTrio(slot) {
     var hide = hiddenKeys();
     hide.wallet = hide.wallet || hide.book;
+    hide.connect = hide.wallet;          // Profile only, like Wallet
     var items = slot.querySelectorAll('.' + TRIO);
     for (var i = 0; i < items.length; i++) {
       /* A class, not style.display: `.sg-row-slot .tt-action.sg-row-trio` is
