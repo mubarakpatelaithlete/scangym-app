@@ -102,10 +102,10 @@ t2('every Home, Create and Shop button opens the one half-screen sheet: red ✕,
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /sgOpenSheet\([\s\S]{0,400}title: 'Share this reel'/, 'Share opens the sheet');
   a2.match(reels, /title: 'Save this reel'/, 'Save opens the sheet');
-  a2.match(reels, /sg-half-sheet\.js\?v=1\.0/, 'the Reels frame loads it');
+  a2.match(reels, /sg-half-sheet\.js\?v=1\.1/, 'the Reels frame loads it');
   const app = fs2.readFileSync(path2.join(pub, 'app.ctr576.js'), 'utf8');
   a2.match(app, /if\(typeof window\.sgOpenSheet==='function'\) return window\.sgOpenSheet\(html,opts\|\|\{\}\)/, 'the Shop uses it');
   for (const f of ['index.html', 'scansquad/index.html']) {
-    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.0/, f + ' loads it');
+    a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /sg-half-sheet\.js\?v=1\.1/, f + ' loads it');
   }
 });

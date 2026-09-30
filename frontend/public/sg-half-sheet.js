@@ -122,6 +122,11 @@
     root.id = ID;
     root.setAttribute('role', 'dialog');
     if (opts.height) root.style.maxHeight = opts.height;
+    /* Inside the Reels frame the document already ends above the tab bar, so
+       the sheet sits on the frame's floor — otherwise it floats 56px up and the
+       action row peeks out underneath (seen live, 2026-09-30). */
+    var framed = false; try { framed = window.parent !== window; } catch (e) { framed = true; }
+    if (framed) root.style.bottom = '0';
     var h = '<div class="shs-handle"></div>';
     var hasHead = opts.title || opts.onBack || opts.icon;
     h += '<div class="shs-head">'
