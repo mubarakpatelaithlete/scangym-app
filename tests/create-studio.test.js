@@ -142,5 +142,12 @@ t2('the button row is a solid rectangle on the tab bar and the reel ends above i
   const reels = fs2.readFileSync(path2.join(pub, 'reels', 'index.html'), 'utf8');
   a2.match(reels, /\.reel video, \.reel canvas\.frame-preview, \.reel iframe, \.reel \.reel-poster\{\n\s+height:calc\(100% - var\(--sg-band-height,76px\)\)/, 'the video stops above the band');
   a2.match(reels, /\.reel-progress\{ bottom:var\(--sg-band-height,76px\)/, 'so does the progress line');
-  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=2\.9/, f);
+  for (const f of ['index.html', 'reels/index.html', 'scansquad/index.html']) a2.match(fs2.readFileSync(path2.join(pub, f), 'utf8'), /rails\.css\?v=3\.0/, f);
+});
+
+t2('the button row looks like the tab bar: 56px, flat icon + label, spread evenly', () => {
+  const css = fs2.readFileSync(path2.join(__dirname, '..', 'frontend', 'public', 'rails.css'), 'utf8');
+  a2.match(css, /--sg-band-height: 56px;/);
+  a2.match(css, /justify-content: space-around !important;/);
+  a2.match(css, /\.reel-actions \.icon \{\n  width: 24px !important;[\s\S]{0,200}background: transparent !important;/, 'no circles');
 });
