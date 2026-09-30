@@ -62,6 +62,18 @@
     '.cs-name{font-size:12.5px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
     '.cs-sub{font-size:11px;color:#c3cddc;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
     '.cs-sec{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 8px;}',
+    /* Library: the creator's own work first, as a strip of thumbnails the way
+       Higgsfield leads with "My assets". "See all" unfolds the dated feed. */
+    '.cs-lib{margin:0 0 12px;}',
+    '.cs-lib .cs-sec{margin:2px 2px 8px;}',
+    '.cs-lib .cs-sec span{color:#FF6D00;font-weight:700;cursor:pointer;}',
+    '.cs-strip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}',
+    '.cs-strip::-webkit-scrollbar{display:none;}',
+    '.cs-strip .cs-thumb{width:64px;height:64px;border-radius:12px;cursor:pointer;position:relative;}',
+    '.cs-strip .cs-thumb.run::after{content:"";position:absolute;inset:0;border-radius:12px;border:2px solid #93c5fd;}',
+    '.cs-lib .cs-feed{display:none;}',
+    '.cs-lib.all .cs-feed{display:block;}',
+    '.cs-lib.all .cs-strip{display:none;}',
     '.cs-sec b{font-size:15px;color:#fff;}',
     '.cs-sec span{font-size:12px;color:#94a3b8;}',
     '.cs-day{font-size:11.5px;color:#94a3b8;font-weight:700;margin:14px 2px 6px;text-transform:uppercase;letter-spacing:.5px;}',
@@ -241,6 +253,31 @@
     return r;
   }
 
+  /* One tap on a thumbnail opens it; a running or failed one reopens the mode. */
+  function stripItem(j) {
+    var t = thumb(j);
+    var running = j.status === 'queued' || j.status === 'running' || j.status === 'processing' || j.status === 'pending';
+    if (running) t.classList.add('run');
+    t.title = j.prompt || '';
+    t.addEventListener('click', function () {
+      if (j.status !== 'done' || j.kind === 'text') { if (window.sgSquadCreate) window.sgSquadCreate.open(j.kind, j.prompt || '', j.text || null, { model: j.model }); return; }
+      if (j.url) window.open(j.url, '_blank', 'noopener');
+    });
+    return t;
+  }
+
+  function renderLibrary(root, items) {
+    var strip = root.querySelector('.cs-strip');
+    var feed = root.querySelector('#' + ID + '-history');
+    if (strip) {
+      strip.innerHTML = '';
+      if (lib.signedOut) strip.appendChild(el('div', 'cs-empty', 'Sign in to see what you\u2019ve made.'));
+      else if (!items.length) strip.appendChild(el('div', 'cs-empty', 'Nothing yet \u2014 tap a model below to make your first one.'));
+      else items.slice(0, 20).forEach(function (j) { strip.appendChild(stripItem(j)); });
+    }
+    if (feed) renderHistory(feed, items);
+  }
+
   function renderHistory(host, items) {
     host.innerHTML = '';
     if (lib.signedOut) { host.appendChild(el('div', 'cs-empty', 'Sign in to see everything you\u2019ve made here \u2014 every image, clip and caption in one place.')); return; }
@@ -265,6 +302,19 @@
     head.appendChild(close);
     sticky.appendChild(head);
 
+    var libBox = el('div', 'cs-lib');
+    var libHead = el('div', 'cs-sec', '<b>Library</b><span role="button">See all \u203a</span>');
+    libHead.querySelector('span').addEventListener('click', function () {
+      var open = libBox.classList.toggle('all');
+      libHead.querySelector('span').textContent = open ? 'Less \u2039' : 'See all \u203a';
+    });
+    libBox.appendChild(libHead);
+    libBox.appendChild(el('div', 'cs-strip', '<div class="cs-empty">Loading\u2026</div>'));
+    var hist = el('div', 'cs-feed'); hist.id = ID + '-history';
+    libBox.appendChild(hist);
+    root.appendChild(libBox);
+    loadLibrary(true).then(function (items) { renderLibrary(root, items); });
+
     var chips = el('div', 'cs-chips');
     var all = [{ key: 'all', chip: 'All' }].concat(KINDS);
     all.forEach(function (k) {
@@ -277,19 +327,12 @@
       });
       chips.appendChild(c);
     });
-    sticky.appendChild(chips);
+    root.appendChild(chips);
 
     var grid = el('div', 'cs-grid');
     grid.appendChild(el('div', 'cs-empty', 'Loading models\u2026'));
     root.appendChild(grid);
     paintGrid(grid);
-
-    var sec = el('div', 'cs-sec', '<b>Your creations</b><span>tap to open</span>');
-    root.appendChild(sec);
-    var hist = el('div'); hist.id = ID + '-history';
-    hist.appendChild(el('div', 'cs-empty', 'Loading\u2026'));
-    root.appendChild(hist);
-    loadLibrary(true).then(function (items) { renderHistory(hist, items); });
     return root;
   }
 
@@ -321,15 +364,15 @@
       /* A job still running when the feed was drawn finishes in the background;
          re-read while the studio is open so the row flips to a thumbnail. */
       if (!histTimer) histTimer = setInterval(function () {
-        var h = document.getElementById(ID + '-history');
-        if (!h) return;
-        loadLibrary(true).then(function (items) { renderHistory(h, items); });
+        var r = document.getElementById(ID);
+        if (!r) return;
+        loadLibrary(true).then(function (items) { renderLibrary(r, items); });
       }, 8000);
     }
   }
 
   /* When the sheet closes after a generation, the feed should already show it. */
-  document.addEventListener('sg-squad-create:done', function () { var h = document.getElementById(ID + '-history'); if (h) loadLibrary(true).then(function (items) { renderHistory(h, items); }); });
+  document.addEventListener('sg-squad-create:done', function () { var r = document.getElementById(ID); if (r) loadLibrary(true).then(function (items) { renderLibrary(r, items); }); });
 
   function init() {
     var style = document.createElement('style');
@@ -341,5 +384,16 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  window.sgCreateStudio = { refresh: function () { cat.at = 0; lib.at = 0; var r = document.getElementById(ID); if (r) { r.remove(); sync(); } } };
+  window.sgCreateStudio = {
+    refresh: function () { cat.at = 0; lib.at = 0; var r = document.getElementById(ID); if (r) { r.remove(); sync(); } },
+    /* "Change model ›" on the create page (squad-create.js#openGrid): bring the
+       grid up, filtered to that type, even if the creator had closed it with ×. */
+    show: function (kind) {
+      dismissed = false;
+      filter = kindByKey(kind) ? kind : 'all';
+      var r = document.getElementById(ID); if (r) r.remove();
+      sync();
+      var root = document.getElementById(ID); if (root) root.scrollTop = 0;
+    },
+  };
 })();

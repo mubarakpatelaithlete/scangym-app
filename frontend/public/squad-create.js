@@ -289,12 +289,22 @@
     '.sv-dot{position:absolute;top:1px;right:1px;width:8px;height:8px;border-radius:50%;border:1.5px solid #0b1424;}',
     '.sv-dot.live{background:#22c55e;}',
     '.sv-dot.soon{background:#94a3b8;}',
-    '#sg-sv-overlay{position:fixed;inset:0;background:rgba(3,6,12,.6);z-index:9490;opacity:0;transition:opacity .25s;}',
-    '#sg-sv-overlay.open{opacity:1;}',
-    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:0;max-height:82vh;overflow-y:auto;background:#101a2e;border-radius:20px 20px 0 0;border-top:1px solid #24344f;box-shadow:0 -12px 40px rgba(0,0,0,.6);z-index:9491;padding:10px 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);scrollbar-width:none;}',
+    /* Higgsfield-style: the create surface is a full page, not a sheet stacked
+       on the grid. It slides in from the right and ← goes back to wherever the
+       creator came from (the model grid, or the ScanSquad home rail). Nothing
+       is dimmed underneath because nothing is meant to be seen underneath. */
+    '#sg-sv-overlay{display:none;}',
+    '#' + SHEET_ID + '{position:fixed;left:0;right:0;top:0;bottom:var(--sg-tab-height,56px);overflow-y:auto;background:#070b14;z-index:9491;padding:max(env(safe-area-inset-top,0px),8px) 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(100%);transition:transform .25s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
-    '#' + SHEET_ID + '.open{transform:translateY(0);}',
-    '.sv-handle{width:38px;height:4px;border-radius:2px;background:#33415c;margin:2px auto 12px;}',
+    '#' + SHEET_ID + '.open{transform:translateX(0);}',
+    '.sv-handle{display:none;}',
+    '.sv-head{display:flex;align-items:center;gap:12px;margin:2px 0 14px;}',
+    '.sv-back{width:36px;height:36px;border-radius:50%;background:#141b2b;border:1px solid #223050;color:#e5e7eb;font-size:20px;line-height:34px;text-align:center;cursor:pointer;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}',
+    '.sv-head-t{flex:1;min-width:0;}',
+    '.sv-head-t b{display:block;font-size:19px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;}',
+    '.sv-head-t span{display:block;font-size:12.5px;color:#c3cddc;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '.sv-head-t span i{font-style:normal;color:#FF6D00;font-weight:700;}',
+    '.sv-kind{font-size:9.5px;font-weight:800;letter-spacing:.6px;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid #223050;color:#cbd5e1;text-transform:uppercase;flex:0 0 auto;}',
     '.sv-seg{display:flex;gap:4px;overflow-x:auto;background:#0b1424;border-radius:11px;padding:3px;margin-bottom:12px;scrollbar-width:none;}',
     '.sv-seg::-webkit-scrollbar{display:none;}',
     '.sv-seg div{flex:0 0 auto;text-align:center;font-size:12px;color:#7d8ba3;padding:7px 10px;border-radius:9px;font-weight:600;cursor:pointer;white-space:nowrap;}',
@@ -392,27 +402,37 @@
     try { history.pushState({ sgCreateSheet: 1 }, '', location.href); } catch (e) {}
   }
 
+  /* The one place the model grid is opened from here: "Change model ›" on the
+     page. create-studio.js owns the grid; we only ask for it, filtered to this
+     type, with the creator's prompt kept in state[mode].__prompt. */
+  function openGrid(mode) {
+    var sh = document.getElementById(SHEET_ID);
+    var ta = sh && sh.querySelector('.sv-prompt');
+    if (ta) state[mode.key].__prompt = ta.value;
+    closeSheet();
+    if (window.sgCreateStudio && typeof window.sgCreateStudio.show === 'function') window.sgCreateStudio.show(mode.key);
+  }
+
   function openSheet(mode) {
     closeSheet();
     pushSheetEntry();
-    var ov = el('div', '', '');
-    ov.id = 'sg-sv-overlay';
-    ov.addEventListener('click', closeSheet);
-    document.body.appendChild(ov);
 
     var sh = el('div');
     sh.id = SHEET_ID;
     sh.setAttribute('data-mode', mode.key);
-    sh.appendChild(el('div', 'sv-handle'));
 
-    // mode switcher — every mode reachable from every sheet
-    var seg = el('div', 'sv-seg');
-    visibleModes().forEach(function (m) {
-      var d = el('div', m.key === mode.key ? 'on' : '', m.icon + ' ' + m.label);
-      if (m.key !== mode.key) d.addEventListener('click', function () { openSheet(m); });
-      seg.appendChild(d);
-    });
-    sh.appendChild(seg);
+    /* Page header: ← back · model name · role + price · type badge. The model
+       line is filled by renderModelPicker once /health answers; until then it
+       carries the mode. Type tabs used to live here — they are the grid's job. */
+    var head = el('div', 'sv-head');
+    var back = el('div', 'sv-back', '\u2190');
+    back.setAttribute('role', 'button'); back.setAttribute('aria-label', 'Back');
+    back.addEventListener('click', function () { closeSheet(); });
+    head.appendChild(back);
+    var ht = el('div', 'sv-head-t', '<b id="sv-head-name">' + mode.label + '</b><span id="sv-head-sub">' + (mode.gen || '') + '</span>');
+    head.appendChild(ht);
+    head.appendChild(el('div', 'sv-kind', mode.label));
+    sh.appendChild(head);
 
     var warn = el('div', 'sv-warn');
     warn.id = 'sv-warn';
@@ -429,6 +449,7 @@
 
     var ta = el('textarea', 'sv-prompt');
     ta.placeholder = mode.placeholder;
+    if (state[mode.key].__prompt) { ta.value = state[mode.key].__prompt; state[mode.key].__prompt = ''; } // back from "Change model": the idea survives the trip
     sh.appendChild(ta);
 
     /* Edit needs a clip before it needs a prompt, so the source row sits
@@ -493,13 +514,13 @@
     note.id = 'sv-note';
     sh.appendChild(note);
 
-    var hist = el('div', 'sv-note');
-    hist.id = 'sv-history';
-    sh.appendChild(hist);
+    /* No "My Creations" list on this page: the Library row at the top of the
+       Create grid (create-studio.js) is the one history. loadHistory() still
+       runs for shareInfo (the referral link under every result). */
 
     refreshSummary(sh, mode);
     document.body.appendChild(sh);
-    requestAnimationFrame(function () { ov.classList.add('open'); sh.classList.add('open'); });
+    requestAnimationFrame(function () { sh.classList.add('open'); });
 
     gateSheet(sh, mode);
   }
@@ -968,9 +989,14 @@
       var cur = list.filter(function (m) { return m.id === state[mode.key].__model; })[0];
       var price = cur && cur.price && mode.key !== 'text' ? cur.price + (cur.unit === 'per image' ? '/image' : '') : '';
       pill.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
-        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">' + (openChips ? 'Done' : 'Change model \u203a') + '</span>';
+        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">Change model \u203a</span>';
+      /* The page header carries the same truth, Higgsfield-style. */
+      var hn = sh.querySelector('#sv-head-name'), hs = sh.querySelector('#sv-head-sub');
+      if (hn && cur) hn.textContent = cur.label;
+      if (hs && cur) hs.innerHTML = (cur.role ? cur.role + ' \u00b7 ' : '') + (price ? '<i>' + price + '</i>' : mode.label);
     };
-    pill.addEventListener('click', function () { openChips = !openChips; host.style.display = openChips ? 'flex' : 'none'; paintPill(); });
+    /* "Change model" is the grid, not a second list folded into this page. */
+    pill.addEventListener('click', function () { openGrid(mode); });
     picker.__paintPill = paintPill;
 
     /* Default to something the creator can actually run: picking a locked
