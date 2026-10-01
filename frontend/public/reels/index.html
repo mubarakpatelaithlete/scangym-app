@@ -585,7 +585,66 @@
         0%,100%{transform:translateX(-50%) translateY(0);}
         50%{transform:translateX(-50%) translateY(-12px);}
       }
-    </style>
+    
+/* ── TASK 64: THE VIDEO IS THE WHOLE SCREEN (owner, 2026-10-01) ─────────────
+   TikTok's layout: the video runs edge to edge down to the tab bar and the
+   buttons float in a column on its right edge. Overrides "THE ROW IS A
+   RECTANGLE" in rails.css for the Home reels only (html body = higher
+   specificity, so these !important rules win wherever the files load). */
+html body .reel video, html body .reel canvas.frame-preview, html body .reel iframe, html body .reel .reel-poster{
+  height:100% !important;
+}
+html body .reel-progress{ bottom:0 !important; }
+html body .reel-info{ bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 14px) !important; right:84px !important; }
+html body .reel-actions,
+html body.sg-cta-in-row .reel-actions,
+html body.sg-cta-in-row.sg-cta-rides-row .reel-actions{
+  left:auto !important; right:4px !important; top:auto !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 10px) !important;
+  width:68px !important; height:auto !important; max-height:calc(100% - 170px) !important;
+  margin:0 !important; padding:0 !important;
+  flex-direction:column !important; align-items:center !important; justify-content:flex-end !important;
+  gap:10px !important; overflow:visible !important;
+  background:none !important; border:0 !important;
+  -webkit-mask-image:none !important; mask-image:none !important;
+}
+html body .reel-actions::before, html body .reel-actions::after{ content:none !important; display:none !important; }
+html body .reel-actions .reel-action,
+html body .reel-actions .sg-row-slot .tt-action.sg-row-trio:not(.sg-row-hidden){
+  flex:0 0 auto !important; width:68px !important; padding:0 !important; gap:3px !important;
+}
+html body .reel-actions .icon,
+html body .reel-actions .tt-action-btn{
+  width:40px !important; height:40px !important; min-height:0 !important;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.6));
+}
+html body .reel-actions .icon svg,
+html body .reel-actions .tt-action-btn svg{ width:32px !important; height:32px !important; }
+html body .reel-actions .label,
+html body .reel-actions .tt-action-label{
+  color:#fff !important; font-size:12px !important; font-weight:600 !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.9) !important;
+}
+html body .reel-actions .tt-action-label{ color:#fff !important; }
+/* "Make one like this" sits bottom-left under the title, as TikTok's
+   template chip does, so it never covers a button. */
+html body .reel-prompt{ left:12px !important; right:auto !important; max-width:calc(100% - 100px) !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 12px) !important; }
+html body .reel-info{ bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 58px) !important; }
+/* Task 64 fix 2: no "1 / 615" counter (TikTok shows none). */
+html body .reel-counter{ display:none !important; }
+/* Task 64 fix 4: creator photo + Follow at the top of the column. */
+html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:relative; margin-bottom:8px; }
+.sg-creator .sg-av{ width:46px; height:46px; border-radius:50%; border:2px solid #fff; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; font:800 18px/1 Sora,system-ui,sans-serif; color:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.5); }
+.sg-creator .sg-av img{ width:100%; height:100%; object-fit:cover; }
+.sg-creator .sg-plus{ position:absolute; left:50%; bottom:-9px; transform:translateX(-50%); width:20px; height:20px;
+  border-radius:50%; background:#fe2c55; color:#fff; font:700 15px/20px system-ui,sans-serif; text-align:center;
+  box-shadow:0 1px 3px rgba(0,0,0,.5); transition:background .15s; }
+.sg-creator.sg-on .sg-plus{ background:#fff; color:#fe2c55; font-size:12px; }
+
+</style>
     <script src="/pass-math.js" defer></script>
     <script src="/pricing.js" defer></script>
     <link rel="stylesheet" href="/one-orange.css?v=1.0">
@@ -723,10 +782,56 @@
         if(!n) return word;
         return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'K' : String(n);
       }
+      /* Task 64 (owner, 2026-10-01): TikTok puts the creator's photo with a
+         red + (Follow) at the top of the column — the "real people" signal.
+         Uploads have a ScanSquad creator, YouTube clips a channel, and our own
+         reels are ScanGym's. No photo is stored for any of them yet, so the
+         circle shows the creator's initial on a colour picked from the name. */
+      function creatorOf(video){
+        var c = (video && video.creator) || {};
+        var name = c.name || c.handle || (video && video.author) || 'ScanGym';
+        var key = String(c.handle || (video && video.author) || 'scangym').toLowerCase().slice(0, 120);
+        return {key:key, name:name, img: c.avatar || c.photo || ''};
+      }
+      function creatorButton(video){
+        var cr = creatorOf(video), h = 0;
+        for(var i = 0; i < cr.key.length; i++) h = (h * 31 + cr.key.charCodeAt(i)) % 360;
+        var bg = cr.key === 'scangym' ? '#FF6D00' : 'hsl(' + h + ',55%,42%)';
+        var face = cr.img ? '<img src="' + escHtml(cr.img) + '" alt="">' : escHtml(cr.name.replace(/^@/,'').charAt(0).toUpperCase() || 'S');
+        return '<div class="reel-action sg-creator' + (follows[cr.key] ? ' sg-on' : '') + '" data-action="follow" data-ck="' + escHtml(cr.key) + '" aria-label="Follow ' + escHtml(cr.name) + '">'
+          + '<div class="sg-av" style="background:' + bg + '">' + face + '</div><span class="sg-plus">' + (follows[cr.key] ? '\u2713' : '+') + '</span></div>';
+      }
+      var follows = {};
+      function paintFollow(key){
+        var els = document.querySelectorAll('.sg-creator[data-ck]');
+        for(var i = 0; i < els.length; i++){
+          if(els[i].getAttribute('data-ck') !== key) continue;
+          els[i].classList.toggle('sg-on', !!follows[key]);
+          var pl = els[i].querySelector('.sg-plus'); if(pl) pl.textContent = follows[key] ? '\u2713' : '+';
+        }
+      }
+      fetch('/api/reels/social/follows', {credentials:'same-origin'})
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ if(d && d.creators) d.creators.forEach(function(k){ follows[k] = true; paintFollow(k); }); })
+        .catch(function(){});
+      function toggleFollow(video){
+        var cr = creatorOf(video);
+        if(!_reelsUserLoggedIn && window.parent && window.parent !== window){ askSignIn('follow', video); return; }
+        var on = !follows[cr.key];
+        follows[cr.key] = on; paintFollow(cr.key);
+        if(navigator.vibrate) navigator.vibrate(10);
+        fetch('/api/reels/social/follow', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({creator: cr.key, on: on})})
+          .then(function(r){
+            if(r.status === 401){ follows[cr.key] = !on; paintFollow(cr.key); askSignIn('follow', video); return null; }
+            if(!r.ok) throw new Error();
+            if(typeof showToast === 'function') showToast(on ? 'Following ' + cr.name : 'Unfollowed ' + cr.name);
+          }).catch(function(){ follows[cr.key] = !on; paintFollow(cr.key); });
+      }
       function socialButtons(video){
         var k = escHtml(socialKey(video));
         return {
-          lead: '<div class="reel-action" data-action="like" data-sk="' + k + '"><div class="icon">' + ICONS.like + '</div><span class="label">Like</span></div>'
+          lead: creatorButton(video) + '<div class="reel-action" data-action="like" data-sk="' + k + '"><div class="icon">' + ICONS.like + '</div><span class="label">Like</span></div>'
               + '<div class="reel-action" data-action="comment" data-sk="' + k + '"><div class="icon">' + ICONS.comment + '</div><span class="label">Comment</span></div>',
           tail: '<div class="reel-action" data-action="repost" data-sk="' + k + '"><div class="icon">' + ICONS.repost + '</div><span class="label">Repost</span></div>'
         };
@@ -2952,6 +3057,7 @@
             if(btn.dataset.action === 'like') toggleSocial('like', video);
             else if(btn.dataset.action === 'repost') toggleSocial('repost', video);
             else if(btn.dataset.action === 'comment') openComments(video);
+            else if(btn.dataset.action === 'follow') toggleFollow(video);
             else if(btn.dataset.action === 'shop') openReelShop(video);
             else if(btn.dataset.action === 'share') handleShare(video);
             else if(btn.dataset.action === 'save') handleSave(video, video.url);
@@ -3253,6 +3359,7 @@
             if(action === 'like') toggleSocial('like', video);
             else if(action === 'repost') toggleSocial('repost', video);
             else if(action === 'comment') openComments(video);
+            else if(action === 'follow') toggleFollow(video);
             else if(action === 'shop') openReelShop(video);
             else if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);

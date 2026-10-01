@@ -678,7 +678,7 @@
     ensureFilterSheet();
     injectFilterButton();
     patchGymOverlay();
-    addUSPMessaging();
+    /* addUSPMessaging(); Task 64: banner removed (owner, 2026-10-01) */
     patchReelsBooking();
     patchChatUniversalHandler();
     patchChannelsLiveStatus();

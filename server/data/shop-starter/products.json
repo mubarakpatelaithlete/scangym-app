@@ -1,0 +1,82 @@
+[
+ {
+  "slug": "gym-reel-prompts-50",
+  "title": "50 AI Gym Reel Prompts",
+  "category": "Prompt packs",
+  "pricePence": 299,
+  "description": "Copy-paste prompts for ScanGym Create, Sora, Veo or Kling: 50 vertical gym reels that look filmed, not generated.",
+  "file": "gym-reel-prompts-50.pdf"
+ },
+ {
+  "slug": "ai-fitness-photo-prompts-30",
+  "title": "30 AI Fitness Photo Prompts",
+  "category": "Prompt packs",
+  "pricePence": 199,
+  "description": "Thirty image prompts for profile photos, thumbnails and gym posters, with lighting and camera settings that look real.",
+  "file": "ai-fitness-photo-prompts-30.pdf"
+ },
+ {
+  "slug": "beginner-gym-plan-4wk",
+  "title": "4-Week Beginner Gym Plan",
+  "category": "Workout plans",
+  "pricePence": 399,
+  "description": "Three full-body sessions a week for complete beginners, with sets, reps and how to add weight safely each week.",
+  "file": "beginner-gym-plan-4wk.pdf"
+ },
+ {
+  "slug": "day-pass-full-body-45",
+  "title": "45-Minute Day-Pass Full-Body Workout",
+  "category": "Workout plans",
+  "pricePence": 149,
+  "description": "One efficient session that works in any gym you visit on a day pass, with swaps for when a machine is busy.",
+  "file": "day-pass-full-body-45.pdf"
+ },
+ {
+  "slug": "strength-builder-12wk",
+  "title": "12-Week Strength Builder",
+  "category": "Workout plans",
+  "pricePence": 499,
+  "description": "A four-day upper/lower programme for people who already train, built on steady weekly progression and a deload every fourth week.",
+  "file": "strength-builder-12wk.pdf"
+ },
+ {
+  "slug": "high-protein-meal-prep-30",
+  "title": "High-Protein Meal Prep for £30 a Week",
+  "category": "Meal guides",
+  "pricePence": 299,
+  "description": "A one-hour Sunday prep that makes 10 high-protein meals, with a UK supermarket shopping list for about £30.",
+  "file": "high-protein-meal-prep-30.pdf"
+ },
+ {
+  "slug": "pre-post-workout-snacks",
+  "title": "Pre & Post Workout Snack Guide",
+  "category": "Meal guides",
+  "pricePence": 149,
+  "description": "What to eat before and after training, when to eat it and 20 quick snack ideas.",
+  "file": "pre-post-workout-snacks.pdf"
+ },
+ {
+  "slug": "workout-tracker-template",
+  "title": "Printable Workout Tracker (12 Weeks)",
+  "category": "Templates",
+  "pricePence": 149,
+  "description": "A printable log for 12 weeks of training: exercises, sets, reps, weight and notes, plus a weekly check-in.",
+  "file": "workout-tracker-template.pdf"
+ },
+ {
+  "slug": "gym-reel-content-calendar",
+  "title": "30-Day Content Calendar for Gym Creators",
+  "category": "Templates",
+  "pricePence": 199,
+  "description": "A day-by-day posting plan for gym reels with a hook, idea and call to action for each of 30 days.",
+  "file": "gym-reel-content-calendar.pdf"
+ },
+ {
+  "slug": "30-gyms-30-days-plan",
+  "title": "30 Gyms in 30 Days: Gym-Hopping Plan",
+  "category": "Workout plans",
+  "pricePence": 199,
+  "description": "A month of varied sessions designed for a different gym each day, with what to train, what to look for and a checklist.",
+  "file": "30-gyms-30-days-plan.pdf"
+ }
+]

@@ -8,6 +8,8 @@
  *   POST /api/reels/social/:id/repost        { on: true|false }
  *   GET  /api/reels/social/:id/comments      newest first
  *   POST /api/reels/social/:id/comments      { body }
+ *   GET  /api/reels/social/follows           creators you follow (Task 64)
+ *   POST /api/reels/social/follow            { creator, on }
  *
  * Reading is open to everyone; writing needs a signed-in customer (the reels
  * frame asks the app to show its sign-in sheet on a 401). Tables live in
@@ -114,6 +116,38 @@ router.post('/:id/comments', authenticateUser, async (req, res) => {
   } catch (e) {
     console.error('[reel-social] add comment:', e.message);
     res.status(500).json({ error: 'Could not post comment' });
+  }
+});
+
+/* Task 64 (owner, 2026-10-01): a creator photo + Follow on every reel, as on
+ * TikTok. `creator` is the feed's creator key: a ScanSquad handle, a YouTube
+ * channel name, or "scangym" for our own reels. */
+function creatorKey(raw) {
+  const k = String(raw || '').trim().toLowerCase().slice(0, 120);
+  return k || null;
+}
+router.get('/follows', optionalAuth, async (req, res) => {
+  if (!req.user) return res.json({ signedIn: false, creators: [] });
+  try {
+    const q = await pool.query('SELECT creator FROM reel_follows WHERE user_id = $1 ORDER BY created_at DESC LIMIT 500', [String(req.user.id)]);
+    res.json({ signedIn: true, creators: q.rows.map(r => r.creator) });
+  } catch (e) {
+    console.error('[reel-social] follows:', e.message);
+    res.status(500).json({ error: 'Could not load follows' });
+  }
+});
+router.post('/follow', authenticateUser, async (req, res) => {
+  const creator = creatorKey(req.body && req.body.creator);
+  if (!creator) return res.status(400).json({ error: 'Bad creator' });
+  const on = !(req.body && req.body.on === false);
+  const uid = String(req.user.id);
+  try {
+    if (on) await pool.query('INSERT INTO reel_follows (creator, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [creator, uid]);
+    else await pool.query('DELETE FROM reel_follows WHERE creator = $1 AND user_id = $2', [creator, uid]);
+    res.json({ ok: true, creator, following: on });
+  } catch (e) {
+    console.error('[reel-social] follow:', e.message);
+    res.status(500).json({ error: 'Could not save' });
   }
 });
 
