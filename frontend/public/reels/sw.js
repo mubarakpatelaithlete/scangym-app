@@ -19,7 +19,7 @@
  *   - Static cache: HTML, CSS, JS, images
  */
 
-var CACHE_VERSION = 'reels-v18'; // v18: TikTok filled icons + sound disc (task 64 pass 2); v17: TikTok caption + sound line (task 64 10/10); v16: TikTok right rail + Follow (task 64); v15: Like/Comment/Repost (task 52); v14: no TikTok/YouTube badges (task 22); v13: sg-tabbar 1.1 Chats tab (task 11); v12: Shop button on every reel (task 6); v11: row pinned (task 12)
+var CACHE_VERSION = 'reels-v19'; // v19: tappable #tags/@handle/sound, tap-to-pause, scrub, long-press menu (task 64 bugs); v18: TikTok filled icons + sound disc (task 64 pass 2); v17: TikTok caption + sound line (task 64 10/10); v16: TikTok right rail + Follow (task 64); v15: Like/Comment/Repost (task 52); v14: no TikTok/YouTube badges (task 22); v13: sg-tabbar 1.1 Chats tab (task 11); v12: Shop button on every reel (task 6); v11: row pinned (task 12)
 var FEED_CACHE    = CACHE_VERSION + '-feed';
 var VIDEO_CACHE   = CACHE_VERSION + '-video';
 var POSTER_CACHE  = CACHE_VERSION + '-poster';
