@@ -13905,7 +13905,7 @@ function ShopPage(){
     var on=_sgShopState.category===c;
     return '<button type="button" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
       +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:18px;padding:7px 12px;'
-      +'background:'+(on?'#FF6D00':'rgba(255,255,255,.06)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
+      +'background:'+(on?'rgba(255,109,0,.22)':'rgba(255,255,255,.06)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
   setTimeout(function(){ if(!_sgShopState.loaded) window._sgShopLoad(); },0);
   /* Task 65 (Amazon pass, owner 2026-10-01): Amazon's mobile order. A white
@@ -13919,11 +13919,11 @@ function ShopPage(){
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:#111;font-size:16px;height:40px">
+        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0 !important;outline:0;background:transparent !important;color:#111 !important;-webkit-text-fill-color:#111;box-shadow:none !important;padding:0 !important;font-size:16px;height:40px">
       </label>
     </div>
     <div aria-label="Digital product categories" style="display:flex;gap:6px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 8px">${chips}</div>
-    <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure checkout · No physical goods</p>
+    <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure · No physical goods</p>
     <div id="sg-digital-shop-results" style="min-height:210px">
       <p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">Loading products…</p>
     </div>
@@ -14013,7 +14013,7 @@ window._sgShopRender=function(){
       +(owned?'<p style="margin:0;font-size:15px;font-weight:900;color:#22c55e">Owned</p>':_sgShopPrice(p.price))
       +'<p style="margin:3px 0 0;color:#86efac;font-size:11px;font-weight:600">\u26A1 Instant PDF download</p>'
       +(sold?'<p style="margin:2px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
-      +'<span style="margin-top:auto;padding-top:9px;display:block"><span style="display:block;text-align:center;border-radius:18px;padding:8px 0;background:'+(owned?'#22c55e':'#FF6D00')+';color:#fff;font-size:13px;font-weight:800">'+(owned?'Download':'Buy now')+'</span></span>'
+      +'<span style="margin-top:auto;padding-top:9px;display:block"><span style="display:block;text-align:center;border-radius:18px;padding:8px 0;background:'+(owned?'#22c55e':'rgba(255,255,255,.1)')+';border:1px solid rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800">'+(owned?'Download':'Buy now')+'</span></span>'
       +'</div></button>';
   }).join('')+'</div>';
 };
