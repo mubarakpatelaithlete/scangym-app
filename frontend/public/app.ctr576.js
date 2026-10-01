@@ -13908,11 +13908,11 @@ function ShopPage(){
       +'background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
   setTimeout(function(){ if(!_sgShopState.loaded) window._sgShopLoad(); },0);
-  return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:22px 16px 40px;color:#fff">
-    <div style="margin-bottom:18px">
+  return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:14px 16px 110px;color:#fff">
+    <div style="margin-bottom:12px">
       <p style="margin:0 0 4px;color:#FF6D00;font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase">ScanGym Digital Shop</p>
-      <h1 style="margin:0;font-size:25px;font-weight:900">Shop creator-made fitness tools</h1>
-      <p style="margin:7px 0 0;color:rgba(255,255,255,.6);font-size:14px">Prompt packs, workout plans and digital guides from ScanSquad creators. No physical goods.</p>
+      <h1 style="margin:0;font-size:21px;font-weight:900">Fitness tools from creators</h1>
+      <p style="margin:4px 0 0;color:rgba(255,255,255,.6);font-size:13px">⚡ Instant PDF download · 🔒 Secure checkout · No physical goods</p>
     </div>
     <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search digital products" oninput="window._sgShopFilter(this.value)" style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px">
     <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 14px;margin-bottom:8px">${chips}</div>
@@ -14001,7 +14001,7 @@ window._sgShopRender=function(){
       +'<span role="button" aria-label="Save for later" onclick="event.stopPropagation();window._sgShopHeart('+p.id+')" style="position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:15px">'+(hearted?'\u2764\uFE0F':'\uD83E\uDD0D')+'</span>'
       +'<div style="padding:10px 12px 12px">'
       +'<p style="margin:0 0 3px;font-size:14px;font-weight:800;line-height:1.25">'+_sgShopEsc(p.title)+'</p>'
-      +'<p style="margin:0 0 7px;color:rgba(255,255,255,.45);font-size:11px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)+'</p>'
+      +'<p style="margin:0 0 7px;color:rgba(255,255,255,.45);font-size:11px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)+'<br>\uD83D\uDCC4 PDF · instant download</p>'
       +'<p style="margin:0;font-size:14px;font-weight:900;color:'+(owned?'#22c55e':'#FF6D00')+'">'+(owned?'Owned':_sgShopEsc(p.price))+'</p>'
       +(sold?'<p style="margin:3px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
       +'</div></button>';

@@ -54,6 +54,7 @@
     '.cs-tile:active{transform:scale(.98);}',
     '.cs-tile.off{opacity:.5;}',
     '.cs-cover{position:relative;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:40px;}',
+    '.cs-cover .cs-gif{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}',
     '.cs-badge{position:absolute;top:8px;left:8px;font-size:9.5px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.92);color:#0b1020;text-transform:uppercase;}',
     '.cs-badge.pro{background:#7c3aed;color:#fff;}',
     '.cs-badge.kind{left:auto;right:8px;background:rgba(0,0,0,.55);color:#fff;}',
@@ -178,7 +179,9 @@
 
   function tile(t) {
     var d = el('div', 'cs-tile' + ((!t.available || t.locked) ? ' off' : ''));
-    var cover = el('div', 'cs-cover', '<span>' + t.kind.icon + '</span>');
+    /* Task 53: every model card has its own animated GIF (img/model-gif/{id}.gif);
+       a missing file falls back to the kind emoji. */
+    var cover = el('div', 'cs-cover', '<img class="cs-gif" src="/img/model-gif/' + esc(t.id) + '.gif?v=1" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span>' + t.kind.icon + '</span>\'">');
     cover.style.background = t.kind.bg;
     var b = badgeFor(t);
     if (b) cover.appendChild(el('span', 'cs-badge ' + b.cls, b.txt));
