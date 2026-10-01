@@ -299,20 +299,31 @@ router.post('/post', async (req, res) => {
   if (++bk.count > 20) return res.status(429).json({ error: 'Limit is 20 posts per hour' });
   buckets.set(k, bk);
   try {
-    let accounts = await myAccounts(req.user.id);
-    if (Array.isArray(b.apps) && b.apps.length) accounts = accounts.filter(a => b.apps.includes(a.slug));
-    if (!accounts.length) return res.status(400).json({ error: 'Connect at least one account first' });
-    const results = await Promise.all(accounts.map(async a => {
-      const base = { app: a.slug, appName: APPS[a.slug].name, account: a.name || '' };
-      try {
-        const r = await postTo(req.user.id, a, p);
-        if (r && r.skipped) return { ...base, status: 'skipped', note: r.skipped };
-        return { ...base, status: 'posted' };
-      } catch (e) { return { ...base, status: 'failed', note: e.message.slice(0, 200) }; }
-    }));
-    res.json({ results, posted: results.filter(r => r.status === 'posted').length });
+    const out = await postEverywhere(req.user.id, p, b.apps);
+    if (out.error) return res.status(400).json({ error: out.error });
+    res.json(out);
   } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
+/** One post to every connected account (or just `apps`). Shared by the
+ *  route above, the Create tab's one-tap Post and every chatbot (Task 56). */
+async function postEverywhere(userId, p, apps) {
+  let accounts = await myAccounts(userId);
+  if (Array.isArray(apps) && apps.length) accounts = accounts.filter(a => apps.includes(a.slug));
+  if (!accounts.length) return { error: 'Connect at least one account first', results: [], posted: 0 };
+  const results = await Promise.all(accounts.map(async a => {
+    const base = { app: a.slug, appName: APPS[a.slug].name, account: a.name || '' };
+    try {
+      const r = await postTo(userId, a, p);
+      if (r && r.skipped) return { ...base, status: 'skipped', note: r.skipped };
+      return { ...base, status: 'posted' };
+    } catch (e) { return { ...base, status: 'failed', note: e.message.slice(0, 200) }; }
+  }));
+  return { results, posted: results.filter(r => r.status === 'posted').length };
+}
+
 module.exports = router;
 module.exports.APPS = APPS;
+module.exports.postEverywhere = postEverywhere;
+module.exports.myAccounts = myAccounts;
+module.exports.isConfigured = configured;
