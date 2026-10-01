@@ -55,3 +55,10 @@ test('Task 65 bugs: search kept + clear, sort, count, skeleton, retry, no stale 
     assert.ok(app.includes(s), s);
   }
 });
+
+test('Task 64/65 round 2: loop + auto-scroll, pull to refresh, hold 2x, clear display; product page details, share, deep link, recent searches', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'reels', 'index.html'), 'utf8');
+  for (const s of ['sgAutoScroll', 'function refreshFeed', 'sg-fast', 'sg-clear', 'Report', 'sg-scrub-t']) assert.ok(html.includes(s), s);
+  const app = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  for (const s of ['Product details', '_sgShopShare', "get('p')", '_sgShopRecent', 'More from @', 'sg-shop-top']) assert.ok(app.includes(s), s);
+});

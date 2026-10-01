@@ -75,3 +75,8 @@ test('Task 66 WhatsApp pass: voice notes, reply, forward, pin/mute/archive, unre
   const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
   for (const s of ['MediaRecorder', 'voice-note.', 'startReply', 'forwardSheet', 'Pin chat', 'Mute notifications', 'Archive chat', 'unread message', "v.id='viewer'", 'Tap to retry', 'Contact info', 'id="toBot"', 'function fmt']) assert.ok(html.includes(s), s);
 });
+
+test('Task 66 round 2: search in chat, star, delete for me, drafts, / quick replies, labels, mark unread, swipe reply, big emoji, voice speed', () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
+  for (const s of ['chatSearch', 'Starred messages', 'Delete for me', 'LOC.draft', 'function qpop', 'labelSheet', 'Mark as unread', 'Swipe a message right', 'b.big', 'vspd']) assert.ok(html.includes(s), s);
+});
