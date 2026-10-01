@@ -533,7 +533,8 @@ router.get('/feed', async (req, res) => {
  * search, not an unrestricted search of every video on YouTube.
  */
 router.get('/search', async (req, res) => {
-  const q = String(req.query.q || '').trim().slice(0, 100).toLocaleLowerCase();
+  const q = String(req.query.q || '').trim().slice(0, 100).toLocaleLowerCase().replace(/^[#@]+/, '');
+  const qs = q.replace(/\s+/g, '');
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 40, 1), 50);
   const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
   if (!q) return res.json({ videos: [], total: 0, hasMore: false });
@@ -541,7 +542,10 @@ router.get('/search', async (req, res) => {
     const catalog = (await loadCatalogFromDB()).map(v => ({ ...v, type: 'catalog' }));
     const social = await loadSocialReels();
     const matches = catalog.concat(social).filter(v =>
-      [v.name, v.category, v.author].some(value => String(value || '').toLocaleLowerCase().includes(q))
+      [v.name, v.category, v.author, v.creator && v.creator.handle, v.creator && v.creator.name].some(value => {
+        const s = String(value || '').toLocaleLowerCase();
+        return s.includes(q) || (qs && s.replace(/[\s@]+/g, '').includes(qs));
+      })
     );
     res.set('Cache-Control', 'public, max-age=60');
     res.json({ videos: matches.slice(offset, offset + limit), total: matches.length,

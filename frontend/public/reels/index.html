@@ -230,6 +230,16 @@
       .reel-info .reel-handle{font-size:16px;font-weight:800;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,.8);}
       .reel-info .reel-title.open{-webkit-line-clamp:unset;display:block;}
       .reel-info .reel-hash{font-weight:700;color:#fff;}
+      .reel-info [data-tag]{cursor:pointer;}
+      .reel-info .reel-tag{font-weight:800;}
+      .reel-info .reel-tag:active,.reel-info .reel-handle:active{opacity:.6;}
+      .reel-info .reel-more{background:none;border:0;padding:0;margin:0 0 2px;color:rgba(255,255,255,.75);font:700 13px/1.3 inherit;cursor:pointer;text-shadow:0 1px 6px rgba(0,0,0,.7);}
+      .reel .sg-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;z-index:20;filter:drop-shadow(0 2px 12px rgba(0,0,0,.5));}
+      .reel.sg-paused .sg-play{opacity:1;}
+      .reel video{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+      .reel-progress::before{content:'';position:absolute;left:0;right:0;top:-14px;bottom:-4px;}
+      .reel-progress.scrub{height:6px !important;}
+      .reel-progress.scrub .reel-progress-bar{background:#fff;}
       .reel-info .reel-sound{display:flex;align-items:center;gap:6px;white-space:nowrap;max-width:230px;color:#fff !important;font-size:13px !important;margin-top:6px !important;}
       .reel-info .reel-sound .rs-clip{overflow:hidden;flex:1;min-width:0;}
       .reel-info .reel-sound .rs-clip span{display:inline-block;animation:sgMarquee 9s linear infinite;}
@@ -1049,6 +1059,9 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           track.removeChild(renderedReels[key]);
           delete renderedReels[key];
         });
+        var _hid = hiddenReels();
+        var _kept = videos.filter(function(v){ return _hid.indexOf(v.id) === -1; });
+        if(_kept.length) videos = _kept; // Not interested reels stay out of the feed
         allVideos = videos;
         posterCache = {};
         currentIndex = 0;
@@ -2073,6 +2086,10 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
       // ── Keyboard nav ──
       document.addEventListener('keydown', function(e){
         if(!searchPanel.hidden){if(e.key === 'Escape') closeReelsSearch();return;}
+        if(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+        if(e.key === ' '){ e.preventDefault(); tapPlayPause(renderedReels[currentIndex]); return; }
+        if(e.key === 'l' && allVideos[currentIndex]){ toggleSocial('like', allVideos[currentIndex]); return; }
+        if(e.key === 'c' && allVideos[currentIndex]){ openComments(allVideos[currentIndex]); return; }
         if(e.key === 'ArrowDown' || e.key === 'j'){
           snapTo(currentIndex + 1, true); // snapTo handles bounds + load-more
         } else if(e.key === 'ArrowUp' || e.key === 'k'){
@@ -3261,6 +3278,23 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         progressWrap.appendChild(progressBuf);
         progressWrap.appendChild(progressBar);
         div.appendChild(progressWrap);
+        /* Drag the progress bar to seek, like TikTok. Its own touch handlers stop
+           the swipe engine from treating the drag as a scroll. */
+        function seekTo(x){
+          var r = progressWrap.getBoundingClientRect();
+          var p = Math.min(1, Math.max(0, (x - r.left) / r.width));
+          if(vid.duration) vid.currentTime = p * vid.duration;
+          progressBar.style.width = (p * 100) + '%';
+        }
+        progressWrap.addEventListener('touchstart', function(e){ e.stopPropagation(); progressWrap.classList.add('scrub'); seekTo(e.touches[0].clientX); }, {passive:true});
+        progressWrap.addEventListener('touchmove', function(e){ e.stopPropagation(); e.preventDefault(); seekTo(e.touches[0].clientX); }, {passive:false});
+        progressWrap.addEventListener('touchend', function(e){ e.stopPropagation(); progressWrap.classList.remove('scrub'); });
+        progressWrap.addEventListener('click', function(e){ e.stopPropagation(); seekTo(e.clientX); });
+        var playIcon = document.createElement('div');
+        playIcon.className = 'sg-play';
+        playIcon.innerHTML = '<svg viewBox="0 0 24 24" width="72" height="72" fill="rgba(255,255,255,.85)"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>';
+        div.appendChild(playIcon);
+        vid.addEventListener('play', function(){ div.classList.remove('sg-paused'); if(vid.playbackRate !== sgSpeed) vid.playbackRate = sgSpeed; }, {signal: poolSignal});
 
         // Creator info
         var hasCreator = video.creator && (video.creator.name || video.creator.handle);
@@ -3293,8 +3327,16 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         // H5 fix: Removed fake view/like counts — no real analytics backend exists yet.
         // Show category + creator info only. Double-tap like still works (saved locally).
 
-        info.innerHTML = tikTokCaption(video)
-          + creatorHtml + affiliateHtml;
+        info.innerHTML = tikTokCaption(video) + affiliateHtml; // creator line dropped: @handle already shows it
+        info.addEventListener('click', function(e){
+          var t = e.target.closest('[data-tag]');
+          if(t){ e.preventDefault(); e.stopPropagation(); openTag(t.dataset.tag); return; }
+          if(e.target.closest('.reel-title, .reel-more')){
+            e.stopPropagation();
+            var open = info.querySelector('.reel-title').classList.toggle('open');
+            var mb = info.querySelector('.reel-more'); if(mb) mb.textContent = open ? 'less' : 'more';
+          }
+        });
         div.appendChild(info);
 
         // Action sidebar
@@ -3345,8 +3387,28 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         div.appendChild(promptBtn);
 
         // Double-tap like
-        var lastTapTime = 0;
+        var lastTapTime = 0, lpTimer = null, lpFired = false, lpX = 0, lpY = 0;
+        div.addEventListener('touchstart', function(e){
+          if(e.target.closest('.reel-actions, .reel-info, .reel-progress, .reel-prompt')) return;
+          lpFired = false; lpX = e.touches[0].clientX; lpY = e.touches[0].clientY;
+          clearTimeout(lpTimer);
+          lpTimer = setTimeout(function(){
+            if(Math.abs(dragDelta) > 10) return;
+            lpFired = true; if(navigator.vibrate) navigator.vibrate(15);
+            openReelMenu(video, div);
+          }, 550);
+        }, {passive:true});
+        div.addEventListener('touchmove', function(e){
+          var t = e.touches[0];
+          if(Math.abs(t.clientX - lpX) > 10 || Math.abs(t.clientY - lpY) > 10) clearTimeout(lpTimer);
+        }, {passive:true});
+        div.addEventListener('touchend', function(){ clearTimeout(lpTimer); }, {passive:true});
+        div.addEventListener('contextmenu', function(e){
+          if(e.target.closest('.reel-actions, .reel-info')) return;
+          e.preventDefault(); openReelMenu(video, div);
+        });
         div.addEventListener('click', function(e){
+          if(lpFired){ lpFired = false; return; }
           if(e.target.closest('.reel-actions') || e.target.closest('.reel-info') || e.target.closest('.creator-cta')) return;
           if(Math.abs(dragDelta) > 10) return;
           var now = Date.now();
@@ -3357,7 +3419,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
             lastTapTime = now;
             setTimeout(function(){
               if(lastTapTime !== 0 && Date.now() - lastTapTime >= 280){
-                toggleMute();
+                tapPlayPause(div); // TikTok: one tap pauses / plays (first tap unmutes)
                 lastTapTime = 0;
               }
             }, 300);
@@ -3398,9 +3460,65 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         var c = video.creator || {};
         var handle = String(c.handle || c.name || 'scangym').replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
         var snd = '\u266B Original sound - ' + handle;
-        return '<p class="reel-handle">@' + escHtml(handle) + '</p>'
-          + '<p class="reel-title" onclick="event.stopPropagation();this.classList.toggle(\'open\')">' + escHtml(humanizeTitle(video.name)) + ' <span class="reel-hash">#' + escHtml(humanizeCategory(video.category).replace(/\s+/g, '').toLowerCase()) + ' #scangym</span></p>'
-          + '<p class="reel-category reel-sound"><i class="reel-disc" aria-hidden="true"></i><span class="rs-clip"><span>' + escHtml(snd) + '\u2003\u2003\u2003' + escHtml(snd) + '\u2003\u2003\u2003</span></span></p>';
+        /* Task 64 bug pass: @handle, every #hashtag and the sound line are real
+           links (data-tag → openTag), and long captions get TikTok's more/less. */
+        var tag = humanizeCategory(video.category).replace(/\s+/g, '').toLowerCase();
+        var ttl = humanizeTitle(video.name);
+        var tags = (tag ? '<span class="reel-tag" role="link" data-tag="#' + escHtml(tag) + '">#' + escHtml(tag) + '</span> ' : '')
+          + '<span class="reel-tag" role="link" data-tag="#scangym">#scangym</span>';
+        return '<p class="reel-handle" role="link" data-tag="@' + escHtml(handle) + '">@' + escHtml(handle) + '</p>'
+          + '<p class="reel-title">' + escHtml(ttl) + ' <span class="reel-hash">' + tags + '</span></p>'
+          + ((ttl.length + tag.length) > 30 ? '<button type="button" class="reel-more">more</button>' : '')
+          + '<p class="reel-category reel-sound" role="link" data-tag="@' + escHtml(handle) + '"><i class="reel-disc" aria-hidden="true"></i><span class="rs-clip"><span>' + escHtml(snd) + '\u2003\u2003\u2003' + escHtml(snd) + '\u2003\u2003\u2003</span></span></p>';
+      }
+      /* #tag → that category tab (TikTok hashtag page); #scangym → For You;
+         @handle / sound → search that creator's reels. */
+      function openTag(t){
+        t = String(t || '');
+        var name = t.slice(1).toLowerCase();
+        if(t.charAt(0) === '#'){
+          var hit = name === 'scangym' ? railCategories[0] : railCategories.filter(function(c){
+            return String(c.label || '').replace(/\s+/g, '').toLowerCase() === name;
+          })[0];
+          if(hit){
+            if(hit.value === (activeCategory || FEED_ALL)){ snapTo(0, true); }
+            else selectCategory(hit);
+            var on = catRail.querySelector('[aria-selected="true"]');
+            if(on) on.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+            showToast('#' + name);
+            return;
+          }
+        }
+        openReelsSearch();
+        runSearch(name);
+      }
+      var sgSpeed = 1;
+      function tapPlayPause(reel){
+        var v = reel && reel.querySelector('video');
+        if(!v || isMuted){ toggleMute(); if(v && v.paused) v.play().catch(function(){}); return; }
+        if(v.paused){ v.play().catch(function(){}); reel.classList.remove('sg-paused'); }
+        else { v.pause(); reel.classList.add('sg-paused'); }
+      }
+      function hiddenReels(){ try { return JSON.parse(localStorage.getItem('sg_not_interested') || '[]'); } catch(e){ return []; } }
+      function openReelMenu(video, reel){
+        if(typeof window.sgOpenSheet !== 'function') return;
+        var sp = [0.5, 1, 1.5, 2];
+        var sh = window.sgOpenSheet(
+          window.sgSheetOption('\uD83D\uDC22', 'Speed 0.5x') + window.sgSheetOption('\u25B6\uFE0F', 'Speed 1x (normal)')
+          + window.sgSheetOption('\u26A1', 'Speed 1.5x') + window.sgSheetOption('\uD83D\uDE80', 'Speed 2x')
+          + window.sgSheetOption('\uD83D\uDEAB', 'Not interested') + window.sgSheetOption('\u2197\uFE0F', 'Share'),
+          { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
+        var o = sh.body.querySelectorAll('.shs-opt');
+        sp.forEach(function(x, i){ o[i].addEventListener('click', function(){
+          sgSpeed = x; var v = reel.querySelector('video'); if(v) v.playbackRate = x;
+          sh.close(); showToast('Speed ' + x + 'x');
+        }); });
+        o[4].addEventListener('click', function(){
+          var h = hiddenReels(); if(h.indexOf(video.id) === -1) h.push(video.id);
+          try { localStorage.setItem('sg_not_interested', JSON.stringify(h.slice(-300))); } catch(e){}
+          sh.close(); showToast('We\u2019ll show fewer like this'); snapTo(currentIndex + 1, true);
+        });
+        o[5].addEventListener('click', function(){ sh.close(); handleShare(video); });
       }
       function doubleTapLike(x, y){
         /* Task 52: a double tap is a real Like now (never an unlike, as on TikTok). */

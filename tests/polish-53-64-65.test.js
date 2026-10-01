@@ -41,3 +41,10 @@ test('Task 65 pass 2: Amazon-style shop (white search first, price, Buy now)', (
   assert.match(app, /function _sgShopPrice/);
   assert.match(app, /'Buy now'/);
 });
+
+test('Task 64 bugs: tappable #tags/@handle/sound, tap-to-pause, scrub, long-press menu', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'reels', 'index.html'), 'utf8');
+  for (const s of ['data-tag="#', 'data-tag="@', 'function openTag', 'function tapPlayPause', 'function openReelMenu', 'Not interested', 'reel-more', "progressWrap.addEventListener('touchmove'"]) {
+    assert.ok(html.includes(s), s);
+  }
+});
