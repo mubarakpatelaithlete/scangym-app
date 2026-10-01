@@ -187,8 +187,14 @@ async function loadCatalogFromDB() {
 // renders them as a poster with a single lazily-mounted iframe (see
 // reels/index.html → createSocialReel).
 
-/** One social slide per this many of our own reels. */
-const SOCIAL_EVERY_NTH = 4;
+/** One social slide per this many of our own reels. Task 64 (owner,
+ *  2026-10-01): real people first, so 2 (was 4). */
+const SOCIAL_EVERY_NTH = 2;
+/** Task 64: our own ad-style reels (price compare, promos, CMO explainers,
+ *  ready-to-post city ads) appear once per this many real clips — TikTok's
+ *  rhythm is roughly one ad per 5-8 videos. */
+const AD_EVERY_NTH = 6;
+const AD_CATEGORIES = new Set(['promo', 'cmo content', 'ready-to-post', 'price compare', 'city promo']);
 const SOCIAL_CACHE_TTL = 5 * 60 * 1000;
 let _socialCache = null;
 let _socialCacheTime = 0;
@@ -257,6 +263,29 @@ function interleaveSocial(own, social, everyNth) {
   // Anything left over is appended, so a large social library still gets seen
   // by someone who swipes to the end instead of being silently dropped.
   while (s < social.length) out.push(social[s++]);
+  return out;
+}
+
+/**
+ * Task 64: pull the ad-style reels out of the list and put one back after every
+ * `everyNth` real clips. Deterministic (stable order in, stable order out), so
+ * paging stays exact. The first slide is always one of our own non-ad videos,
+ * because it must paint instantly and must not be an advert.
+ */
+function spaceAds(list, everyNth) {
+  const isAd = (v) => v && v.type === 'catalog' && AD_CATEGORIES.has(String(v.category || '').toLowerCase());
+  const ads = list.filter(isAd);
+  const real = list.filter((v) => !isAd(v));
+  if (!ads.length || !real.length) return list;
+  const firstOwn = real.findIndex((v) => v.type !== 'social');
+  if (firstOwn > 0) real.unshift(real.splice(firstOwn, 1)[0]);
+  const out = [];
+  let a = 0;
+  for (let i = 0; i < real.length; i++) {
+    out.push(real[i]);
+    if ((i + 1) % everyNth === 0 && a < ads.length) out.push(ads[a++]);
+  }
+  while (a < ads.length) out.push(ads[a++]);
   return out;
 }
 
@@ -453,6 +482,9 @@ router.get('/feed', async (req, res) => {
         console.warn('Feed: social reel injection failed:', socialErr.message);
       }
     }
+
+    // Task 64: ads once every AD_EVERY_NTH real clips, never first.
+    if (shuffle && !category) feed = spaceAds(feed, AD_EVERY_NTH);
 
     // G3 FIX: total is captured after interleaving so the reel counter the user
     // sees matches the feed they can actually swipe through.
@@ -1056,6 +1088,7 @@ setTimeout(async () => {
 
 module.exports = router;
 module.exports.invalidateFeedCache = invalidateFeedCache;
+module.exports._spaceAds = spaceAds;
 
 // ═══ #5: AI Content Moderation ═══
 // Checks uploaded reel for inappropriate content, ensures human element + ScanGym branding
@@ -1167,6 +1200,7 @@ router.get('/geo-feed', async (req, res) => {
       // Non-fatal: our own reels are the product, social is a top-up.
       console.warn('[geo-feed] social reel injection failed:', socialErr.message);
     }
+    reels = spaceAds(reels, AD_EVERY_NTH);
 
     const total = reels.length;
     const slice = reels.slice(offset, offset + limit);

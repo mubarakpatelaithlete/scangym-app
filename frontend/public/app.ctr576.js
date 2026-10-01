@@ -13908,14 +13908,14 @@ function ShopPage(){
       +'background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
   setTimeout(function(){ if(!_sgShopState.loaded) window._sgShopLoad(); },0);
-  return `<section style="max-width:720px;margin:0 auto;padding:22px 16px 40px;color:#fff">
+  return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:22px 16px 40px;color:#fff">
     <div style="margin-bottom:18px">
       <p style="margin:0 0 4px;color:#FF6D00;font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase">ScanGym Digital Shop</p>
       <h1 style="margin:0;font-size:25px;font-weight:900">Shop creator-made fitness tools</h1>
       <p style="margin:7px 0 0;color:rgba(255,255,255,.6);font-size:14px">Prompt packs, workout plans and digital guides from ScanSquad creators. No physical goods.</p>
     </div>
     <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search digital products" oninput="window._sgShopFilter(this.value)" style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px">
-    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;padding:2px 0 14px;margin-bottom:8px">${chips}</div>
+    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 14px;margin-bottom:8px">${chips}</div>
     <div id="sg-digital-shop-results" style="min-height:210px">
       <p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">Loading products…</p>
     </div>
@@ -13994,7 +13994,7 @@ window._sgShopRender=function(){
     var sold=p.salesCount||0;
     var cover=p.coverImageUrl
       ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:118px;object-fit:cover;display:block">'
-      : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:30px">📄</div>';
+      : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:34px">'+({'Prompt packs':'\u2728','Workout plans':'\uD83C\uDFCB\uFE0F','Meal guides':'\uD83E\uDD57','Video programs':'\uD83C\uDFAC','Templates':'\uD83D\uDCCB'}[p.category]||'📄')+'</div>';
     return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="position:relative;text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);color:#fff;padding:0;cursor:pointer">'
       +cover
       +(sold&&sold===topSales?'<span style="position:absolute;top:8px;left:8px;background:#FF6D00;color:#fff;font-size:10px;font-weight:900;border-radius:6px;padding:3px 6px">\uD83D\uDD25 Bestseller</span>':'')

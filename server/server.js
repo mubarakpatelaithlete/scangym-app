@@ -1214,6 +1214,9 @@ app.listen(PORT, '0.0.0.0', () => {
   // Purge Cloudflare CDN cache on every deploy so users get fresh assets
   setTimeout(purgeCloudflareCache, 5000);
 
+  // Task 65: ScanGym's own starter products, so the Shop is never empty.
+  setTimeout(function(){ require('./lib/shop-starter').seedStarterProducts().catch(function(e){ console.warn('[shop-starter] seed failed:', e.message); }); }, 15000);
+
   // Video enrichment + variants + posters now handled by the combined startup
   // pipeline in routes/reels.js (runs 30s after startup from DB catalog).
   // Removed duplicate JSON-based enrichment that was stale and wasted CPU.
