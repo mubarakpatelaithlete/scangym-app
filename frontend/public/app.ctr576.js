@@ -13897,13 +13897,13 @@ try{ window.sgRailCircle = sgRailCircle; }catch(e){}
    Creator-made digital products: a grid of real listings, a product sheet, and
    a one-tap purchase on the card already saved for gym bookings. The page used
    to be a "coming soon" placeholder with a disabled search box. */
-var _sgShopState={products:[],category:'All',q:'',loaded:false,owned:{},selling:false};
+var _sgShopState={products:[],category:'All',q:'',sort:'featured',loaded:false,owned:{},selling:false,seq:0};
 
 function ShopPage(){
   var cats=['All','Prompt packs','Workout plans','Meal guides','Video programs','Templates'];
   var chips=cats.map(function(c){
     var on=_sgShopState.category===c;
-    return '<button type="button" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
+    return '<button type="button" data-shop-cat="'+c+'" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
       +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:18px;padding:7px 12px;'
       +'background:'+(on?'rgba(255,109,0,.22)':'rgba(255,255,255,.06)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
@@ -13919,13 +13919,14 @@ function ShopPage(){
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0 !important;outline:0;background:transparent !important;color:#111 !important;-webkit-text-fill-color:#111;box-shadow:none !important;padding:0 !important;font-size:16px;height:40px">
+        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" value="${_sgShopEsc(_sgShopState.q)}" enterkeyhint="search" onkeydown="if(event.key==='Enter')this.blur()" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0 !important;outline:0;background:transparent !important;color:#111 !important;-webkit-text-fill-color:#111;box-shadow:none !important;padding:0 !important;font-size:16px;height:40px">
+        <button type="button" id="sg-shop-clear" aria-label="Clear search" onclick="window._sgShopClear()" style="display:${_sgShopState.q?'flex':'none'};flex:none;width:26px;height:26px;border:0;border-radius:50%;background:#ddd;color:#333;font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;padding:0">✕</button>
       </label>
     </div>
     <div aria-label="Digital product categories" style="display:flex;gap:6px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 8px">${chips}</div>
     <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure · No physical goods</p>
     <div id="sg-digital-shop-results" style="min-height:210px">
-      <p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">Loading products…</p>
+      ${_sgShopSkeleton()}
     </div>
     <div style="margin-top:26px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px">
       <button type="button" onclick="window._sgShopOpenSell()" style="width:100%;border:1px dashed rgba(255,109,0,.5);border-radius:14px;padding:14px;background:rgba(255,109,0,.08);color:#FF6D00;font-weight:800;font-size:14px;cursor:pointer">＋ Sell your own digital product</button>
@@ -13934,14 +13935,37 @@ function ShopPage(){
   </section>`;
 }
 
+/* Task 65 bug pass: switching category restyles the pills in place and
+   reloads only the grid, so the page no longer jumps to the top. */
 window._sgShopCategory=function(category){
   _sgShopState.category=category;
-  _sgShopState.loaded=false;
-  render();
+  var pills=document.querySelectorAll('[data-shop-cat]');
+  if(!pills.length){ _sgShopState.loaded=false; render(); return; }
+  pills.forEach(function(b){
+    var on=b.getAttribute('data-shop-cat')===category;
+    b.style.borderColor=on?'#FF6D00':'rgba(255,255,255,.14)';
+    b.style.background=on?'rgba(255,109,0,.22)':'rgba(255,255,255,.06)';
+  });
+  var box=document.getElementById('sg-digital-shop-results');
+  if(box)box.innerHTML=_sgShopSkeleton();
+  window._sgShopLoad(true);
 };
+window._sgShopClear=function(){
+  var i=document.getElementById('sg-shop-search');
+  if(i){i.value='';i.focus();}
+  window._sgShopFilter('');
+};
+window._sgShopSort=function(v){ _sgShopState.sort=v; window._sgShopRender(); };
+window._sgShopSkeleton=_sgShopSkeleton;
+function _sgShopSkeleton(){
+  var c='<div style="border-radius:12px;overflow:hidden;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)"><div class="sg-shop-sk" style="height:128px"></div><div style="padding:10px"><div class="sg-shop-sk" style="height:12px;margin-bottom:6px"></div><div class="sg-shop-sk" style="height:12px;width:60%;margin-bottom:10px"></div><div class="sg-shop-sk" style="height:20px;width:40%"></div></div></div>';
+  return '<style>.sg-shop-sk{border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.14),rgba(255,255,255,.06));background-size:200% 100%;animation:sgShopSk 1.2s linear infinite}@keyframes sgShopSk{to{background-position:-200% 0}}</style>'
+    +'<div aria-label="Loading products" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+c+c+c+c+'</div>';
+}
 
 window._sgShopFilter=function(value){
   _sgShopState.q=String(value||'');
+  var x=document.getElementById('sg-shop-clear'); if(x)x.style.display=_sgShopState.q?'flex':'none';
   clearTimeout(window._sgShopTimer);
   window._sgShopTimer=setTimeout(function(){ window._sgShopLoad(true); },250);
 };
@@ -13950,11 +13974,13 @@ window._sgShopLoad=async function(force){
   var box=document.getElementById('sg-digital-shop-results');
   if(!box)return;
   _sgShopState.loaded=true;
+  var mySeq=++_sgShopState.seq; // only the newest request may paint (fast typing / pill taps)
   try{
     var url='/api/shop/products?limit=40'
       +(_sgShopState.category&&_sgShopState.category!=='All'?'&category='+encodeURIComponent(_sgShopState.category):'')
       +(_sgShopState.q?'&q='+encodeURIComponent(_sgShopState.q):'');
-    var data=await fetch(url,{credentials:'include'}).then(function(r){return r.json();});
+    var data=await fetch(url,{credentials:'include'}).then(function(r){if(!r.ok)throw new Error('shop '+r.status);return r.json();});
+    if(mySeq!==_sgShopState.seq)return;
     _sgShopState.products=data.products||[];
     if(state.user){
       try{
@@ -13966,7 +13992,9 @@ window._sgShopLoad=async function(force){
     }
     window._sgShopRender();
   }catch(e){
-    box.innerHTML='<p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">The shop is unavailable right now. Pull down to try again.</p>';
+    if(mySeq!==_sgShopState.seq)return;
+    box.innerHTML='<div style="text-align:center;padding:36px 0"><p style="margin:0 0 12px;color:rgba(255,255,255,.6);font-size:14px">The shop could not load. Check your connection.</p>'
+      +'<button type="button" onclick="this.parentNode.parentNode.innerHTML=window._sgShopSkeleton();window._sgShopLoad(true)" style="border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:9px 22px;background:rgba(255,255,255,.08);color:#fff;font-weight:800;font-size:14px;cursor:pointer">Try again</button></div>';
   }
 };
 
@@ -13974,6 +14002,13 @@ window._sgShopRender=function(){
   var box=document.getElementById('sg-digital-shop-results');
   if(!box)return;
   var items=_sgShopState.products;
+  if(!items.length&&_sgShopState.q){
+    box.innerHTML='<div style="text-align:center;border:1px dashed rgba(255,255,255,.16);border-radius:18px;padding:30px 20px">'
+      +'<div style="font-size:30px;margin-bottom:8px">🔍</div><h2 style="margin:0 0 6px;font-size:17px">No results for “'+_sgShopEsc(_sgShopState.q)+'”</h2>'
+      +'<p style="margin:0 0 14px;color:rgba(255,255,255,.55);font-size:13px">Check the spelling or try a shorter word.</p>'
+      +'<button type="button" onclick="window._sgShopClear()" style="border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:8px 18px;background:rgba(255,255,255,.08);color:#fff;font-weight:800;cursor:pointer">Clear search</button></div>';
+    return;
+  }
   if(!items.length){
     box.innerHTML='<div style="text-align:center;border:1px dashed rgba(255,255,255,.16);border-radius:18px;padding:34px 20px">'
       +'<div style="font-size:34px;margin-bottom:8px">🛍️</div>'
@@ -13996,12 +14031,24 @@ window._sgShopRender=function(){
   }
   var topSales=items.reduce(function(m,x){return Math.max(m,x.salesCount||0);},0);
   var savedIds=_sgShopLS('sg_shop_saved');
-  box.innerHTML=rows+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+items.map(function(p){
+  /* Amazon's results bar: a count and a Sort by menu (sorts on the device). */
+  var so=_sgShopState.sort||'featured';
+  items=items.slice();
+  if(so==='low')items.sort(function(a,b){return (a.pricePence||0)-(b.pricePence||0);});
+  else if(so==='high')items.sort(function(a,b){return (b.pricePence||0)-(a.pricePence||0);});
+  else if(so==='best')items.sort(function(a,b){return (b.salesCount||0)-(a.salesCount||0);});
+  else if(so==='new')items.sort(function(a,b){return String(b.createdAt||'').localeCompare(String(a.createdAt||''));});
+  var opt=function(v,l){return '<option value="'+v+'"'+(so===v?' selected':'')+'>'+l+'</option>';};
+  var bar='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px">'
+    +'<p style="margin:0;font-size:13px;color:rgba(255,255,255,.7)"><b style="color:#fff">'+items.length+'</b> result'+(items.length===1?'':'s')+(_sgShopState.q?' for “'+_sgShopEsc(_sgShopState.q)+'”':'')+'</p>'
+    +'<label style="font-size:12px;color:rgba(255,255,255,.6)">Sort by <select aria-label="Sort products" onchange="window._sgShopSort(this.value)" style="background:#1e293b;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 6px;font-size:13px">'
+    +opt('featured','Featured')+opt('low','Price: low to high')+opt('high','Price: high to low')+opt('best','Best sellers')+opt('new','Newest')+'</select></label></div>';
+  box.innerHTML=rows+bar+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+items.map(function(p){
     var owned=!!_sgShopState.owned[p.id];
     var hearted=savedIds.indexOf(p.id)>=0;
     var sold=p.salesCount||0;
     var cover=p.coverImageUrl
-      ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:128px;object-fit:cover;display:block">'
+      ? '<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" loading="lazy" decoding="async" style="width:100%;height:128px;object-fit:cover;display:block;background:rgba(255,255,255,.06)">'
       : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:34px">'+({'Prompt packs':'\u2728','Workout plans':'\uD83C\uDFCB\uFE0F','Meal guides':'\uD83E\uDD57','Video programs':'\uD83C\uDFAC','Templates':'\uD83D\uDCCB'}[p.category]||'📄')+'</div>';
     return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="position:relative;display:flex;flex-direction:column;text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.05);color:#fff;padding:0;cursor:pointer">'
       +cover
@@ -14031,7 +14078,9 @@ function _sgShopRow(title,inner){
     +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">'+inner+'</div></div>';
 }
 function _sgShopMini(p){
-  return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="'+_sgShopPill+'">'+_sgShopEsc(p.title)
+  return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="'+_sgShopPill+'">'
+    +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="" loading="lazy" style="display:block;width:100%;height:70px;object-fit:cover;border-radius:8px;margin-bottom:6px">':'')
+    +'<span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+_sgShopEsc(p.title)+'</span>'
     +'<br><span style="color:#FF6D00;font-size:11px">'+(_sgShopState.owned[p.id]?'Owned':_sgShopEsc(p.price))+'</span></button>';
 }
 window._sgShopHeart=function(id){

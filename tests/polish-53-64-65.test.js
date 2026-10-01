@@ -48,3 +48,10 @@ test('Task 64 bugs: tappable #tags/@handle/sound, tap-to-pause, scrub, long-pres
     assert.ok(html.includes(s), s);
   }
 });
+
+test('Task 65 bugs: search kept + clear, sort, count, skeleton, retry, no stale paint', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  for (const s of ['value="${_sgShopEsc(_sgShopState.q)}"', '_sgShopClear', '_sgShopSort', 'Price: low to high', 'function _sgShopSkeleton', 'Try again', 'mySeq!==_sgShopState.seq', 'No results for', 'loading="lazy"', 'data-shop-cat']) {
+    assert.ok(app.includes(s), s);
+  }
+});
