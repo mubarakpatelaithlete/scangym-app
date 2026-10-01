@@ -1252,10 +1252,30 @@
       var sh = document.getElementById(SHEET_ID);
       return { sh: sh, ta: sh && sh.querySelector('.sv-prompt'), gen: sh && sh.querySelector('#sv-gen') };
     }
+    /* Task 56 (owner, 2026-10-01): one tap posts to every linked account, here,
+       like Viktor does — no new tab. The /post-everywhere page is only opened
+       when nothing is linked yet (to link) or the network call fails. */
     chip('🚀 Post', function () {
-      var q = '?media=' + encodeURIComponent(abs) + '&type=' + (isVid ? 'video' : 'image') +
-        '&text=' + encodeURIComponent((shareInfo && shareInfo.shareText) || 'Made with ScanGym');
-      window.open('/post-everywhere/' + q, '_blank', 'noopener');
+      var text = (shareInfo && shareInfo.shareText) || 'Made with ScanGym';
+      var q = '?media=' + encodeURIComponent(abs) + '&type=' + (isVid ? 'video' : 'image') + '&text=' + encodeURIComponent(text);
+      var page = function () { window.open('/post-everywhere/' + q, '_blank', 'noopener'); };
+      var c = this;
+      fetch('/api/post-everywhere/accounts', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (d) {
+          var acc = (d && d.accounts) || [];
+          if (!acc.length) { toast('Link your socials once, then tap Post again.', 'info', 3500); page(); return; }
+          var names = acc.map(function (a) { return a.appName; }).filter(function (n, i, all) { return all.indexOf(n) === i; });
+          if (!window.confirm('Post this to ' + names.join(', ') + '?')) return;
+          toast('Posting to ' + names.length + (names.length === 1 ? ' account…' : ' accounts…'), 'info', 2500);
+          return fetch('/api/post-everywhere/post', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image' }) })
+            .then(function (r) { return r.json(); })
+            .then(function (o) {
+              if (!o || !o.results) { toast((o && o.error) || 'Could not post right now.', 'error', 4000); return; }
+              var msg = o.results.map(function (x) { return (x.status === 'posted' ? '✅ ' : x.status === 'skipped' ? '⏭️ ' : '❌ ') + x.appName; }).join('  ');
+              toast('Posted to ' + o.posted + '/' + o.results.length + ': ' + msg, o.posted ? 'success' : 'error', 6000);
+            });
+        }).catch(function () { page(); });
     });
     chip('✏️ Edit', function () {
       if (isVid) { window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs }); return; }

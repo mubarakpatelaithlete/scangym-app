@@ -24,6 +24,7 @@ const memory = require('./customer-memory');
 const chat = require('./chat-create');
 const wizard = require('./create-wizard');
 const chatLink = require('./chat-link');
+const chatPost = require('./chat-post');
 /* In-chat creation can be switched off with CHAT_CREATE=off without a deploy. */
 function chatCreateOn(deps) { return !(deps && deps.noChatCreate) && process.env.CHAT_CREATE !== 'off'; }
 
@@ -817,6 +818,13 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
         result = { text: `❌ Which booking should I cancel?\n\n${list.map((b, i) => `${i + 1}. ${b.label}`).join('\n')}\n\nReply with a number, or NO to keep them.`, data: { options: list.map((b, i) => ({ label: `${i + 1}. ${b.label}`, value: String(i + 1) })) } };
       }
     }
+  }
+  /* Task 56: "post it" → latest creation to every linked social account. */
+  if (!result && customer && session.pendingPost) {
+    result = await (deps.chatPost || chatPost).answerPost(session, customer.userId, text, deps);
+  }
+  if (!result && customer && (deps.chatPost || chatPost).detectPost(text)) {
+    result = await (deps.chatPost || chatPost).askPost(session, customer.userId, deps);
   }
   if (!result) {
     create = detectCreate(text);
