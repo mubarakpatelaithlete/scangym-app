@@ -283,6 +283,7 @@
     // eight modes used to be colour emoji, which is why this row still looked
     // unlike Share and Save once the circles already matched.
     '.' + BTN_ID + ' .sv-circle svg{width:var(--sg-btn-icon,20px);height:var(--sg-btn-icon,20px);display:block;}',
+    '.' + BTN_ID + ' .sv-circle .sv-gif{width:calc(var(--sg-btn-icon,20px) + 8px);height:calc(var(--sg-btn-icon,20px) + 8px);display:block;object-fit:contain;}',
     '.' + BTN_ID + '.sv-off .sv-circle{opacity:.55;}',
     '.' + BTN_ID + ':active .sv-circle{transform:scale(.92);}',
     '.' + BTN_ID + ' .sv-label{font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.8);}',
@@ -1409,8 +1410,17 @@
     text: 'pen', image: 'image', video: 'film', audio: 'mic',
     music: 'music', edit: 'clapper', twin: 'person', clipping: 'scissors', ugc: 'phone'
   };
+  // Task 53: each Create button shows its own small animated GIF (made once
+  // with ChatGPT gpt-image-1-mini, animated offline, ~30KB each). Falls back to
+  // the line icon if the GIF fails to load.
+  var GIF_KEYS = { text: 1, image: 1, video: 1, audio: 1, music: 1, edit: 1, twin: 1, clipping: 1, ugc: 1 };
   function iconFor(mode) {
     var table = (typeof window !== 'undefined' && window.SG_ICONS) || {};
+    if (GIF_KEYS[mode.key]) {
+      return '<img class="sv-gif" src="/img/create-gif/' + mode.key + '.gif?v=1" alt="" width="28" height="28" decoding="async" ' +
+        'onerror="this.outerHTML=this.getAttribute(\'data-fb\')||\'\'" data-fb="' +
+        String(table[ICON_KEYS[mode.key]] || mode.icon).replace(/"/g, '&quot;') + '">';
+    }
     return table[ICON_KEYS[mode.key]] || mode.icon;
   }
 
