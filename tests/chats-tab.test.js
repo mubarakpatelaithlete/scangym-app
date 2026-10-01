@@ -70,3 +70,8 @@ test('Task 66: Chats looks like WhatsApp: top section tabs, flat icons, useful s
   for (const e of ['📷', '🔍', '🧰', '📞']) assert.ok(!markup.slice(0, markup.indexOf('<!-- CHAT VIEW')).includes(e), 'no emoji icon ' + e);
   for (const s of ['ScanGym Assistant', 'wa.me/12052094512', 't.me/ScanGymBot', 'Sign in to chat']) assert.ok(html.includes(s), s);
 });
+
+test('Task 66 WhatsApp pass: voice notes, reply, forward, pin/mute/archive, unread divider, viewer, retry', () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
+  for (const s of ['MediaRecorder', 'voice-note.', 'startReply', 'forwardSheet', 'Pin chat', 'Mute notifications', 'Archive chat', 'unread message', "v.id='viewer'", 'Tap to retry', 'Contact info', 'id="toBot"', 'function fmt']) assert.ok(html.includes(s), s);
+});
