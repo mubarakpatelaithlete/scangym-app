@@ -13904,18 +13904,26 @@ function ShopPage(){
   var chips=cats.map(function(c){
     var on=_sgShopState.category===c;
     return '<button type="button" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
-      +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:20px;padding:9px 13px;'
-      +'background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.04)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
+      +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:18px;padding:7px 12px;'
+      +'background:'+(on?'#FF6D00':'rgba(255,255,255,.06)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
   setTimeout(function(){ if(!_sgShopState.loaded) window._sgShopLoad(); },0);
-  return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:14px 16px 110px;color:#fff">
-    <div style="margin-bottom:12px">
-      <p style="margin:0 0 4px;color:#FF6D00;font-size:11px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase">ScanGym Digital Shop</p>
-      <h1 style="margin:0;font-size:21px;font-weight:900">Fitness tools from creators</h1>
-      <p style="margin:4px 0 0;color:rgba(255,255,255,.6);font-size:13px">⚡ Instant PDF · 🔒 Secure · No physical goods</p>
+  /* Task 65 (Amazon pass, owner 2026-10-01): Amazon's mobile order. A white
+     search bar first and sticky, slim category pills, a "delivery" line
+     (instant download), then the grid. The big title block is gone. */
+  return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:10px 12px 110px;color:#fff">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 8px 44px;min-height:30px">
+      <h1 style="margin:0;font-size:17px;font-weight:900;white-space:nowrap">ScanGym <span style="color:#FF6D00">Digital Shop</span></h1>
+      <span style="color:rgba(255,255,255,.55);font-size:11px;white-space:nowrap">PDF guides &amp; plans</span>
     </div>
-    <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search digital products" oninput="window._sgShopFilter(this.value)" style="width:100%;box-sizing:border-box;padding:13px 15px;margin:3px 0 12px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:15px">
-    <div aria-label="Digital product categories" style="display:flex;gap:8px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 14px;margin-bottom:8px">${chips}</div>
+    <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
+      <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0;outline:0;background:transparent;color:#111;font-size:16px;height:40px">
+      </label>
+    </div>
+    <div aria-label="Digital product categories" style="display:flex;gap:6px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 8px">${chips}</div>
+    <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure checkout · No physical goods</p>
     <div id="sg-digital-shop-results" style="min-height:210px">
       <p style="color:rgba(255,255,255,.5);font-size:14px;text-align:center;padding:40px 0">Loading products…</p>
     </div>
@@ -13988,26 +13996,34 @@ window._sgShopRender=function(){
   }
   var topSales=items.reduce(function(m,x){return Math.max(m,x.salesCount||0);},0);
   var savedIds=_sgShopLS('sg_shop_saved');
-  box.innerHTML=rows+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">'+items.map(function(p){
+  box.innerHTML=rows+'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+items.map(function(p){
     var owned=!!_sgShopState.owned[p.id];
     var hearted=savedIds.indexOf(p.id)>=0;
     var sold=p.salesCount||0;
     var cover=p.coverImageUrl
-      ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:118px;object-fit:cover;display:block">'
+      ? '<img src="'+p.coverImageUrl+'" alt="" style="width:100%;height:128px;object-fit:cover;display:block">'
       : '<div style="height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,109,0,.25),rgba(255,109,0,.05));font-size:34px">'+({'Prompt packs':'\u2728','Workout plans':'\uD83C\uDFCB\uFE0F','Meal guides':'\uD83E\uDD57','Video programs':'\uD83C\uDFAC','Templates':'\uD83D\uDCCB'}[p.category]||'📄')+'</div>';
-    return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="position:relative;text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.04);color:#fff;padding:0;cursor:pointer">'
+    return '<button type="button" onclick="window._sgShopOpen('+p.id+')" style="position:relative;display:flex;flex-direction:column;text-align:left;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.05);color:#fff;padding:0;cursor:pointer">'
       +cover
       +(sold&&sold===topSales?'<span style="position:absolute;top:8px;left:8px;background:#FF6D00;color:#fff;font-size:10px;font-weight:900;border-radius:6px;padding:3px 6px">\uD83D\uDD25 Bestseller</span>':'')
       +'<span role="button" aria-label="Save for later" onclick="event.stopPropagation();window._sgShopHeart('+p.id+')" style="position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:15px">'+(hearted?'\u2764\uFE0F':'\uD83E\uDD0D')+'</span>'
-      +'<div style="padding:10px 12px 12px">'
-      +'<p style="margin:0 0 3px;font-size:14px;font-weight:800;line-height:1.25">'+_sgShopEsc(p.title)+'</p>'
-      +'<p style="margin:0 0 7px;color:rgba(255,255,255,.45);font-size:11px">@'+_sgShopEsc(p.creatorHandle)+' · '+_sgShopEsc(p.category)+'<br>\uD83D\uDCC4 PDF · instant download</p>'
-      +'<p style="margin:0;font-size:14px;font-weight:900;color:'+(owned?'#22c55e':'#FF6D00')+'">'+(owned?'Owned':_sgShopEsc(p.price))+'</p>'
-      +(sold?'<p style="margin:3px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
+      +'<div style="padding:9px 10px 10px;display:flex;flex-direction:column;flex:1">'
+      +'<p style="margin:0 0 4px;font-size:13px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px">'+_sgShopEsc(p.title)+'</p>'
+      +'<p style="margin:0 0 6px;color:rgba(255,255,255,.45);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">by @'+_sgShopEsc(p.creatorHandle)+'</p>'
+      +(owned?'<p style="margin:0;font-size:15px;font-weight:900;color:#22c55e">Owned</p>':_sgShopPrice(p.price))
+      +'<p style="margin:3px 0 0;color:#86efac;font-size:11px;font-weight:600">\u26A1 Instant PDF download</p>'
+      +(sold?'<p style="margin:2px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
+      +'<span style="margin-top:auto;padding-top:9px;display:block"><span style="display:block;text-align:center;border-radius:18px;padding:8px 0;background:'+(owned?'#22c55e':'#FF6D00')+';color:#fff;font-size:13px;font-weight:800">'+(owned?'Download':'Buy now')+'</span></span>'
       +'</div></button>';
   }).join('')+'</div>';
 };
 
+/* Amazon-style price: big pounds, small raised pence (£1⁹⁹). */
+function _sgShopPrice(price){
+  var m=/^(\D*)(\d+)[.](\d\d)$/.exec(String(price||''));
+  if(!m)return '<p style="margin:0;font-size:15px;font-weight:900">'+_sgShopEsc(price)+'</p>';
+  return '<p style="margin:0;font-weight:900;line-height:1"><span style="font-size:12px;vertical-align:top">'+_sgShopEsc(m[1])+'</span><span style="font-size:22px">'+m[2]+'</span><span style="font-size:12px;vertical-align:top">'+m[3]+'</span></p>';
+}
 var _sgShopPill='flex:none;width:130px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:left;cursor:pointer;white-space:normal';
 function _sgShopLS(key){try{var v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}}
 function _sgShopRow(title,inner){

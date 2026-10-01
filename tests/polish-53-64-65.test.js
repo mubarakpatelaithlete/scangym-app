@@ -26,3 +26,18 @@ test('Task 65: every starter product has a cover', () => {
   for (const p of list) assert.ok(fs.existsSync(pub('img/shop/' + p.slug + '.webp')), 'missing cover ' + p.slug);
   assert.match(fs.readFileSync(path.join(__dirname, '..', 'server', 'lib', 'shop-starter.js'), 'utf8'), /cover_image_url/);
 });
+
+test('Task 64 pass 2: TikTok filled rail icons + spinning sound disc', () => {
+  const html = read('reels/index.html');
+  assert.match(html, /svg\.tt-fill\{ fill:#fff !important/);
+  assert.match(html, /class="reel-disc"/);
+  assert.match(html, /mask-image:linear-gradient\(90deg/);
+});
+
+test('Task 65 pass 2: Amazon-style shop (white search first, price, Buy now)', () => {
+  const app = read('app.ctr576.js');
+  const shop = app.slice(app.indexOf('function ShopPage()'), app.indexOf('// ─── More Hub Page'));
+  assert.match(shop, /Search ScanGym Shop/);
+  assert.match(app, /function _sgShopPrice/);
+  assert.match(app, /'Buy now'/);
+});
