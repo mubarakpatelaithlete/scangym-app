@@ -13919,9 +13919,10 @@ function ShopPage(){
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" value="${_sgShopEsc(_sgShopState.q)}" enterkeyhint="search" onkeydown="if(event.key==='Enter')this.blur()" oninput="window._sgShopFilter(this.value)" style="flex:1;min-width:0;border:0 !important;outline:0;background:transparent !important;color:#111 !important;-webkit-text-fill-color:#111;box-shadow:none !important;padding:0 !important;font-size:16px;height:40px">
+        <input type="search" id="sg-shop-search" aria-label="Search digital fitness products" placeholder="Search ScanGym Shop" value="${_sgShopEsc(_sgShopState.q)}" enterkeyhint="search" onkeydown="if(event.key==='Enter')this.blur()" onfocus="window._sgShopRecent(true)" onblur="window._sgShopRemember();setTimeout(function(){window._sgShopRecent(false)},150)" oninput="window._sgShopFilter(this.value);window._sgShopRecent(!this.value)" style="flex:1;min-width:0;border:0 !important;outline:0;background:transparent !important;color:#111 !important;-webkit-text-fill-color:#111;box-shadow:none !important;padding:0 !important;font-size:16px;height:40px">
         <button type="button" id="sg-shop-clear" aria-label="Clear search" onclick="window._sgShopClear()" style="display:${_sgShopState.q?'flex':'none'};flex:none;width:26px;height:26px;border:0;border-radius:50%;background:#ddd;color:#333;font-size:14px;font-weight:900;align-items:center;justify-content:center;cursor:pointer;padding:0">✕</button>
       </label>
+      <div id="sg-shop-recent" style="display:none;margin-top:8px"></div>
     </div>
     <div aria-label="Digital product categories" style="display:flex;gap:6px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 8px">${chips}</div>
     <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure · No physical goods</p>
@@ -13932,6 +13933,7 @@ function ShopPage(){
       <button type="button" onclick="window._sgShopOpenSell()" style="width:100%;border:1px dashed rgba(255,109,0,.5);border-radius:14px;padding:14px;background:rgba(255,109,0,.08);color:#FF6D00;font-weight:800;font-size:14px;cursor:pointer">＋ Sell your own digital product</button>
       <p style="margin:8px 0 0;color:rgba(255,255,255,.4);font-size:12px;text-align:center">ScanSquad creators keep 70% of every sale.</p>
     </div>
+    <button type="button" id="sg-shop-top" onclick="window._sgShopTop()" aria-label="Back to top" style="display:none;position:fixed;right:14px;bottom:150px;z-index:20;border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:9px 14px;background:rgba(15,23,42,.92);color:#fff;font-weight:800;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.4)">↑ Top</button>
   </section>`;
 }
 
@@ -13955,6 +13957,32 @@ window._sgShopClear=function(){
   if(i){i.value='';i.focus();}
   window._sgShopFilter('');
 };
+window._sgShopShare=function(id){
+  var p=_sgShopState.products.filter(function(x){return x.id===id;})[0]||{};
+  var url=location.origin+'/shop?p='+id;
+  if(navigator.share){navigator.share({title:p.title||'ScanGym Shop',text:(p.title||'')+' — '+(p.price||''),url:url}).catch(function(){});return;}
+  try{navigator.clipboard.writeText(url).then(function(){if(typeof sgToast==='function')sgToast('Link copied','success',1800);});}catch(e){}
+};
+window._sgShopRecent=function(show){
+  var el=document.getElementById('sg-shop-recent');if(!el)return;
+  var list=_sgShopLS('sg_shop_recent');
+  if(!show||!list.length||_sgShopState.q){el.style.display='none';return;}
+  el.innerHTML='<p style="margin:0 0 6px;color:rgba(255,255,255,.5);font-size:11px;font-weight:700">RECENT SEARCHES</p>'+list.map(function(q){
+    return '<button type="button" onmousedown="event.preventDefault()" onclick="var i=document.getElementById(\'sg-shop-search\');i.value=this.textContent;window._sgShopFilter(this.textContent);window._sgShopRecent(false);i.blur()" style="margin:0 6px 6px 0;border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:5px 10px;background:rgba(255,255,255,.06);color:#fff;font-size:13px;cursor:pointer">'+_sgShopEsc(q)+'</button>';}).join('');
+  el.style.display='block';
+};
+window._sgShopRemember=function(){
+  var q=String(_sgShopState.q||'').trim();if(q.length<2)return;
+  var l=_sgShopLS('sg_shop_recent').filter(function(x){return x.toLowerCase()!==q.toLowerCase();});l.unshift(q);
+  try{localStorage.setItem('sg_shop_recent',JSON.stringify(l.slice(0,8)));}catch(e){}
+};
+/* Back-to-top button once you are a few screens down (Amazon). Listens on any
+   scroller because the app shell decides which element scrolls. */
+if(!window._sgShopTopBound){window._sgShopTopBound=1;
+  document.addEventListener('scroll',function(e){var b=document.getElementById('sg-shop-top');if(!b)return;
+    var t=e.target===document?(document.scrollingElement||document.documentElement):e.target;if(!t||t.scrollTop==null)return;
+    window._sgShopScroller=t;b.style.display=t.scrollTop>900?'block':'none';},true);}
+window._sgShopTop=function(){var t=window._sgShopScroller||document.scrollingElement;if(t&&t.scrollTo)t.scrollTo({top:0,behavior:'smooth'});else window.scrollTo(0,0);};
 window._sgShopSort=function(v){ _sgShopState.sort=v; window._sgShopRender(); };
 window._sgShopSkeleton=_sgShopSkeleton;
 function _sgShopSkeleton(){
@@ -13991,6 +14019,8 @@ window._sgShopLoad=async function(force){
       }catch(e){}
     }
     window._sgShopRender();
+    var dl=null;try{dl=new URLSearchParams(location.search).get('p');}catch(e){}
+    if(dl&&!_sgShopState._dl){_sgShopState._dl=1;window._sgShopOpen(+dl);} // shared /shop?p=ID opens that product
   }catch(e){
     if(mySeq!==_sgShopState.seq)return;
     box.innerHTML='<div style="text-align:center;padding:36px 0"><p style="margin:0 0 12px;color:rgba(255,255,255,.6);font-size:14px">The shop could not load. Check your connection.</p>'
@@ -14114,10 +14144,27 @@ window._sgShopOpen=function(productId){
   var seen=_sgShopLS('sg_shop_seen').filter(function(x){return x!==p.id;});seen.unshift(p.id);
   try{localStorage.setItem('sg_shop_seen',JSON.stringify(seen.slice(0,12)));}catch(e){}
   setTimeout(function(){window._sgShopAlso(p.id);},0);
+  /* Task 65 round 2 (Amazon product page): big picture, price block, Save +
+     Share, a details table, Read more, and More from this creator. */
+  var saved=_sgShopLS('sg_shop_saved').indexOf(p.id)>=0;
+  var fmt=/pdf/i.test(p.contentType||p.fileName||'')?'PDF':((p.fileName||'').split('.').pop()||'File').toUpperCase();
+  var more=_sgShopState.products.filter(function(x){return x.creatorHandle===p.creatorHandle&&x.id!==p.id;}).slice(0,10);
+  var desc=String(p.description||'');
+  var dRow=function(k,v){return '<tr><td style="padding:6px 8px 6px 0;color:rgba(255,255,255,.5);font-size:13px;white-space:nowrap">'+k+'</td><td style="padding:6px 0;font-size:13px;font-weight:600">'+v+'</td></tr>';};
   var body='<div style="padding:4px 2px 8px">'
+    +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px">':'')
+    +(owned?'':'<div style="margin:0 0 4px">'+_sgShopPrice(p.price)+'</div>')
+    +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout</p>'
+    +'<div style="display:flex;gap:8px;margin:0 0 12px">'
+    +'<button type="button" id="sg-shop-save" onclick="window._sgShopHeart('+p.id+');var s=_sgShopLS(\'sg_shop_saved\').indexOf('+p.id+')>=0;this.textContent=s?\'❤️ Saved\':\'🤍 Save for later\'" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">'+(saved?'❤️ Saved':'🤍 Save for later')+'</button>'
+    +'<button type="button" onclick="window._sgShopShare('+p.id+')" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">↗️ Share</button></div>'
     +(p.salesCount?'<p style="margin:0 0 8px;color:#FF6D00;font-size:12px;font-weight:800">\uD83D\uDD25 '+p.salesCount+' people bought this</p>':'')
     +(p.fileSizeKb?'<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:12px">'+p.fileSizeKb+' KB</p>':'')
-    +'<p style="margin:0 0 16px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap">'+_sgShopEsc(p.description||'')+'</p>'
+    +'<p id="sg-shop-desc" style="margin:0 0 6px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap;'+(desc.length>220?'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden':'')+'">'+_sgShopEsc(desc)+'</p>'
+    +(desc.length>220?'<button type="button" onclick="var d=document.getElementById(\'sg-shop-desc\');var o=d.style.display===\'block\';d.style.display=o?\'-webkit-box\':\'block\';this.textContent=o?\'Read more\':\'Show less\'" style="border:0;background:none;color:#7dd3fc;font-weight:700;font-size:13px;padding:0;margin:0 0 14px;cursor:pointer">Read more</button>':'<div style="height:10px"></div>')
+    +'<p style="margin:0 0 4px;font-size:14px;font-weight:800">Product details</p><table style="border-collapse:collapse;margin:0 0 14px">'
+    +dRow('Format',fmt)+(p.fileSizeKb?dRow('File size',p.fileSizeKb+' KB'):'')+dRow('Category',_sgShopEsc(p.category))+dRow('Sold by','@'+_sgShopEsc(p.creatorHandle))+dRow('Delivery','Instant download + email copy')+'</table>'
+    +(more.length?_sgShopRow('More from @'+_sgShopEsc(p.creatorHandle),more.map(_sgShopMini).join('')):'')
     +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
     +'<div id="sg-shop-also"></div>'
     +'<div style="position:sticky;bottom:0;background:#12141d;padding:10px 0 4px;z-index:2">'
@@ -17071,7 +17118,7 @@ function _renderInner(){
     else if(path==='/about')page=InfoPage('About ScanGym',`<p class="text-xl text-white font-bold">The Skyscanner for Gyms</p><p class="text-lg text-slate-300">We're building a world where any gym is accessible to anyone, anywhere, for a fair price.</p><div class="mt-8 border-l-2 border-brand pl-6 space-y-6">${[{date:"2026",title:"Founded in Manchester",desc:"Mubarak Ibrahim Patel launches ScanGym — a marketplace connecting fitness enthusiasts with gym owners who have unused capacity."},{date:"2026",title:"QR Scan-and-Go",desc:"Easy gym entry with unique QR codes. Show your QR at reception — no membership cards needed."},{date:"2026",title:"AI Coach Launch",desc:"GPT-4o powered personal training. Custom workout plans, form analysis, and nutrition advice for every gym-goer."},{date:"Coming",title:"Global Expansion",desc:"Bringing ScanGym to every city on Earth. Dubai, New York, Barcelona, Berlin — gym access without borders."}].map(m=>`<div class="relative"><span class="absolute -left-[33px] w-4 h-4 bg-brand rounded-full border-2 border-dark"></span><p class="text-brand text-xs font-bold">${m.date}</p><p class="text-white font-semibold">${m.title}</p><p class="text-slate-400 text-sm">${m.desc}</p></div>`).join("")}</div><div class="mt-8 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="10" data-suffix="+">0</p><p class="text-slate-500 text-xs">Cities Live</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="1" data-suffix="">0</p><p class="text-slate-500 text-xs">Country (UK)</p></div><div class="bg-slate-800 rounded-xl p-4 text-center"><p class="text-2xl font-bold text-white" data-counter data-target="18" data-suffix="">0</p><p class="text-slate-500 text-xs">Features Built</p></div></div><div class="mt-8"><p class="text-slate-400">📍 Manchester, UK · 📧 hello@scangym.com · 📱 @scangym</p></div>`);
     else if(path==='/tools')page=ToolsPage();
   else if(path==='/shop'||path.startsWith('/shop/'))page=ShopPage();
-  else if(path==='/chats'||path.startsWith('/chats/'))page='<iframe class="sg-reels-frame" id="sg-chats-frame" src="/chats/app.html?v=1.4" title="Chats" allow="clipboard-write; camera; microphone; autoplay"></iframe>';
+  else if(path==='/chats'||path.startsWith('/chats/'))page='<iframe class="sg-reels-frame" id="sg-chats-frame" src="/chats/app.html?v=1.5" title="Chats" allow="clipboard-write; camera; microphone; autoplay"></iframe>';
   else if(path==='/faq')page=InfoPage('Frequently Asked Questions',`<p class="text-slate-400 mb-6">Everything you need to know. Click any question to expand.</p><div class="space-y-3">${[{cat:"For Gym-Goers",qs:[{q:"How much does it cost?",a:`From ${sgPrice('day').display} per 24-hour session. 4 pass types: Day ${sgPrice('day').display}, 3-Day ${sgPrice('3day').display}, Weekly ${sgPrice('weekly').display}, Monthly ${sgPrice('monthly').display}. Same price any time of day.`},{q:"How do I get in?",a:"After booking, you get a unique QR code. Open it on your phone and scan at the gym entrance. Show it at reception and you're in."},{q:"Can I cancel?",a:"Yes! Free cancellation up to 2 hours before your session. Refund goes to your ScanGym Wallet instantly, or back to your card in 5-10 days."},{q:"Do I need an account?",a:"Quick sign-in with Google or phone number. Your card saves automatically — every booking after is just 1 tap. Apple Pay and Google Pay supported too."},{q:"How long can I stay?",a:"24 hours from scan-in. Scan out when you leave."}]},{cat:"For Gym Owners",qs:[{q:"How much does it cost to list?",a:"Zero. Free to list. We only take a small commission on bookings. You set your own prices and control availability."},{q:"What equipment do I get?",a:"Listed gyms qualify for free vending machines and QR scanner hardware — installed at no cost to you."},{q:"How do I get paid?",a:"Direct bank transfer, weekly. Full analytics dashboard shows your bookings, revenue, and ratings in real-time."}]},{cat:"For Creators",qs:[{q:"How does ScanSquad work?",a:"Sign up, get your personal referral page (scangym.com/r/yourname), share it. Earn 25% commission on every booking."},{q:"How much can I earn?",a:"Starters: \u00a350-150/mo. Rising Stars: \u00a3150-400/mo. Hot Creators: \u00a3400-800/mo + free sessions. Elite: \u00a3800-2,000/mo. Legends: \u00a32,000-5,000+/mo."}]}].map(cat=>`<div class="mb-4"><h3 class="text-brand font-bold text-sm mb-2">${cat.cat}</h3>${cat.qs.map(q=>`<div class="border border-slate-700 rounded-lg mb-2 overflow-hidden"><button class="accordion-trigger w-full flex items-center justify-between p-4 text-left hover:bg-slate-800/50 transition"><span class="text-white text-sm font-medium">${q.q}</span><span class="accordion-arrow text-slate-500 transition-transform">▼</span></button><div class="overflow-hidden transition-all duration-300" style="max-height:0"><p class="text-slate-400 text-sm p-4 pt-0">${q.a}</p></div></div>`).join("")}</div>`).join("")}</div>`);
   else if(path==='/for-gyms'||path==='/gym-owners')page=InfoPage('For Gym Owners',`<p class="text-xl text-white font-bold">Fill your empty hours. Earn more revenue.</p><p class="text-lg text-slate-300">Gym-goers search ScanGym daily. Turn your quiet hours into profit.</p><div class="mt-6 bg-brand/10 border border-brand/30 rounded-xl p-6"><p class="text-white font-bold mb-3">💰 Revenue Calculator — How much could you earn?</p><div class="grid sm:grid-cols-3 gap-4 mb-4"><div><label class="text-slate-400 text-xs">Empty slots per day</label><input type="range" id="calc-slots" min="2" max="50" value="10" class="w-full accent-brand" oninput="document.getElementById('calc-result').textContent='£'+((this.value*${sgPrice('day').amount}*0.85)*30).toFixed(0)"></div><div class="text-center"><p class="text-slate-400 text-xs">Estimated monthly revenue</p><p id="calc-result" class="text-3xl font-bold text-brand">£${Math.round(10 * sgPrice('day').amount * 0.85 * 30).toLocaleString()}</p></div><div class="text-center"><p class="text-slate-400 text-xs">Your commission</p><p class="text-white font-bold">85%</p><p class="text-slate-500 text-xs">You keep · We take 15%</p></div></div><p class="text-slate-500 text-xs">Based on ${sgPrice('day').display} avg day pass × 10 bookings/day × 30 days. Actual results vary.</p></div><div class="mt-6 grid sm:grid-cols-3 gap-4"><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">💸</p><p class="text-white font-semibold text-sm">You set the price</p><p class="text-slate-500 text-xs">4 passes from ${sgPrice('day').display}. Change anytime.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">⏸️</p><p class="text-white font-semibold text-sm">Full control</p><p class="text-slate-500 text-xs">Pause bookings with one toggle.</p></div><div class="bg-slate-800 p-4 rounded-lg text-center"><p class="text-3xl mb-2">🥤</p><p class="text-white font-semibold text-sm">Free equipment</p><p class="text-slate-500 text-xs">Vending machines + QR scanners.</p></div></div><p class="mt-6 text-center text-slate-400">Zero listing fee. Zero commitment. Cancel anytime.</p><div class="mt-6 flex gap-4 flex-wrap justify-center"><a onclick="navigate('/list-your-gym')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20">List Your Gym — It's Free →</a><a onclick="navigate('/owner-benefits')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">See All Benefits →</a></div>`);
   else if(path==='/list-your-gym')page=ListYourGymFullPage();
