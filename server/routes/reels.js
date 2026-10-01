@@ -273,7 +273,8 @@ function interleaveSocial(own, social, everyNth) {
  * because it must paint instantly and must not be an advert.
  */
 function spaceAds(list, everyNth) {
-  const isAd = (v) => v && v.type === 'catalog' && AD_CATEGORIES.has(String(v.category || '').toLowerCase());
+  // geo-feed's catalog rows carry no `type`, so "ours" = not social, not an upload.
+  const isAd = (v) => v && v.type !== 'social' && v.type !== 'upload' && AD_CATEGORIES.has(String(v.category || '').toLowerCase());
   const ads = list.filter(isAd);
   const real = list.filter((v) => !isAd(v));
   if (!ads.length || !real.length) return list;
