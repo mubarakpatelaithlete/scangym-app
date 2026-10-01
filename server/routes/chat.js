@@ -12,7 +12,7 @@ const { sendOwnerSMS, sendOwnerEmail } = require('../lib/owner-notify');
 
 // Gemini API config
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-3.8-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 /**
@@ -124,7 +124,7 @@ router.post('/start', optionalAuth, async (req, res) => {
       gymName: gym.name,
       messages: [{ role: 'assistant', content: welcomeMsg, timestamp: new Date().toISOString() }],
       supportsHumanEscalation: true,
-      aiModel: 'gemini-2.0-flash',
+      aiModel: 'gemini-3.8-flash',
     });
   } catch (err) {
     console.error('Chat start error:', err);
@@ -367,7 +367,7 @@ Brand: ScanGym only.${profileContext}`;
       reply = getFallbackResponse(message);
     }
 
-    res.json({ reply, model: 'gemini-2.0-flash' });
+    res.json({ reply, model: 'gemini-3.8-flash' });
   } catch (err) {
     console.error('Quick chat error:', err);
     res.status(500).json({ error: 'Failed to process message' });
@@ -427,7 +427,7 @@ Do NOT include the JSON block until you have at least fitness_goal plus 4 other 
     if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
 
     const geminiResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
