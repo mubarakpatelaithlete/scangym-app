@@ -33,7 +33,7 @@
 
       /* ── Discovery header: category rail + search, above the video ── */
       #reels-top-bar{position:fixed;top:0;left:0;right:0;z-index:55;display:flex;align-items:center;
-        gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 8px 10px 8px;
+        gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 8px 10px 52px; /* clear the fixed S logo (brand-mark.css) */
         background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 100%);pointer-events:none}
       #reels-cat-rail{flex:1;min-width:0;display:flex;align-items:center;gap:18px;overflow-x:auto;
         overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
@@ -225,6 +225,13 @@
         font-size:11px;color:rgba(255,255,255,.55);margin-top:4px;
         text-shadow:0 1px 4px rgba(0,0,0,.5);
       }
+      .reel-info .reel-handle{font-size:16px;font-weight:800;margin:0 0 4px;text-shadow:0 1px 8px rgba(0,0,0,.8);}
+      .reel-info .reel-title.open{-webkit-line-clamp:unset;display:block;}
+      .reel-info .reel-hash{font-weight:700;color:#fff;}
+      .reel-info .reel-sound{overflow:hidden;white-space:nowrap;max-width:220px;color:rgba(255,255,255,.85) !important;font-size:12px !important;margin-top:6px !important;}
+      .reel-info .reel-sound span{display:inline-block;animation:sgMarquee 9s linear infinite;}
+      @keyframes sgMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+      @media (prefers-reduced-motion:reduce){.reel-info .reel-sound span{animation:none}}
       .reel-info .reel-creator{
         font-size:12px;color:#FF6D00;font-weight:600;margin-top:3px;
         text-shadow:0 1px 4px rgba(0,0,0,.5);
@@ -3029,8 +3036,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
 
         var info = document.createElement('div');
         info.className = 'reel-info';
-        info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
-          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
+        info.innerHTML = tikTokCaption(video)
           + (video.author ? '<span class="reel-social-source">' + escHtml(video.author) + '</span>' : '')
           // Same CTA an uncredited catalog reel gets, so the tab behaves the same.
           + '<a class="creator-cta" href="/explore" onclick="event.preventDefault();_ctaNavigate(\'/explore\')">'
@@ -3276,8 +3282,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         // H5 fix: Removed fake view/like counts — no real analytics backend exists yet.
         // Show category + creator info only. Double-tap like still works (saved locally).
 
-        info.innerHTML = '<p class="reel-title">' + escHtml(humanizeTitle(video.name)) + '</p>'
-          + '<p class="reel-category">\uD83C\uDFAC ' + escHtml(humanizeCategory(video.category)) + '</p>'
+        info.innerHTML = tikTokCaption(video)
           + creatorHtml + affiliateHtml;
         div.appendChild(info);
 
@@ -3374,6 +3379,18 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
       //  ENGAGEMENT
       // ═══════════════════════════════════════════════════════════
 
+
+      /* Task 64 (10/10 pass): TikTok's caption block — bold @handle, a two-line
+         caption that expands on tap ("more"), and a scrolling "original sound"
+         line. Keeps .reel-title / .reel-category so older selectors still match. */
+      function tikTokCaption(video){
+        var c = video.creator || {};
+        var handle = String(c.handle || c.name || 'scangym').replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
+        var snd = '\u266B Original sound \u00b7 @' + handle + ' \u00b7 ' + humanizeCategory(video.category);
+        return '<p class="reel-handle">@' + escHtml(handle) + '</p>'
+          + '<p class="reel-title" onclick="event.stopPropagation();this.classList.toggle(\'open\')">' + escHtml(humanizeTitle(video.name)) + ' <span class="reel-hash">#' + escHtml(humanizeCategory(video.category).replace(/\s+/g, '').toLowerCase()) + ' #scangym</span></p>'
+          + '<p class="reel-category reel-sound"><span>' + escHtml(snd) + '\u2003\u2003' + escHtml(snd) + '</span></p>';
+      }
       function doubleTapLike(x, y){
         /* Task 52: a double tap is a real Like now (never an unlike, as on TikTok). */
         var _dt = renderedReels[currentIndex];

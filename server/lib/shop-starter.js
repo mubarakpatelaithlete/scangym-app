@@ -24,16 +24,21 @@ async function seedStarterProducts() {
     const filePath = path.join(DIR, p.file);
     if (!fs.existsSync(filePath)) continue;
     const size = fs.statSync(filePath).size;
+    // Task 65 (10/10 pass): a real cover per product (frontend/public/img/shop/{slug}.webp);
+    // only filled when empty, so an owner-set cover is never overwritten.
+    const cover = p.slug ? `/img/shop/${p.slug}.webp` : null;
     const upd = await pool.query(
-      `UPDATE shop_products SET file_path = $1, file_size = $2 WHERE creator_handle = $3 AND title = $4`,
-      [filePath, size, HANDLE, p.title]
+      `UPDATE shop_products SET file_path = $1, file_size = $2,
+         cover_image_url = COALESCE(NULLIF(cover_image_url, ''), $5)
+       WHERE creator_handle = $3 AND title = $4`,
+      [filePath, size, HANDLE, p.title, cover]
     );
     if (upd.rowCount) continue;
     await pool.query(
       `INSERT INTO shop_products (creator_handle, title, description, category, price_pence, currency,
-         file_path, file_name, file_size, content_type)
-       VALUES ($1, $2, $3, $4, $5, 'GBP', $6, $7, $8, 'application/pdf')`,
-      [HANDLE, p.title, p.description, p.category, p.pricePence, filePath, p.file, size]
+         file_path, file_name, file_size, content_type, cover_image_url)
+       VALUES ($1, $2, $3, $4, $5, 'GBP', $6, $7, $8, 'application/pdf', $9)`,
+      [HANDLE, p.title, p.description, p.category, p.pricePence, filePath, p.file, size, cover]
     );
     added++;
   }
