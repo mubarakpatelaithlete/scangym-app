@@ -35,7 +35,7 @@ test('chat page has the WhatsApp basics: ticks, typing, last seen, delete, calls
 test('Task 11: Chats/Calls/Tools sit in the bottom band and calls are real WebRTC', () => {
   const fs2 = require('node:fs'), p2 = require('node:path');
   const html = fs2.readFileSync(p2.join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
-  assert.ok(/<nav class="seg"/.test(html), 'sections are a bottom nav');
+  assert.ok(/<nav class="seg"/.test(html), 'sections nav exists');
   for (const s of ['RTCPeerConnection', 'callStart', '/calls/log', '/calls/incoming', 'watchIncoming']) assert.ok(html.includes(s), s);
   assert.ok(!html.includes('coming next'), 'no "coming soon" placeholder left');
   const calls = require('../server/routes/dm-calls.js');
@@ -60,4 +60,13 @@ test('Tasks 28/29: ChatGPT and Grok guides use the signed-in connector (create +
   }
   const rail = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'profile-rail.js'), 'utf8');
   assert.match(rail, /window\.open\('\/chatgpt', '_blank'\)/);
+});
+
+test('Task 66: Chats looks like WhatsApp: top section tabs, flat icons, useful signed-out view', () => {
+  const html = read('frontend/public/chats/app.html');
+  const top = html.indexOf('<div class="top">'), nav = html.indexOf('<nav class="seg"'), list = html.indexOf('<div id="list"');
+  assert.ok(top > 0 && nav > top && nav < list, 'sections sit in the header, not a 2nd bottom bar');
+  const markup = html.slice(html.indexOf('<body>'), html.indexOf('<script>', html.indexOf('<body>')));
+  for (const e of ['📷', '🔍', '🧰', '📞']) assert.ok(!markup.slice(0, markup.indexOf('<!-- CHAT VIEW')).includes(e), 'no emoji icon ' + e);
+  for (const s of ['ScanGym Assistant', 'wa.me/12052094512', 't.me/ScanGymBot', 'Sign in to chat']) assert.ok(html.includes(s), s);
 });
