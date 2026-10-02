@@ -37,9 +37,21 @@
     return items.filter(function (x) { var t = Date.parse(x.createdAt); return t && now - t < 14 * 864e5; })
       .sort(function (a, b) { return Date.parse(b.createdAt) - Date.parse(a.createdAt); }).slice(0, 12);
   }
+  /* 4. Batch 7 (Tasks 108/119): \uD83D\uDD25 Best sellers (Amazon) — most sold first. */
+  function bestSellers(items) {
+    return items.filter(function (x) { return (x.salesCount || 0) > 0; })
+      .sort(function (a, b) { return b.salesCount - a.salesCount; }).slice(0, 12);
+  }
   function after() {
     var st = window._sgShopState, box = document.getElementById('sg-digital-shop-results');
     if (!st || !box || st.q || st.category !== 'All' || document.getElementById('sg-shop-top')) return;
+    var bs = bestSellers(st.products || []);
+    if (bs.length >= 2 && !document.getElementById('sg-shop-best')) {
+      box.insertAdjacentHTML('afterbegin', dealsHtml(bs).replace('sg-shop-deals', 'sg-shop-best').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83D\uDD25 Best sellers'));
+      Array.prototype.forEach.call(box.querySelectorAll('#sg-shop-best [data-id]'), function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-id'), x = bs.filter(function (p) { return String(p.id) === id; })[0]; if (x && window._sgShopOpen) window._sgShopOpen(x.id); });
+      });
+    }
     var na = arrivals(st.products || []);
     if (na.length >= 2 && !document.getElementById('sg-shop-new')) {
       box.insertAdjacentHTML('afterbegin', dealsHtml(na).replace('sg-shop-deals', 'sg-shop-new').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83C\uDD95 New arrivals'));
@@ -70,5 +82,5 @@
     return true;
   }
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
-  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals };
+  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers };
 })();
