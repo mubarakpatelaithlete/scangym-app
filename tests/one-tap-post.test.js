@@ -13,7 +13,7 @@ test('client posts straight away with toScanGym, no confirm dialog', () => {
 });
 test('server publishes only the caller\'s own finished video to Home', async () => {
   const src = read('server/routes/post-everywhere.js');
-  assert.match(src, /INSERT INTO video_catalog \(name, category, source, url, cdn_key, orientation, dopamine_tier, active\)/);
+  assert.match(src, /INSERT INTO video_catalog \(name, category, source, url, cdn_key, orientation, dopamine_tier, active(, shop_product_id)?\)/);
   assert.match(src, /WHERE user_id = \$1 AND video_url = \$2 AND status = 'done'/);
   const { _internals } = require('../server/routes/post-everywhere.js');
   assert.strictEqual(_internals.displayName({ first_name: 'Rahul', last_name: 'Jekar' }), 'Rahul J.');

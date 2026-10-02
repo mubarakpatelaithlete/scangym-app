@@ -801,7 +801,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
          the frame asks the parent to open "Shop this reel" for this video. */
       var SHOP_ACTION = '<div class="reel-action" data-action="shop"><div class="icon">' + ICONS.shop + '</div><span class="label">Shop</span></div>';
       function openReelShop(video){
-        try { window.parent.postMessage({ sg: 'row-act', key: 'shop', category: (video && video.category) || '', title: (video && video.name) || '' }, '*'); } catch(e){}
+        try { window.parent.postMessage({ sg: 'row-act', key: 'shop', category: (video && video.category) || '', title: (video && video.name) || '', productId: (video && video.shopProductId) || null }, '*'); } catch(e){}
       }
 
       /* ── Task 52 (owner, 2026-09-30): Like / Comment / Save / Share / Repost ──

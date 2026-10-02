@@ -476,7 +476,8 @@ window._sgShopSubmitProduct=async function(){
       var sheet=document.getElementById('sg-shop-sheet');
       if(sheet)sheet.remove();
       if(typeof window.sgCloseSheet==='function')window.sgCloseSheet();
-      sgToast('Listed! It is live in the Shop 🎉','success',4000);
+      if(src&&r.product&&r.product.id){window._sgSoldFor=window._sgSoldFor||{};window._sgSoldFor[src]=r.product.id;}
+      sgToast(src?'Listed! Now tap 🚀 Post and it is sold right in your video 🛍️':'Listed! It is live in the Shop 🎉','success',4500);
       _sgShopState.loaded=false;
       window._sgShopLoad(true);
       return;

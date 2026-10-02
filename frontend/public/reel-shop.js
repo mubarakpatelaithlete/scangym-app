@@ -102,8 +102,11 @@
     var cat = shopCategory(d.category);
     var base = '/api/shop/products?limit=8';
     var first = cat ? getJSON(base + '&category=' + encodeURIComponent(cat)) : Promise.resolve({ products: [] });
-    first.then(function (a) {
-      var list = (a && a.products) || [];
+    /* Task 161: the product the creator sells in this video comes first. */
+    var pinned = d.productId ? getJSON('/api/shop/products/' + encodeURIComponent(d.productId)).then(function (x) { return (x && x.product) ? [x.product] : []; }, function () { return []; }) : Promise.resolve([]);
+    Promise.all([first, pinned]).then(function (both) {
+      var a = both[0], pin = both[1];
+      var list = pin.concat(((a && a.products) || []).filter(function (p) { return !pin.length || p.id !== pin[0].id; }));
       if (list.length >= 3) return list;
       return getJSON(base).then(function (b) {
         var seen = {};
@@ -114,7 +117,7 @@
     }).then(function (products) {
       var html = '<div id="sg-reel-shop">' + (products.length ? products.map(row).join('') : emptyState()) + '</div>';
       if (typeof window.sgOpenSheet === 'function') {
-        window.sgOpenSheet(html, { title: 'Shop this reel', sub: d.title ? String(d.title).slice(0, 60) : 'Digital products from ScanSquad creators', icon: '\uD83D\uDECD\uFE0F' });
+        window.sgOpenSheet(html, { title: d.productId ? 'Sold in this video' : 'Shop this reel', sub: d.title ? String(d.title).slice(0, 60) : 'Digital products from ScanSquad creators', icon: '\uD83D\uDECD\uFE0F' });
       } else if (typeof window._sgShopSimpleSheet === 'function') {
         window._sgShopSimpleSheet(html, {});
       } else { if (typeof window.switchTab === 'function') window.switchTab('shop'); return; }
