@@ -47,7 +47,7 @@
     {
       key: 'text', label: 'Text', icon: '✍️', api: '/api/squad-text',
       title: 'Create text', placeholder: 'What should the post say?',
-      gen: '⚡ Generate text', resultKind: 'text',
+      gen: 'Generate text', resultKind: 'text',
       templates: [
         { label: '📣 Gym promo', prompt: 'Short punchy Instagram caption for a gym day pass at £5, no membership, friendly and confident' },
         { label: '💬 Member win', prompt: 'Celebrate a member hitting 10 gym visits this month, warm and motivating, 2 short lines' },
@@ -66,7 +66,7 @@
     {
       key: 'image', label: 'Image', icon: '🖼️', api: '/api/squad-image',
       title: 'Create image', placeholder: 'Describe the image…',
-      gen: '⚡ Generate image', resultKind: 'image',
+      gen: 'Generate image', resultKind: 'image',
       templates: [
         { label: '🏋️ Gym shot', prompt: 'Bright modern gym interior, squat racks, natural light, clean and energetic, vertical' },
         { label: '⚡ £5 poster', prompt: 'Bold poster: "Any gym. £5/day." orange accents on dark background, high contrast, vertical' },
@@ -79,7 +79,7 @@
     {
       key: 'video', label: 'Video', icon: '🎬', api: '/api/squad-video',
       title: 'Create video', placeholder: 'Describe your gym video…',
-      gen: '⚡ Generate video', resultKind: 'video',
+      gen: 'Generate video', resultKind: 'video',
       note: 'Renders in ~1 min · 5 per day · then share straight to your socials',
       templates: [
         { label: '🏋️ Gym tour', prompt: 'Smooth cinematic walkthrough of a modern gym: squat racks, cardio zone, bright clean lighting, energetic people training, upbeat feel, vertical 9:16' },
@@ -99,7 +99,7 @@
     {
       key: 'audio', label: 'Audio', icon: '🎙️', api: '/api/squad-audio',
       title: 'Create audio', placeholder: 'What should the voice say?',
-      gen: '⚡ Generate audio', resultKind: 'audio',
+      gen: 'Generate audio', resultKind: 'audio',
       templates: [
         { label: '🎧 Promo read', prompt: 'Upbeat 15-second voiceover: any gym, five pounds a day, no membership, book in the ScanGym app' },
       ],
@@ -111,7 +111,7 @@
     {
       key: 'music', label: 'Music', icon: '🎵', api: '/api/squad-music',
       title: 'Create music', placeholder: 'Describe the track…',
-      gen: '⚡ Generate music', resultKind: 'audio',
+      gen: 'Generate music', resultKind: 'audio',
       templates: [
         { label: '🔥 Hype loop', prompt: 'High-energy gym workout loop, driving drums, confident, 30 seconds' },
       ],
@@ -127,7 +127,7 @@
          the model chip — the server prices and names them. */
       key: 'edit', label: 'Edit', icon: '🎞️', api: '/api/squad-edit',
       title: 'Edit video', placeholder: 'What should change in the clip?',
-      gen: '⚡ Edit video', resultKind: 'video', needsSource: true,
+      gen: 'Edit video', resultKind: 'video', needsSource: true,
       note: 'Pick a clip, say what to change · billed per second of the clip',
       templates: [
         { label: '📱 Make it vertical', prompt: 'Reframe to 9:16 for Reels, keep the person centred' },
@@ -145,7 +145,7 @@
     {
       key: 'twin', label: 'Twin', icon: '🧍', api: null,
       title: 'Create twin', placeholder: 'What should your twin say?',
-      gen: '⚡ Generate twin', resultKind: 'video',
+      gen: 'Generate twin', resultKind: 'video',
       templates: [
         { label: '👋 Intro', prompt: 'Friendly piece to camera introducing ScanGym: any gym, £5 a day, no membership' },
       ],
@@ -157,7 +157,7 @@
     {
       key: 'clipping', label: 'Clipping', icon: '✂️', api: null,
       title: 'Create clips', placeholder: 'Paste a video link to clip…',
-      gen: '⚡ Generate clips', resultKind: 'video',
+      gen: 'Generate clips', resultKind: 'video',
       templates: [
         { label: '📈 Best moments', prompt: 'Find the highest-energy 30 seconds and cut it vertical with captions' },
       ],
@@ -169,7 +169,7 @@
     {
       key: 'ugc', label: 'UGC', icon: '📱', api: null,
       title: 'Create UGC', placeholder: 'Describe the UGC ad…',
-      gen: '⚡ Generate UGC', resultKind: 'video',
+      gen: 'Generate UGC', resultKind: 'video',
       templates: [
         { label: '🗣️ Testimonial', prompt: 'Selfie-style testimonial: someone trying three different gyms in one week with ScanGym, natural and unscripted' },
       ],
@@ -354,12 +354,57 @@
     /* Task 154 Create 10: the What next buttons fit on screen without sideways scrolling. */
     '.sv-next{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible !important;flex-wrap:wrap;}',
     '.sv-next .sv-mchip{min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;padding:9px 4px;}',
+    /* Owner 2026-10-02 "Create looks ugly": Higgsfield/YouTube look. Outline
+       icons, see-through chips (no blur: blur is the costliest paint on phones),
+       one row of tools, model cards with a preview, one bright Generate. */
+    '.sv-oi{width:16px;height:16px;flex:none;vertical-align:-3px;margin-right:6px;}',
+    '#' + SHEET_ID + ' .sv-chip,#' + SHEET_ID + ' .sv-mchip{display:inline-flex;align-items:center;background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.16) !important;color:#f1f3f6 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;box-shadow:none !important;border-radius:999px;font-weight:600;font-size:13px;padding:8px 13px;}',
+    '#' + SHEET_ID + ' .sv-ptools,#' + SHEET_ID + ' .sv-ptools-more{flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none;}',
+    '#' + SHEET_ID + ' .sv-ptools::-webkit-scrollbar,#' + SHEET_ID + ' .sv-mstrip::-webkit-scrollbar{display:none;}',
+    '#' + SHEET_ID + ' .sv-ptools>*,#' + SHEET_ID + ' .sv-ptools-more>*{flex:none;white-space:nowrap;}',
+    '#sv-model-pill{background:transparent !important;border:0 !important;border-radius:0 !important;padding:2px 2px 0 !important;font-size:12.5px !important;color:#9aa3b2 !important;}',
+    '#sv-model-pill b{color:#fff;font-weight:700;}',
+    '.sv-mstrip{gap:8px !important;padding:2px 0 4px !important;scroll-snap-type:x proximity;}',
+    '.sv-mstrip .sv-mchip[data-model]{flex:0 0 118px !important;width:118px !important;min-height:58px;display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:flex-end;white-space:normal !important;line-height:1.25;font-size:11.5px !important;font-weight:500 !important;padding:8px 9px !important;border-radius:14px !important;border:1px solid rgba(255,255,255,.14) !important;background:rgba(255,255,255,.05) !important;scroll-snap-align:start;overflow:hidden;text-align:left;}',
+    '.sv-mstrip .sv-mchip[data-model] b{display:block;font-size:12px;font-weight:800;color:#fff;}',
+    '.sv-mstrip .sv-mchip[data-model][style*="solid #fff"]{border:1.5px solid #FF6D00 !important;background:rgba(255,109,0,.12) !important;}',
+    '.sv-mstrip .sv-msample{width:100% !important;height:64px !important;margin:0 0 6px !important;border-radius:9px !important;}',
+    '#' + SHEET_ID + ' .sv-gen{height:54px;border-radius:999px;background:linear-gradient(135deg,#FF8A1F,#FF5A00) !important;color:#fff;font-weight:800;font-size:16px;letter-spacing:.2px;box-shadow:0 8px 24px rgba(255,109,0,.35) !important;transition:transform .08s ease;}',
+    '#' + SHEET_ID + ' .sv-gen:active{transform:scale(.98);}',
+    '#' + SHEET_ID + ' .sv-gen:disabled{background:rgba(255,255,255,.08) !important;color:rgba(255,255,255,.55);box-shadow:none !important;}',
+    '.sv-note{font-size:11.5px !important;color:#8b93a1 !important;line-height:1.45;text-align:center;}',
   ].join('');
 
+  /* Task 165/owner 2026-10-02 ("ugly Create", YouTube/Higgsfield screenshots):
+     buttons carry thin white outline icons, never colour emoji. Every chip
+     built through el() swaps its leading emoji for an outline SVG (or drops it). */
+  var OI = function (d) { return '<svg class="sv-oi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; };
+  var OUTLINE = {
+    '\u2728': OI('<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>'),
+    '\uD83D\uDD58': OI('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    '\uD83C\uDFA8': OI('<path d="M12 3a9 9 0 100 18c1 0 1.5-.8 1.5-1.6 0-1-.8-1.4-.8-2.4 0-1 .8-1.6 1.8-1.6H17a4 4 0 004-4c0-4.7-4-8.4-9-8.4z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'),
+    '\uD83C\uDFB2': OI('<path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>'),
+    '\uD83D\uDCCE': OI('<path d="M21 11l-8.5 8.5a5 5 0 01-7-7L14 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L15 7"/>'),
+    '\uD83D\uDDBC\uFE0F': OI('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>'),
+    '\uD83C\uDFC1': OI('<path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>'),
+    '\u21A9\uFE0F': OI('<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-4"/>'),
+    '\u22EF': OI('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'),
+    '\u2715': OI('<path d="M6 6l12 12M18 6L6 18"/>'),
+    '\uD83D\uDCCB': OI('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>'),
+    '\uD83D\uDCE4': OI('<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/>'),
+    '\u2699': OI('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'),
+    '\u26A1': OI('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>')
+  };
+  var EMOJI_LEAD = /^(?:[\u2190-\u2BFF\u2300-\u23FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDC00-\uDFFF])[\uFE0F\u200D]*(?:\uD83C[\uDFFB-\uDFFF])?\s*/;
+  function outlineIcon(html) {
+    if (typeof html !== 'string') return html;
+    for (var k in OUTLINE) if (html.indexOf(k) === 0) return OUTLINE[k] + '<span>' + html.slice(k.length).replace(/^[\uFE0F\s]+/, '') + '</span>';
+    return html.replace(EMOJI_LEAD, '');
+  }
   function el(tag, cls, html) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
-    if (html !== undefined) e.innerHTML = html;
+    if (html !== undefined) e.innerHTML = /(^|\s)sv-(chip|mchip)(\s|$)/.test(cls || '') ? outlineIcon(html) : html;
     return e;
   }
 
@@ -740,13 +785,13 @@
     enh.addEventListener('click', function () {
       var idea = ta.value.trim();
       if (idea.length < 2) { ta.focus(); ta.placeholder = 'Type a short idea, then tap \u2728 Enhance'; return; }
-      if (enh.dataset.busy) return; enh.dataset.busy = '1'; enh.textContent = '\u2728 Enhancing\u2026';
+      if (enh.dataset.busy) return; enh.dataset.busy = '1'; enh.innerHTML = outlineIcon('\u2728 Enhancing\u2026');
       fetch('/api/squad-image/enhance', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: idea, kind: mode.key === 'video' ? 'video' : (mode.key === 'image' ? 'image' : 'audio') }) })
         .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Could not enhance'); return j; }); })
         .then(function (j) { ta.dataset.before = idea; ta.value = j.prompt; undo.style.display = ''; })
-        .catch(function (e) { enh.textContent = '\u26A0\uFE0F ' + e.message; setTimeout(function () { enh.textContent = '\u2728 Enhance prompt'; }, 2200); })
-        .then(function () { delete enh.dataset.busy; if (/Enhancing/.test(enh.textContent)) enh.textContent = '\u2728 Enhance prompt'; });
+        .catch(function (e) { enh.textContent = '\u26A0\uFE0F ' + e.message; setTimeout(function () { enh.innerHTML = outlineIcon('\u2728 Enhance prompt'); }, 2200); })
+        .then(function () { delete enh.dataset.busy; if (/Enhancing/.test(enh.textContent)) enh.innerHTML = outlineIcon('\u2728 Enhance prompt'); });
     });
     var undo = el('div', 'sv-chip', '\u21A9\uFE0F Undo');
     undo.style.display = 'none';
@@ -807,7 +852,7 @@
     moreT.addEventListener('click', function () {
       var open = extra.style.display === 'flex';
       extra.style.display = open ? 'none' : 'flex';
-      moreT.textContent = open ? '\u22EF More' : '\u2715 Less';
+      moreT.innerHTML = outlineIcon(open ? '\u22EF More' : '\u2715 Less');
       if (open) { recBox.style.display = 'none'; styleBox.style.display = 'none'; }
     });
     tools.appendChild(enh); tools.appendChild(undo);
@@ -1354,7 +1399,7 @@
       bits.push('🔐 Sign in to create — your work and your credit live on your account');
     }
     if (quota && mode.note) bits.push(quota.remaining + ' of ' + quota.limit + ' ' + mode.key + ' runs left today');
-    n.innerHTML = bits.length ? bits.join(' · ') : (mode.note || '');
+    n.innerHTML = bits.length ? bits.map(function (b) { return String(b).replace(EMOJI_LEAD, ''); }).join(' · ') : (mode.note || '');
   }
 
   function closeSheet(fromPop) {

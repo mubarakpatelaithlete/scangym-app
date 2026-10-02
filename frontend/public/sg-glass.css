@@ -33,12 +33,11 @@
 .gd-pill,
 .sg-pass-chip,
 .sg-cal-quick-chip {
-  background: var(--sg-glass-bg) !important;
+  background: rgba(255, 255, 255, .07) !important;
   border: 1px solid var(--sg-glass-edge) !important;
-  -webkit-backdrop-filter: var(--sg-glass-blur);
-  backdrop-filter: var(--sg-glass-blur);
   color: #fff !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; /* speed: no blur on chips */
   transition: background .15s ease, transform .1s ease;
 }
 [data-shop-cat]:active, .sv-chip:active, .sv-mchip:active, .tt-chip:active,
@@ -82,7 +81,7 @@
 html:root {
   --sg-btn-bg: rgba(255, 255, 255, .08);
   --sg-btn-border-color: rgba(255, 255, 255, .24);
-  --sg-btn-blur: blur(14px) saturate(160%);
+  --sg-btn-blur: none; /* speed: see-through without the costly blur */
   --sg-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
 }
 html body #sg-reel-row-host .reel-actions,
@@ -116,9 +115,13 @@ html body #sg-reel-row-host .reel-actions .reel-action[data-action="like"].sg-on
 html body #sg-reel-row-host .reel-actions .reel-action[data-action="repost"].sg-on .icon svg path { stroke: #22c55e !important; }
 
 /* Round icon buttons and pills everywhere: see-through glass, white edge */
-.sg-row-btn, .sg-sheet-x, .sg-icon-btn, #reels-top-bar button, #reels-top-bar a {
+.sg-row-btn, .sg-icon-btn, #reels-search-button, #sg-hp-plus {
   background: rgba(255, 255, 255, .08) !important;
   border: 1px solid rgba(255, 255, 255, .24) !important;
-  -webkit-backdrop-filter: var(--sg-glass-blur); backdrop-filter: var(--sg-glass-blur);
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
 }
-#reels-top-bar svg, .sg-row-btn svg, .sg-icon-btn svg { fill: none !important; stroke: #fff !important; stroke-width: 1.7 !important; }
+/* Home top tabs (Stories / For You / Following): plain text like TikTok, no boxes */
+#reels-top-bar .reels-tab, #reels-top-bar [role="tab"], #reels-top-bar .sg-home-tab {
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+}
+#reels-search-button svg, .sg-row-btn svg, .sg-icon-btn svg { fill: none !important; stroke: #fff !important; stroke-width: 1.7 !important; }
