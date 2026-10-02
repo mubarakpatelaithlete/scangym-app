@@ -1859,16 +1859,44 @@
       var c = this;
       /* Task 110: no confirm, no page — one tap posts to your ScanGym profile and
          every linked account, with the name and email you are signed in with. */
-      toast('Posting\u2026', 'info', 2000);
+      /* Owner 2026-10-02: "Post does nothing / where does it go?" The toast hid
+         behind the sheet. Now the button itself says Posting…, and a card under
+         the buttons (TikTok Studio style) shows where it went with links. */
+      if (c.dataset.busy) return; c.dataset.busy = '1';
+      var label = c.innerHTML; c.innerHTML = outlineIcon('Posting\u2026'); c.style.opacity = '.7';
+      var card = row.parentNode && row.parentNode.querySelector('.sv-post-card');
+      if (!card) { card = el('div', 'sv-post-card'); row.after(card); }
+      card.style.cssText = 'margin:10px 0 4px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e5e7eb;font-size:13px;line-height:1.45;';
+      card.innerHTML = '<b style="color:#fff">Posting to ScanGym\u2026</b><div style="color:#9aa3b2;font-size:12px">Writing the title, caption and hashtags for you.</div>';
+      var done = function () { delete c.dataset.busy; c.innerHTML = label; c.style.opacity = ''; };
       fetch('/api/post-everywhere/post', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image', toScanGym: true, autoMeta: true, productId: (window._sgSoldFor && window._sgSoldFor[abs]) || null }) })
         .then(function (r) { if (r.status === 401) return Promise.reject(401); return r.json(); })
         .then(function (o) {
-          if (!o || !o.results) { toast((o && o.error) || 'Could not post right now.', 'error', 4000); return; }
-          var msg = o.results.map(function (x) { return (x.status === 'posted' ? '\u2705 ' : x.status === 'skipped' ? '\u23ED\uFE0F ' : '\u274C ') + x.appName; }).join('  ');
-          toast('Posted to ' + o.posted + '/' + o.results.length + ': ' + msg + (o.noSocials ? ' \u00b7 Link Instagram, YouTube, TikTok\u2026 once in Profile \u203a Connect to post everywhere' : ''), o.posted ? 'success' : 'error', 6500);
+          done();
+          if (!o || !o.results) { card.innerHTML = '<b style="color:#fca5a5">Could not post</b><div>' + ((o && o.error) || 'Try again in a minute.') + '</div>'; return; }
+          var sg = o.results.filter(function (x) { return x.app === 'scangym'; })[0] || {};
+          var others = o.results.filter(function (x) { return x.app !== 'scangym'; });
+          var title = (o.meta && o.meta.title) || '';
+          var tags = (o.meta && o.meta.hashtags || []).join(' ');
+          var ok = sg.status === 'posted' || (sg.status === 'skipped' && sg.id);
+          var watch = sg.id ? '/reels?v=' + sg.id : '/reels';
+          card.innerHTML = (ok
+              ? '<b style="color:#4ade80">\u2713 ' + (sg.status === 'posted' ? 'Posted' : 'Already posted') + ' on ScanGym Home</b>'
+              : '<b style="color:#fca5a5">ScanGym: ' + (sg.note || 'not posted') + '</b>')
+            + (title ? '<div style="color:#fff;margin-top:4px">' + title.replace(/</g, '&lt;') + '</div>' : '')
+            + (tags ? '<div style="color:#9aa3b2;font-size:12px">' + tags.replace(/</g, '&lt;') + '</div>' : '')
+            + (others.length ? '<div style="color:#9aa3b2;font-size:12px;margin-top:4px">' + others.map(function (x) { return x.appName + ': ' + x.status; }).join(' \u00b7 ') + '</div>'
+              : '<div style="color:#9aa3b2;font-size:12px;margin-top:4px">Link Instagram, TikTok or YouTube once in Profile to post there too.</div>')
+            + '<div style="display:flex;gap:8px;margin-top:10px">'
+            + '<a href="' + watch + '" style="flex:1;text-align:center;padding:10px;border-radius:999px;background:linear-gradient(135deg,#FF8A1F,#FF5A00);color:#fff;font-weight:800;text-decoration:none">Watch on Home</a>'
+            + '<a href="/more/profile" style="flex:1;text-align:center;padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:700;text-decoration:none">My posts</a></div>';
         })
-        .catch(function (e) { if (e === 401) { if (window.sgAskSignIn) window.sgAskSignIn('post'); else toast('Sign in to post', 'info', 3000); } else page(); });
+        .catch(function (e) {
+          done();
+          if (e === 401) { card.innerHTML = '<b>Sign in to post</b>'; if (window.sgAskSignIn) window.sgAskSignIn('post'); }
+          else { card.innerHTML = '<b style="color:#fca5a5">Network problem</b><div>Opening the post page instead.</div>'; page(); }
+        });
     });
     chip('✏️ Edit', function () {
       if (isVid) { window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs }); return; }
