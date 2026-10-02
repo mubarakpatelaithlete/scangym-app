@@ -151,4 +151,21 @@ router.post('/follow', authenticateUser, async (req, res) => {
   }
 });
 
+/* Task 154 Profile 1: follower count for the Profile top section. */
+router.get('/me-stats', authenticateUser, async (req, res) => {
+  try {
+    const u = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [req.user.id]);
+    const h = creatorKey(u.rows[0] && u.rows[0].referral_handle);
+    let followers = 0;
+    if (h) {
+      const c = await pool.query('SELECT COUNT(DISTINCT user_id)::int AS n FROM reel_follows WHERE creator = ANY($1)', [[h, '@' + h]]);
+      followers = (c.rows[0] && c.rows[0].n) || 0;
+    }
+    res.json({ handle: h, followers });
+  } catch (e) {
+    console.error('[reel-social] me-stats:', e.message);
+    res.json({ handle: null, followers: 0, degraded: true });
+  }
+});
+
 module.exports = router;

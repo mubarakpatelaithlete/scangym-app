@@ -617,6 +617,9 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
   try {
     customer = await mem.resolveCustomer(userId, meta, deps);
     key = mem.memoryKey(userId, customer);
+    /* Task 154 Chats 10 / item 22: a linked ScanGym ID already has an email —
+       WhatsApp (and every linked chat) must never ask for it again. */
+    if (customer && customer.email && !session.savedEmail) session.savedEmail = customer.email;
     if (!session.memLoaded) {
       session.memLoaded = true;
       session.memory = await mem.loadMemory(key, deps);

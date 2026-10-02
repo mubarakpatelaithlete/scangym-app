@@ -140,6 +140,7 @@ const FEED_CACHE_TTL = 60_000; // 60 seconds
 function invalidateFeedCache() {
   _feedCache = null;
   _feedCacheTime = 0;
+  _geoCache.reels = null;
 }
 
 /**
@@ -1259,6 +1260,7 @@ router.post('/ai-enhance', express.json(), async (req, res) => {
 
 // ═══ #9: Geo-language reel recommendations ═══
 // Returns reels filtered by user's detected language/country
+const _geoCache = { reels: null, at: 0 };
 router.get('/geo-feed', async (req, res) => {
   // FIX (Task 31): the old query referenced non-existent columns (status/language/
   // country/views — the real column is `active`), so this always returned empty and
@@ -1269,6 +1271,13 @@ router.get('/geo-feed', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 50);
   const offset = parseInt(req.query.offset) || 0;
   try {
+    /* Task 154 Home 1: the whole interleaved list is the same for everyone —
+       cache it 60s instead of rebuilding it (≈2s) on every first open. */
+    if (_geoCache.reels && Date.now() - _geoCache.at < 60000) {
+      const r0 = _geoCache.reels;
+      res.set('Cache-Control', 'public, max-age=30');
+      return res.json({ reels: r0.slice(Math.max(0, offset), offset + limit), language: lang, country, total: r0.length });
+    }
     const catalog = await loadCatalogFromDB();
 
     // The reels player asks THIS endpoint first and only falls back to /feed if
@@ -1286,6 +1295,7 @@ router.get('/geo-feed', async (req, res) => {
       console.warn('[geo-feed] social reel injection failed:', socialErr.message);
     }
     reels = spaceAds(reels, AD_EVERY_NTH);
+    if (reels.length) { _geoCache.reels = reels; _geoCache.at = Date.now(); }
 
     const total = reels.length;
     const slice = reels.slice(offset, offset + limit);

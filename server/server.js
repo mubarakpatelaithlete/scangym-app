@@ -710,6 +710,7 @@ if (fs.existsSync(FRONTEND_DIR)) {
     return feedData;
   }
 
+  const _ssrFeed = { text: null, at: 0, busy: null };
   async function serveReelsWithPrefetch(req, res) {
     // Allow browser to serve stale HTML while revalidating in background
     res.setHeader('Cache-Control', 'no-cache, stale-while-revalidate=30');
@@ -718,14 +719,24 @@ if (fs.existsSync(FRONTEND_DIR)) {
     try {
       // PERF: Only inject first 15 videos (~4-6KB slimmed) instead of all 115.
       // Client loads the rest lazily after first paint.
+      /* Task 154 Home 1 (2026-10-02): the live /feed took >400ms, so SSR timed
+         out and the phone waited ~2s for geo-feed before the first video
+         (measured 3.5s). Serve the last good feed at once and refresh it in the
+         background, so the first video starts during HTML parse. */
       const feedUrl = `http://127.0.0.1:${PORT}/api/reels/feed?limit=15&offset=0&shuffle=true`;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 400);
-      const feedRes = await fetch(feedUrl, { signal: controller.signal });
-      clearTimeout(timeout);
+      const refresh = () => {
+        if (_ssrFeed.busy) return _ssrFeed.busy;
+        _ssrFeed.busy = fetch(feedUrl).then((r) => (r.ok ? r.text() : null))
+          .then((t) => { if (t) { const d = JSON.parse(t); if (d && d.videos && d.videos.length) { _ssrFeed.text = t; _ssrFeed.at = Date.now(); } } })
+          .catch(() => {}).finally(() => { _ssrFeed.busy = null; });
+        return _ssrFeed.busy;
+      };
+      if (!_ssrFeed.text) {
+        await Promise.race([refresh(), new Promise((r) => setTimeout(r, 400))]);
+      } else if (Date.now() - _ssrFeed.at > 60000) refresh();
 
-      if (feedRes.ok) {
-        const feedData = JSON.parse(await feedRes.text());
+      if (_ssrFeed.text) {
+        const feedData = JSON.parse(_ssrFeed.text);
         let html = getReelsHtml();
 
         // PERF: Slim feed — strip fields the player doesn't need (saves ~40% JSON)

@@ -1141,6 +1141,21 @@
     return m || 'Something went wrong. Try again.';
   }
 
+  /* Task 157 B3 (63): the result may land after the sheet was closed. */
+  function notifyDone(mode, out) {
+    var visible = out && out.isConnected && !document.hidden;
+    if (visible) return;
+    var label = (mode && mode.label) || 'creation';
+    try {
+      if (document.hidden && window.Notification && Notification.permission === 'granted') {
+        var n = new Notification('ScanGym: your ' + label + ' is ready', { body: 'Tap to open My Creations', icon: '/favicon.png' });
+        n.onclick = function () { window.focus(); location.href = '/create'; };
+        return;
+      }
+    } catch (e) {}
+    if (typeof window.sgToast === 'function') window.sgToast('\u2705 Your ' + label + ' is ready \u2014 open Create \u2192 Library', 'success', 6000);
+  }
+
   /* Task 157 B3: a failed run offers one-tap Try again (Higgsfield's retry). */
   function addRetry(out, fn) {
     var b = el('button', 'sv-chip', '\uD83D\uDD01 Try again');
@@ -1240,7 +1255,8 @@
     var wasOpen = !!(ov || sh);
     if (ov) ov.remove();
     if (sh) sh.remove();
-    if (job && job.timer) { clearInterval(job.timer); job = null; }
+    if (job && job.timer && !job.bg) clearInterval(job.timer); // Task 157 B3: "Keep browsing" keeps polling
+    job = null;
     stopPreview();
     /* Closing by ✕ or backdrop has to consume the entry we pushed, or the next
        back press would do nothing at all. When the pop *is* what closed us, the
@@ -1366,16 +1382,28 @@
         var slow = etaS && etaS >= 60;
         out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span id="sv-prog-t">' +
           (etaS ? 'Rendering… ' + phrase(etaS) : 'Rendering…') + '</span></div>' +
+          /* Task 157 B3 (61/62/63/68): progress bar, keep working while it renders, ping when done. */
+          '<div class="sv-bar" style="height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:8px"><i id="sv-prog-bar" style="display:block;height:100%;width:3%;background:#FF6D00;transition:width .8s"></i></div>' +
+          '<button type="button" id="sv-bg" class="sv-chip" style="margin-top:8px">\u2B07 Keep browsing \u2014 I\u2019ll tell you when it\u2019s ready</button>' +
           (slow ? '<div class="sv-note" style="margin-top:6px">You can close this — we\'ll email you the moment it lands, and it will be waiting in My Creations.</div>' : '');
+        var bgBtn = document.getElementById('sv-bg');
+        if (bgBtn) bgBtn.onclick = function () {
+          try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+          if (job) job.bg = true;
+          closeSheet();
+          if (typeof window.sgToast === 'function') window.sgToast('Rendering in the background \u2014 it lands in My Creations', 'info', 3000);
+        };
         job = { id: res.d.jobId };
-        job.timer = setInterval(function () {
-          fetch(mode.api + '/status/' + job.id).then(function (r) { return r.json(); }).then(function (st) {
+        var J = job;
+        J.timer = setInterval(function () {
+          fetch(mode.api + '/status/' + J.id).then(function (r) { return r.json(); }).then(function (st) {
             if (st.status === 'done') {
-              clearInterval(job.timer);
-              showResult(out, st.videoUrl || st.imageUrl || st.audioUrl || st.url, mode, job.id);
+              clearInterval(J.timer);
+              showResult(out, st.videoUrl || st.imageUrl || st.audioUrl || st.url, mode, J.id);
+              notifyDone(mode, out);
               gen.disabled = false;
             } else if (st.status === 'error') {
-              clearInterval(job.timer);
+              clearInterval(J.timer);
               out.innerHTML = '<div class="sv-warn">❌ ' + friendlyError(st.error || 'Generation failed.') + '</div>';
               addRetry(out, function () { startJob(sh, ta, gen, mode); });
               gen.disabled = false;
@@ -1385,12 +1413,14 @@
                 var elapsed = Math.round((Date.now() - start) / 1000);
                 var left = st.remainingSeconds != null ? st.remainingSeconds
                   : (etaS ? Math.max(0, etaS - elapsed) : null);
+                var bar = document.getElementById('sv-prog-bar');
+                if (bar) bar.style.width = Math.min(95, Math.max(3, left != null ? Math.round(100 * elapsed / Math.max(1, elapsed + left)) : 50)) + '%';
                 t.textContent = 'Rendering… ' + elapsed + 's · ' +
                   (left ? phrase(left) + ' to go' : 'any moment now') +
                   (st.queuePosition ? ' · queue position ' + st.queuePosition : '');
               }
               if (Date.now() - start > 600000) { // 10 min: measured worst case is under 4
-                clearInterval(job.timer);
+                clearInterval(J.timer);
                 out.innerHTML = '<div class="sv-warn">⏳ Still rendering server-side — reopen Create in a minute.</div>';
                 gen.disabled = false;
               }
