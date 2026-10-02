@@ -246,6 +246,23 @@ router.get('/apps', (req, res) => {
 });
 
 router.use(authenticateUser);
+
+/* Task 160/161 (owner, 2026-10-02): "is it in my studio?" — the videos you
+   posted to ScanGym (linked through your own Create job), each with the Shop
+   product it sells. Works even when no social posting provider is set up. */
+router.get('/mine', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT vc.id, vc.name, vc.url, vc.active, vc.shop_product_id, sp.title AS product_title, sp.price_pence AS product_price
+         FROM video_catalog vc
+         JOIN squad_video_jobs j ON vc.cdn_key = 'creation:' || j.id
+         LEFT JOIN shop_products sp ON sp.id = vc.shop_product_id
+        WHERE j.user_id = $1 AND vc.source = 'creation'
+        ORDER BY vc.id DESC LIMIT 50`, [String(req.user.id)]);
+    res.json({ posts: rows.map(r => ({ id: r.id, title: r.name, url: r.url, live: r.active !== false,
+      product: r.shop_product_id ? { id: r.shop_product_id, title: r.product_title, price: r.product_price != null ? '£' + (r.product_price / 100).toFixed(2) : '' } : null })) });
+  } catch (e) { res.status(500).json({ error: 'Could not load your posts' }); }
+});
 router.use((req, res, next) => configured() ? next() : res.status(503).json({ error: 'Post everywhere is not set up yet' }));
 
 router.get('/accounts', async (req, res) => {

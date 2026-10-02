@@ -639,6 +639,18 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
       }
     }
   } catch (e) { console.error('[Memory] wrapper setup failed:', e.message); }
+  /* Task 159/164: "@neon-gym but at sunrise" builds on that past creation. */
+  try {
+    if (customer && customer.userId && /@[a-z0-9]/i.test(String(text || '')) && mem.expandMentions) {
+      let items = session.libItems || [];
+      if (items.length < 30) {
+        const lib = await (deps.libraryFor || require('../lib/gen-jobs').libraryFor)(customer.userId, { limit: 40 }).catch(() => null);
+        if (lib && lib.items) items = lib.items;
+      }
+      const x = mem.expandMentions(text, items);
+      if (x.used.length) text = x.text;
+    }
+  } catch (e) { console.error('[Memory] @mention failed:', e.message); }
 
   let result = null;
   let create = null;

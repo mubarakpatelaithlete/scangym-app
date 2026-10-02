@@ -39,6 +39,9 @@ const ALLOWED_TYPES = new Set([
   'image/jpeg',
   'audio/mpeg',
   'video/mp4',
+  'text/plain',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-powerpoint',
 ]);
 
 const storage = multer.diskStorage({
@@ -60,7 +63,7 @@ const upload = multer({
   },
 });
 
-const CATEGORIES = ['Prompt packs', 'Workout plans', 'Meal guides', 'Video programs', 'Templates'];
+const CATEGORIES = ['Prompt packs', 'Workout plans', 'Meal guides', 'Video programs', 'Templates', 'Presentations', 'Affiliate links'];
 
 function publicProduct(row) {
   return {
@@ -255,6 +258,34 @@ router.post('/products', authenticateUser, upload.single('file'), async (req, re
     const handle = await ownHandle(req.user.id);
     if (!handle) {
       return res.status(403).json({ error: 'You need a ScanSquad creator handle before you can sell', code: 'no_creator_handle' });
+    }
+    /* Task 161 (owner, 2026-10-02): "digital product is prompt, PDF,
+       presentation, affiliate link". Prompt and affiliate link are text the
+       buyer gets as a .txt file; a prompt sold from a Create result defaults to
+       the exact prompt that made it. PDF / presentation are uploaded files. */
+    const kind = String((req.body || {}).kind || '');
+    if (!req.file && (kind === 'prompt' || kind === 'affiliate')) {
+      let text = String((req.body || {}).text || '').trim().slice(0, 20000);
+      const src = String((req.body || {}).sourceUrl || '');
+      if (kind === 'prompt' && !text && src) {
+        const { rows: [j] } = await pool.query(
+          "SELECT prompt FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1", [req.user.id, src]);
+        text = (j && j.prompt) ? String(j.prompt).trim() : '';
+      }
+      if (kind === 'affiliate') {
+        let u; try { u = new URL(text); } catch (e) { u = null; }
+        if (!u || !/^https?:$/.test(u.protocol)) return res.status(400).json({ error: 'Paste the full affiliate link (https://…)' });
+      }
+      if (!text) return res.status(400).json({ error: kind === 'prompt' ? 'Write the prompt buyers get' : 'Paste the affiliate link' });
+      const body = kind === 'prompt'
+        ? 'ScanGym prompt\n\n' + text + (src ? '\n\nMade with it: ' + src : '') + '\n\nPaste it into ScanGym Create (scangym.com/create) or any AI image/video tool.\n'
+        : 'ScanGym affiliate link\n\n' + text + '\n\nOpen the link to get the offer.\n';
+      if (!fs.existsSync(SHOP_DIR)) fs.mkdirSync(SHOP_DIR, { recursive: true });
+      const name = kind === 'prompt' ? 'scangym-prompt.txt' : 'affiliate-link.txt';
+      const dest = path.join(SHOP_DIR, `${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${name}`);
+      fs.writeFileSync(dest, body);
+      req.file = { path: dest, originalname: name, size: Buffer.byteLength(body), mimetype: 'text/plain' };
+      if (!req.body.category) req.body.category = kind === 'prompt' ? 'Prompt packs' : 'Affiliate links';
     }
     // Task 101: "Sell" under a Create result lists that creation directly —
     // no download-then-upload. Only a finished job of this user's own.

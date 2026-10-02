@@ -494,6 +494,72 @@
     f.click();
   }
 
+  /* Task 159/164 (owner, 2026-10-02): type @ in the prompt to pick one of your
+     past creations from your shared library. The pick becomes the reference
+     (image) and its prompt is folded into the new one, so "@neon gym at
+     sunrise" builds on what you already made without explaining it again. */
+  var _lib = null;
+  function libLoad() {
+    if (_lib) return Promise.resolve(_lib);
+    return fetch('/api/squad-create/library?limit=40', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : { items: [] }; })
+      .then(function (d) { _lib = (d.items || []).filter(function (x) { return x.status === 'done' && x.url && x.prompt; }); return _lib; })
+      .catch(function () { return []; });
+  }
+  function mentionLabel(p) {
+    return String(p || '').replace(/[|].*$/, '').replace(/[^a-zA-Z0-9 ]+/g, ' ').trim().split(/\s+/).slice(0, 3).join('-').toLowerCase() || 'creation';
+  }
+  function expandMentions(prompt, mode) {
+    var ms = state[mode.key].__mentions || [];
+    var out = prompt;
+    ms.forEach(function (m) {
+      if (out.indexOf('@' + m.label) < 0) return;
+      out = out.replace('@' + m.label, '(my earlier creation: ' + String(m.prompt).replace(/\s*\|.*$/, '').slice(0, 300) + ')');
+    });
+    return out;
+  }
+  function mentions(sh, ta, mode) {
+    var box = el('div', 'sv-mention');
+    box.style.cssText = 'display:none;flex-direction:column;gap:4px;margin:4px 0;max-height:240px;overflow-y:auto;border-radius:14px;padding:6px;background:rgba(18,20,29,.72);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)';
+    sh.appendChild(box);
+    function q() { var m = ta.value.slice(0, ta.selectionStart).match(/(^|\s)@([\w-]*)$/); return m ? m[2].toLowerCase() : null; }
+    function pick(it) {
+      var label = mentionLabel(it.prompt);
+      var cur = ta.selectionStart, before = ta.value.slice(0, cur).replace(/@[\w-]*$/, '@' + label + ' ');
+      ta.value = before + ta.value.slice(cur);
+      ta.focus(); ta.selectionStart = ta.selectionEnd = before.length;
+      var st = state[mode.key];
+      st.__mentions = (st.__mentions || []).filter(function (m) { return m.label !== label; }).concat([{ label: label, prompt: it.prompt, url: it.url, kind: it.kind }]);
+      if (mode.key === 'image' && it.kind === 'image') { st.__ref = it.url; renderFrames(sh, mode); }
+      box.style.display = 'none';
+      toast('\uD83D\uDCDA Building on your earlier creation' + (mode.key === 'image' && it.kind === 'image' ? ' (added as reference)' : ''), 'info', 2500);
+    }
+    ta.addEventListener('input', function () {
+      var k = q();
+      if (k == null) { box.style.display = 'none'; return; }
+      libLoad().then(function (items) {
+        var words = k.split('-').filter(Boolean);
+        var list = items.filter(function (it) { var p = it.prompt.toLowerCase(); return words.every(function (w) { return p.indexOf(w) >= 0; }); }).slice(0, 8);
+        box.innerHTML = '';
+        if (!list.length) {
+          box.appendChild(el('div', '', items.length ? 'No creation matches \u201c' + k + '\u201d' : 'Your library is empty \u2014 make something first'));
+          box.firstChild.style.cssText = 'font-size:12px;color:rgba(255,255,255,.6);padding:6px';
+        }
+        list.forEach(function (it) {
+          var r = el('div', 'sv-mention-i');
+          r.setAttribute('role', 'button');
+          r.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px;border-radius:10px;cursor:pointer';
+          r.innerHTML = (it.kind === 'video' ? '<video muted playsinline preload="metadata" src="' + it.url + '#t=0.1" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none"></video>'
+            : '<img alt="" src="' + it.url + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">')
+            + '<span style="min-width:0;font-size:12px;color:#fff;line-height:1.3"><b>@' + mentionLabel(it.prompt) + '</b><br><span style="color:rgba(255,255,255,.6)">' + String(it.prompt).slice(0, 70).replace(/[<>&]/g, '') + '</span></span>';
+          r.addEventListener('mousedown', function (e) { e.preventDefault(); pick(it); });
+          box.appendChild(r);
+        });
+        box.style.display = 'flex';
+      });
+    });
+    ta.addEventListener('blur', function () { setTimeout(function () { box.style.display = 'none'; }, 150); });
+  }
+
   /* Higgsfield-style slots under the prompt: Reference (image), Start + End frame (video). */
   function renderFrames(sh, mode) {
     var box = sh.querySelector('#sv-frames');
@@ -594,9 +660,10 @@
     sh.appendChild(chips);
 
     var ta = el('textarea', 'sv-prompt');
-    ta.placeholder = mode.placeholder;
+    ta.placeholder = mode.placeholder + ' \u00b7 Type @ to build on a past creation';
     if (state[mode.key].__prompt) { ta.value = state[mode.key].__prompt; state[mode.key].__prompt = ''; } // back from "Change model": the idea survives the trip
     sh.appendChild(ta);
+    mentions(sh, ta, mode);
     /* Batch 5 (Tasks 112/120): Higgsfield-style prompt counter + one-tap Clear. */
     var cnt = el('div', 'sv-count');
     cnt.id = 'sv-count';
@@ -749,6 +816,47 @@
     sh.appendChild(extra);
     sh.appendChild(recBox);
     sh.appendChild(styleBox);
+    /* Task 157 B4 (31–34, 36): Higgsfield's one-tap effects. Camera moves and
+       viral effects add one line to the prompt (tap again to swap); gym ad
+       templates fill the whole prompt. Always visible for video, one row. */
+    if (mode.key === 'video') {
+      var FX = [['\uD83C\uDFA5 Dolly in', 'camera: slow dolly in towards the subject'], ['\uD83C\uDFD7\uFE0F Crane up', 'camera: crane shot rising up and revealing the whole scene'],
+        ['\uD83D\uDD04 Orbit', 'camera: smooth 360 orbit around the subject'], ['\uD83D\uDE81 FPV drone', 'camera: fast FPV drone flythrough'],
+        ['\uD83D\uDCA8 Whip pan', 'camera: whip pan transition'], ['\uD83D\uDC22 Slow-mo', 'effect: dramatic 120fps slow motion'],
+        ['\uD83D\uDCA5 Explosion', 'effect: cinematic explosion of chalk dust and sparks behind the subject'], ['\u26A1 Speed ramp', 'effect: speed ramp, slow to fast on the beat'],
+        ['\uD83C\uDF00 Morph', 'effect: seamless morph transition into the next scene'], ['\uD83D\uDD25 Neon glow', 'effect: neon light trails following the movement']];
+      var TPL = [['\uD83C\uDFCB\uFE0F Gym tour', 'Cinematic tour of a modern gym: FPV drone glides past racks, cardio and the free-weights area, warm lighting, energetic, 9:16'],
+        ['\uD83D\uDCAA Transformation', 'Before and after fitness transformation of the same person, split moment with a flash transition, motivational, 9:16'],
+        ['\uD83D\uDCE3 Promo', 'Bold promo ad: athlete finishes a heavy lift, text space at the top, \u00a35 day pass vibe, punchy cuts, 9:16'],
+        ['\uD83E\uDDD8 Class', 'Group fitness class in full swing, instructor shouting, people jumping in sync, colourful lights, 9:16'],
+        ['\uD83C\uDF89 Opening', 'Grand opening of a new gym: ribbon cut, confetti, crowd cheering, camera crane up over the entrance, 9:16']];
+      var fx = el('div', 'sv-row sv-fx');
+      fx.setAttribute('aria-label', 'Effects');
+      fx.style.cssText = 'display:flex;gap:6px;overflow-x:auto;margin:6px 0 2px;scrollbar-width:none;flex-wrap:nowrap';
+      var lab = el('div', 'sv-fx-l', '\uD83D\uDD25 Effects');
+      lab.style.cssText = 'flex:none;align-self:center;font-size:11px;font-weight:800;color:rgba(255,255,255,.55);padding-right:2px';
+      fx.appendChild(lab);
+      FX.forEach(function (f) {
+        var c = el('div', 'sv-chip', f[0]);
+        c.style.flex = 'none';
+        c.addEventListener('click', function () {
+          var key = f[1].split(':')[0];
+          var re = new RegExp('\\s*\\|\\s*' + key + ':[^|]*', 'i');
+          var base = ta.value.replace(re, '').trim();
+          ta.value = (base ? base + ' | ' : '') + f[1];
+          fx.querySelectorAll('.sv-chip').forEach(function (o) { if (o.dataset.k === key) o.classList.remove('on'); });
+          c.dataset.k = key; c.classList.add('on');
+        });
+        fx.appendChild(c);
+      });
+      TPL.forEach(function (t) {
+        var c = el('div', 'sv-chip', t[0]);
+        c.style.flex = 'none';
+        c.addEventListener('click', function () { ta.value = t[1]; ta.focus(); });
+        fx.appendChild(c);
+      });
+      sh.appendChild(fx);
+    }
     if (mode.key === 'video') {
       var negIn = document.createElement('input');
       negIn.id = 'sv-neg'; negIn.maxLength = 300;
@@ -1304,7 +1412,7 @@
     var out = sh.querySelector('#sv-out');
     out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span>Sending…</span></div>';
 
-    var body = { prompt: prompt };
+    var body = { prompt: expandMentions(prompt, mode) };
     rememberPrompt(mode.key, prompt);
     if (sourceUrl) body.videoUrl = sourceUrl;
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
