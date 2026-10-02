@@ -602,7 +602,8 @@
         font-variant-numeric:tabular-nums;
       }
       .swipe-hint{
-        position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+        /* Task 156: sat on top of the caption/sound line; mid-screen keeps it clear of the text. */
+        position:fixed;top:56%;left:50%;transform:translateX(-50%);
         z-index:35;display:flex;flex-direction:column;align-items:center;
         gap:4px;pointer-events:none;
         animation:hintBounce 1.8s ease-in-out infinite;
@@ -2810,7 +2811,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         for(var i = fromIndex + 1; i <= fromIndex + prefetchCount && i < allVideos.length; i++){
           // OPTIMIZATION #1: Prefetch the quality variant matching current connection
           var url = resolveVideoUrl(allVideos[i]);
-          if(!url || prefetchedUrls[url]) continue;
+          // Task 156: YouTube/TikTok/Instagram links are pages, not media files — fetching them only burns data and fails CORS.
+          if(!url || prefetchedUrls[url] || /youtube\.com|youtu\.be|tiktok\.com|instagram\.com/i.test(url)) continue;
           prefetchedUrls[url] = true;
           urls.push(url);
         }
@@ -4250,7 +4252,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         for(var i = centerIndex + 1; i <= centerIndex + PREFETCH_AHEAD && i < allVideos.length; i++){
           if(activeAbortControllers[i]) continue; // already fetching
           var url = resolveVideoUrl(allVideos[i]);
-          if(!url || prefetchedUrls[url]) continue;
+          // Task 156: YouTube/TikTok/Instagram links are pages, not media files — fetching them only burns data and fails CORS.
+          if(!url || prefetchedUrls[url] || /youtube\.com|youtu\.be|tiktok\.com|instagram\.com/i.test(url)) continue;
           prefetchedUrls[url] = true;
 
           var controller = new AbortController();
