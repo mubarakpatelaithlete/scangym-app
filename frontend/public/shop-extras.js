@@ -18,9 +18,29 @@
           + '<span style="color:rgba(255,255,255,.55);font-size:11px;font-weight:500">' + c.n + ' \u00b7 ' + c.sold + ' sold</span></button>';
       }).join('') + '</div></div>';
   }
+  /* 2. Batch 5: \uD83C\uDFF7 Deals under \u00a35 (Amazon "Deals" row). */
+  function deals(items) {
+    return items.filter(function (x) { return x.pricePence > 0 && x.pricePence <= 500; })
+      .sort(function (a, b) { return a.pricePence - b.pricePence; }).slice(0, 12);
+  }
+  function dealsHtml(list) {
+    return '<div id="sg-shop-deals" style="margin:0 0 14px"><p style="margin:0 0 8px;font-size:15px;font-weight:800">\uD83C\uDFF7\uFE0F Deals under \u00a35</p>'
+      + '<div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none">' + list.map(function (x) {
+        return '<button type="button" data-id="' + esc(x.id) + '" style="flex:none;width:120px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px;background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:700;cursor:pointer;text-align:left">'
+          + '<span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.title || x.name || 'Product') + '</span>'
+          + '<span style="color:#FF6D00;font-size:13px;font-weight:900">\u00a3' + (x.pricePence / 100).toFixed(2) + '</span></button>';
+      }).join('') + '</div></div>';
+  }
   function after() {
     var st = window._sgShopState, box = document.getElementById('sg-digital-shop-results');
     if (!st || !box || st.q || st.category !== 'All' || document.getElementById('sg-shop-top')) return;
+    var dl = deals(st.products || []);
+    if (dl.length >= 2 && !document.getElementById('sg-shop-deals')) {
+      box.insertAdjacentHTML('afterbegin', dealsHtml(dl));
+      Array.prototype.forEach.call(box.querySelectorAll('#sg-shop-deals [data-id]'), function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-id'), x = dl.filter(function (p) { return String(p.id) === id; })[0]; if (x && window._sgShopOpen) window._sgShopOpen(x.id); });
+      });
+    }
     var list = topCreators(st.products || []);
     if (list.length < 2) return;
     box.insertAdjacentHTML('afterbegin', rowHtml(list));
@@ -37,5 +57,5 @@
     return true;
   }
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
-  window._sgShopExtras = { topCreators: topCreators };
+  window._sgShopExtras = { topCreators: topCreators, deals: deals };
 })();

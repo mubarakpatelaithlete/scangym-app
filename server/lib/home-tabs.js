@@ -58,11 +58,16 @@ function youtubeParams({ query, live, lat, lng, regionCode, pageToken }) {
   return p;
 }
 
+/** YouTube titles arrive HTML-encoded (&amp; &#39;) — decode for display. */
+function decodeEntities(t) {
+  return String(t || '').replace(/&(amp|lt|gt|quot|#39|#x27|apos);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'", apos: "'" }[k]));
+}
+
 function toRow(item, query, category, live) {
   const id = item.id.videoId;
   return {
     external_id: `yt_${id}`,
-    title: item.snippet.title,
+    title: decodeEntities(item.snippet.title),
     author_name: item.snippet.channelTitle,
     author_url: `https://www.youtube.com/channel/${item.snippet.channelId}`,
     thumbnail_url: (item.snippet.thumbnails && (item.snippet.thumbnails.high || item.snippet.thumbnails.medium || {}).url) || null,
@@ -121,9 +126,9 @@ async function fetchInto({ cacheKey, hours, query, live, lat, lng, regionCode, c
 /** social_reels rows → the slide shape the Home player already renders (type 'social'). */
 function toSlide(r) {
   return {
-    id: `social_${r.id}`, name: r.title || '', category: r.category, source: 'youtube', type: 'social',
+    id: `social_${r.id}`, name: decodeEntities(r.title), category: r.category, source: 'youtube', type: 'social',
     externalId: r.external_id, url: r.video_url, thumb: r.thumbnail_url, posterUrl: r.thumbnail_url,
-    author: r.author_name || '', authorUrl: r.author_url || '', orientation: 'vertical',
+    author: decodeEntities(r.author_name), authorUrl: r.author_url || '', orientation: 'vertical',
     live: r.category === tabCategory('live'),
   };
 }
@@ -187,4 +192,4 @@ async function buildTab(key, { all = [], perf = new Map(), follows = null, lat, 
   return { tab: key, videos, message: videos.length ? null : `Nothing in ${tab.label} right now — check back soon.` };
 }
 
-module.exports = { TABS, TAB_BY_KEY, buildTab, tabCategory, creatorKeyOf, youtubeParams, cell, fetchInto };
+module.exports = { decodeEntities, TABS, TAB_BY_KEY, buildTab, tabCategory, creatorKeyOf, youtubeParams, cell, fetchInto };

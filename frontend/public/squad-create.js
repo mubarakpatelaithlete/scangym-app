@@ -517,6 +517,17 @@
     ta.placeholder = mode.placeholder;
     if (state[mode.key].__prompt) { ta.value = state[mode.key].__prompt; state[mode.key].__prompt = ''; } // back from "Change model": the idea survives the trip
     sh.appendChild(ta);
+    /* Batch 5 (Tasks 112/120): Higgsfield-style prompt counter + one-tap Clear. */
+    var cnt = el('div', 'sv-count');
+    cnt.id = 'sv-count';
+    cnt.style.cssText = 'display:flex;justify-content:flex-end;gap:12px;font-size:11px;color:rgba(255,255,255,.5);margin:2px 2px 0';
+    var cntN = el('span', '', '0 characters'), clr = el('span', '', '\u2715 Clear');
+    clr.setAttribute('role', 'button'); clr.style.cursor = 'pointer';
+    clr.addEventListener('click', function () { ta.value = ''; upd(); ta.focus(); });
+    cnt.appendChild(cntN); cnt.appendChild(clr);
+    function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = n ? 'visible' : 'hidden'; }
+    ta.addEventListener('input', upd); upd();
+    sh.appendChild(cnt);
 
     /* Task 120 step 1: ✨ Enhance (Higgsfield / CapCut / ElevenLabs) + 🎲 Surprise me. */
     var tools = el('div', 'sv-row sv-ptools');
