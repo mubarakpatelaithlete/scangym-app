@@ -1050,6 +1050,9 @@ text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}</styl
   app.get('/privacy', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'privacy', 'index.html'));
   });
+  app.get(['/refunds', '/refund-policy'], (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'refunds', 'index.html'));
+  });
 
   // Real 404 for unknown API routes.
   // Before this, an unknown /api/... path fell through to the SPA fallback below and
