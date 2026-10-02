@@ -561,10 +561,31 @@
       });
       recBox.style.display = 'flex';
     });
+    /* Task 112/120 batch 3 (Higgsfield styles): one tap adds a proven style line to the prompt. */
+    var STYLES = [['\uD83C\uDFAC Cinematic', 'cinematic film still, anamorphic lens, dramatic lighting, shallow depth of field'],
+      ['\uD83C\uDF8C Anime', 'anime style, clean line art, vibrant cel shading'], ['\uD83E\uDDF8 3D', '3D render, Pixar style, soft global illumination'],
+      ['\uD83C\uDF03 Neon', 'neon cyberpunk night, glowing signs, wet reflective streets'], ['\uD83C\uDF9E\uFE0F Film noir', 'black and white film noir, hard shadows, 1940s'],
+      ['\uD83D\uDCF8 Photo', 'ultra-realistic photo, natural light, 50mm lens, high detail'], ['\uD83C\uDFA8 Watercolour', 'soft watercolour painting, paper texture']];
+    var styleBox = el('div', 'sv-styles');
+    styleBox.style.cssText = 'display:none;gap:6px;overflow-x:auto;margin:4px 0;scrollbar-width:none;';
+    STYLES.forEach(function (st) {
+      var c = el('div', 'sv-chip', st[0]);
+      c.style.flex = 'none';
+      c.addEventListener('click', function () {
+        var base = ta.value.replace(/\s*\|\s*style:.*$/i, '').trim();
+        ta.value = (base ? base + ' | style: ' : 'style: ') + st[1];
+        styleBox.style.display = 'none';
+      });
+      styleBox.appendChild(c);
+    });
+    var sty = el('div', 'sv-chip', '\uD83C\uDFA8 Style');
+    sty.addEventListener('click', function () { styleBox.style.display = styleBox.style.display === 'flex' ? 'none' : 'flex'; });
     tools.appendChild(enh); tools.appendChild(undo); tools.appendChild(rec);
+    if (mode.key === 'image' || mode.key === 'video') tools.appendChild(sty);
     if ((mode.templates || []).length) tools.appendChild(dice);
     sh.appendChild(tools);
     sh.appendChild(recBox);
+    sh.appendChild(styleBox);
     var frames = el('div', 'sv-row');
     frames.id = 'sv-frames';
     frames.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px';
