@@ -456,12 +456,19 @@ function falInput(prompt, settings, model) {
   return profileFor(model).build(prompt, { ...settings, durationSeconds: seconds });
 }
 
+/** Task 102 bug: the Gemini API rejects generateAudio ("isn't supported by this
+ *  model") — Veo 3.x there always makes audio. Send only what it accepts. */
+function veoParams(settings) {
+  const { generateAudio, ...rest } = settings || {};
+  return rest;
+}
+
 /** Start a Veo long-running operation and return its name. */
 async function veoSubmit(prompt, settings) {
   const r = await fetch(`${API_BASE}/models/${VEO_MODEL}:predictLongRunning?key=${GEMINI_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instances: [{ prompt }], parameters: settings }),
+    body: JSON.stringify({ instances: [{ prompt }], parameters: veoParams(settings) }),
   });
   const data = await r.json();
   if (!r.ok || !data.name) {
@@ -656,4 +663,4 @@ async function rehost(url, jobId) {
 }
 
 module.exports = router;
-module.exports._internals = { falInput, cleanSettings, VIDEO_PROFILES, effectiveSeconds, profileFor };
+module.exports._internals = { veoParams, falInput, cleanSettings, VIDEO_PROFILES, effectiveSeconds, profileFor };

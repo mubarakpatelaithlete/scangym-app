@@ -1113,7 +1113,9 @@
     pill.id = 'sv-model-pill';
     pill.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;box-sizing:border-box;';
     var host = el('div', 'sv-row');
-    host.style.cssText = 'display:none;flex-wrap:wrap;margin-top:8px;';
+    /* Task 102: the models sit right here as a one-tap strip (no trip to the grid). */
+    host.className = 'sv-row sv-mstrip';
+    host.style.cssText = 'display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin-top:8px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;';
     picker.appendChild(pill);
     picker.appendChild(host);
     var openChips = false;
@@ -1121,13 +1123,13 @@
       var cur = list.filter(function (m) { return m.id === state[mode.key].__model; })[0];
       var price = cur && cur.price && mode.key !== 'text' ? cur.price + (cur.unit === 'per image' ? '/image' : '') : '';
       pill.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
-        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">Change model \u203a</span>';
+        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">All models \u203a</span>';
       /* The page header carries the same truth, Higgsfield-style. */
       var hn = sh.querySelector('#sv-head-name'), hs = sh.querySelector('#sv-head-sub');
       if (hn && cur) hn.textContent = cur.label;
       if (hs && cur) hs.innerHTML = (cur.role ? cur.role + ' \u00b7 ' : '') + (price ? '<i>' + price + '</i>' : mode.label);
     };
-    /* "Change model" is the grid, not a second list folded into this page. */
+    /* The strip below switches in one tap; "All models" still opens the full grid. */
     pill.addEventListener('click', function () { openGrid(mode); });
     picker.__paintPill = paintPill;
 
@@ -1183,14 +1185,16 @@
         state[mode.key].__quotedSeconds = m.quotedSeconds || null;
         state[mode.key].__unit = m.unit || null;
         Array.prototype.forEach.call(host.children, function (c) { if (c.__paint) c.__paint(); });
-        openChips = false; host.style.display = 'none'; paintPill();
+        paintPill(); // instant: price + header update in place, prompt and settings untouched
         refreshQuota(sh, mode);
       });
-      chip.__paint = paint;
-      paint();
+      chip.__paint = function () { paint(); chip.style.flex = 'none'; chip.style.whiteSpace = 'nowrap'; };
+      chip.__paint();
       host.appendChild(chip);
     });
     paintPill();
+    var on = host.children[list.map(function (m) { return m.id; }).indexOf(state[mode.key].__model)];
+    if (on && on.scrollIntoView) setTimeout(function () { try { on.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }, 0);
   }
 
   /** A caption is read, copied and pasted — not played. */
