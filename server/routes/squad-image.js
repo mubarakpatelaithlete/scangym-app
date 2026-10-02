@@ -255,5 +255,40 @@ router.get('/history', optionalAuth, async (req, res) => {
   res.json({ ...out, quota: await jobs.quotaFor(req, KIND) });
 });
 
+/* Task 120 step 1: ✨ Enhance prompt — Higgsfield, CapCut and ElevenLabs all
+   turn a short idea into a detailed prompt in one tap. Text only, no charge. */
+const enhanceLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many enhances — try again in a minute' } });
+const ENHANCE_KINDS = {
+  image: 'a still image (subject, setting, lighting, camera angle, lens, style, colour palette)',
+  video: 'a short video clip (subject, action, camera movement, setting, lighting, mood, pacing)',
+  audio: 'a piece of music or sound (genre, mood, tempo, instruments, vocals or not)',
+};
+function cleanEnhanced(text) {
+  return String(text || '').trim().replace(/^(enhanced prompt|prompt)\s*:\s*/i, '').replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 600);
+}
+router.post('/enhance', express.json({ limit: '8kb' }), enhanceLimiter, async (req, res) => {
+  try {
+    const idea = String((req.body || {}).prompt || '').trim().slice(0, 500);
+    const kind = ENHANCE_KINDS[(req.body || {}).kind] ? req.body.kind : 'image';
+    if (idea.length < 2) return res.status(400).json({ error: 'Type an idea first' });
+    const llm = require('../lib/llm');
+    const { completion } = await llm.chat('Enhance', {
+      messages: [
+        { role: 'system', content: `You rewrite a customer's short idea into one vivid generation prompt for ${ENHANCE_KINDS[kind]}. Keep their subject and language. Max 70 words. Reply with the prompt only, no quotes, no preamble.` },
+        { role: 'user', content: idea },
+      ],
+      max_tokens: 160,
+      temperature: 0.8,
+    });
+    const out = cleanEnhanced(completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content);
+    if (!out) return res.status(502).json({ error: 'Could not enhance right now' });
+    res.json({ prompt: out });
+  } catch (e) {
+    console.error('[enhance]', e.message);
+    res.status(502).json({ error: 'Could not enhance right now' });
+  }
+});
+
 module.exports = router;
-module.exports._internals = { buildInput, cleanSettings, IMAGE_PROFILES, cleanReferenceUrl, referenceModel };
+module.exports._internals = { cleanEnhanced, buildInput, cleanSettings, IMAGE_PROFILES, cleanReferenceUrl, referenceModel };
