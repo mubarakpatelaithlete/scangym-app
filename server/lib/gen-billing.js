@@ -205,14 +205,25 @@ async function gate(req, db = pool, deps = {}) {
        justify (no failed charge) is lifted here, at the moment the creator
        presses Generate, rather than at tomorrow's 7am run. */
     const lifted = await liftUnjustifiedSuspensions(db, userId);
-    if (!(lifted.lifted > 0)) return {
-      status: 403,
-      body: {
-        error: 'Generation is paused until your unpaid invoice is settled. Pay it and Create unlocks straight away.',
-        suspended: true,
-        needsPayment: true,
-      },
-    };
+    if (!(lifted.lifted > 0)) {
+      /* Task 151: "paused until your unpaid invoice is settled" next to
+         "£2.78 allowance left" read as nonsense. Say which invoice, how much,
+         and that the card was declined, so the one action (Pay now) is obvious. */
+      const overdue = await overdueFor(userId, db);
+      const amount = overdue && overdue.pence > 0 ? pricing.money(overdue.pence) : null;
+      return {
+        status: 403,
+        body: {
+          error: amount
+            ? `Your card was declined for ${amount}${overdue.number ? ` (invoice ${overdue.number})` : ''}. Tap Pay now to try your card again. Create unlocks the moment it goes through.`
+            : 'Your last card payment was declined. Tap Pay now to try your card again. Create unlocks the moment it goes through.',
+          suspended: true,
+          needsPayment: true,
+          overduePence: overdue ? overdue.pence : null,
+          overdue: amount,
+        },
+      };
+    }
   }
 
   const mandate = await mandateFor(userId, db, { ...deps, state });
@@ -246,6 +257,47 @@ async function gate(req, db = pool, deps = {}) {
   }
 
   return null;
+}
+
+/**
+ * What a suspended creator actually owes right now: invoices whose charge
+ * failed. This is the number the "Pay now" button settles. (Task 151)
+ */
+async function overdueFor(userId, db = pool) {
+  try {
+    const r = await db.query(
+      `SELECT COALESCE(SUM(gross_pence), 0)::bigint AS pence, COUNT(*)::int AS n,
+              MIN(number) AS number
+         FROM squad_invoices
+        WHERE user_id = $1::text AND status = 'failed'`,
+      [String(userId)],
+    );
+    const row = r.rows[0] || {};
+    return { pence: Number(row.pence || 0), count: Number(row.n || 0), number: row.n === 1 ? row.number : null };
+  } catch (e) {
+    console.error('[SquadBilling] overdue lookup failed:', e.message);
+    return null;
+  }
+}
+
+/**
+ * "Pay now": try the saved card again for every open or failed invoice, at
+ * the creator's request, instead of making them wait for tomorrow's 7am run.
+ * chargeInvoice lifts the suspension itself once nothing is owed.
+ */
+async function payOverdue(userId, db = pool, deps = {}) {
+  const open = await db.query(
+    `SELECT * FROM squad_invoices WHERE user_id = $1::text AND status IN ('open','failed')
+      ORDER BY issued_on`,
+    [String(userId)],
+  );
+  let paid = 0; let failed = 0; let reason = null;
+  for (const inv of open.rows) {
+    const r = await chargeInvoice(inv, db, deps);
+    if (r.ok) paid += 1; else { failed += 1; reason = r.reason || reason; }
+  }
+  const state = await stateFor(userId, db);
+  return { paid, failed, reason, suspended: !!(state && state.suspended_at), nothingDue: open.rows.length === 0 };
 }
 
 // ── The daily run ────────────────────────────────────────────────────────────
@@ -675,4 +727,6 @@ module.exports = {
   MAX_AGE_DAYS,
   SUSPEND_AFTER_DAYS,
   liftUnjustifiedSuspensions,
+  overdueFor,
+  payOverdue,
 };
