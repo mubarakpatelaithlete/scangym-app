@@ -10,6 +10,8 @@
  *   DELETE /api/dm/messages/:id             delete for everyone (sender only)
  *   PATCH  /api/dm/messages/:id {body}      edit (sender only, 15 min, text only)
  *   POST   /api/dm/messages/:id/react {emoji}  react / change / remove ('' removes)
+ *   GET    /api/dm/business                 my greeting / away messages
+ *   PUT    /api/dm/business {greeting, greetingOn, away, awayOn}
  *   GET    /api/dm/users?q=                 find people by name / email / phone
  *   POST   /api/dm/invite {phone}           SMS invite via Twilio
  *
@@ -162,6 +164,7 @@ router.post('/threads/:id/messages', async (req, res) => {
     await pool.query('UPDATE dm_threads SET last_message_at=NOW() WHERE id=$1', [t.id]);
     typing.delete(`${t.id}:${uid}`);
     res.status(201).json({ id: Number(m.id), at: m.created_at });
+    autoReply(t.id, t.user_a === uid ? t.user_b : t.user_a).catch((e) => console.error('[dm] auto-reply', e.message));
   } catch (e) { console.error('[dm] send', e.message); res.status(500).json({ error: 'Could not send' }); }
 });
 
@@ -230,6 +233,49 @@ router.delete('/messages/:id', async (req, res) => {
     if (!r.rowCount) return res.status(404).json({ error: 'Message not found' });
     res.json({ deleted: true });
   } catch (e) { res.status(500).json({ error: 'Could not delete' }); }
+});
+
+/* Task 107 batch 2 — WhatsApp Business: a greeting the first time someone
+   messages you, and an away message (at most once an hour per chat). Sent as
+   the owner, so it appears in the chat exactly like a normal reply. */
+const AWAY_GAP_MS = 60 * 60 * 1000;
+async function autoReply(threadId, ownerId) {
+  const { rows: [b] } = await pool.query('SELECT * FROM dm_business WHERE user_id=$1', [ownerId]);
+  if (!b) return null;
+  const said = async (body, sinceMs) => {
+    const { rows } = await pool.query(
+      `SELECT 1 FROM dm_messages WHERE thread_id=$1 AND sender_id=$2 ${body ? 'AND body=$3' : ''}
+       ${sinceMs ? `AND created_at > NOW() - INTERVAL '${Math.round(sinceMs / 1000)} seconds'` : ''} LIMIT 1`,
+      body ? [threadId, ownerId, body] : [threadId, ownerId]);
+    return rows.length > 0;
+  };
+  let text = null;
+  if (b.greeting_on && b.greeting && !(await said(null, 0))) text = b.greeting;
+  else if (b.away_on && b.away && !(await said(b.away, AWAY_GAP_MS))) text = b.away;
+  if (!text) return null;
+  await pool.query('INSERT INTO dm_messages (thread_id, sender_id, body) VALUES ($1,$2,$3)', [threadId, ownerId, text]);
+  await pool.query('UPDATE dm_threads SET last_message_at=NOW() WHERE id=$1', [threadId]);
+  return text;
+}
+
+router.get('/business', async (req, res) => {
+  try {
+    const { rows: [b] } = await pool.query('SELECT * FROM dm_business WHERE user_id=$1', [me(req)]);
+    res.json({ greeting: (b && b.greeting) || '', greetingOn: !!(b && b.greeting_on), away: (b && b.away) || '', awayOn: !!(b && b.away_on) });
+  } catch (e) { res.status(500).json({ error: 'Could not load' }); }
+});
+
+router.put('/business', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const clip = (v) => String(v || '').trim().slice(0, 1000);
+    await pool.query(
+      `INSERT INTO dm_business (user_id, greeting, greeting_on, away, away_on, updated_at) VALUES ($1,$2,$3,$4,$5,NOW())
+       ON CONFLICT (user_id) DO UPDATE SET greeting=EXCLUDED.greeting, greeting_on=EXCLUDED.greeting_on,
+         away=EXCLUDED.away, away_on=EXCLUDED.away_on, updated_at=NOW()`,
+      [me(req), clip(b.greeting), !!b.greetingOn && !!clip(b.greeting), clip(b.away), !!b.awayOn && !!clip(b.away)]);
+    res.json({ saved: true });
+  } catch (e) { res.status(500).json({ error: 'Could not save' }); }
 });
 
 router.patch('/messages/:id', async (req, res) => {
@@ -304,3 +350,4 @@ router.post('/invite', async (req, res) => {
 });
 
 module.exports = router;
+module.exports._internals = { autoReply };
