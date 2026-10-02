@@ -524,8 +524,11 @@
     var cntN = el('span', '', '0 characters'), clr = el('span', '', '\u2715 Clear');
     clr.setAttribute('role', 'button'); clr.style.cursor = 'pointer';
     clr.addEventListener('click', function () { ta.value = ''; upd(); ta.focus(); });
-    cnt.appendChild(cntN); cnt.appendChild(clr);
-    function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = n ? 'visible' : 'hidden'; }
+    var cpy = el('span', '', '\uD83D\uDCCB Copy');
+    cpy.setAttribute('role', 'button'); cpy.style.cursor = 'pointer';
+    cpy.addEventListener('click', function () { if (navigator.clipboard && ta.value) navigator.clipboard.writeText(ta.value).then(function () { toast('Prompt copied', 'success', 2000); }); });
+    cnt.appendChild(cntN); cnt.appendChild(cpy); cnt.appendChild(clr);
+    function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = cpy.style.visibility = n ? 'visible' : 'hidden'; }
     ta.addEventListener('input', upd); upd();
     sh.appendChild(cnt);
 

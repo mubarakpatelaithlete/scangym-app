@@ -3691,9 +3691,17 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           + window.sgSheetOption('\uD83D\uDD04', 'Refresh For You')
           + window.sgSheetOption('\uD83D\uDCF6', sgDataSaver() ? 'Data saver: On' : 'Data saver: Off')
           + window.sgSheetOption('\u23F1\uFE0F', 'Screen time: ' + (sgScreenLimit() ? sgScreenLimit() + ' min' : 'Off'))
-          + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : ''),
+          + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : '')
+          + window.sgSheetOption('\uD83D\uDD17', 'Copy link'),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
+        /* Batch 6 (Tasks 104/109): TikTok-style Copy link — always the last option. */
+        o[o.length - 1].addEventListener('click', function(){
+          sh.close();
+          var u = location.origin + '/reels?v=' + encodeURIComponent(video.id);
+          if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){ showToast('Link copied'); }, function(){ showToast(u); });
+          else showToast(u);
+        });
         sp.forEach(function(x, i){ o[i].addEventListener('click', function(){
           sgSpeed = x; var v = reel.querySelector('video'); if(v) v.playbackRate = x;
           sh.close(); showToast('Speed ' + x + 'x');
