@@ -2573,7 +2573,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           var vid = el.querySelector('video');
           if(!vid) continue;
           // Preload current + next 3 videos fully, rest metadata only
-          vid.preload = (idx >= centerIndex - 1 && idx <= centerIndex + 3) ? 'auto' : 'metadata';
+          vid.preload = sgDataSaver() ? (idx === centerIndex ? 'auto' : 'none') : ((idx >= centerIndex - 1 && idx <= centerIndex + 3) ? 'auto' : 'metadata');
           // FIX #2: Force load for next video if it hasn't started
           if(idx === centerIndex + 1 && vid.readyState < 1){
             vid.load();
@@ -2789,7 +2789,10 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
       // ── Prefetch — use fetch() + Cache API for real pre-download ──
       // PERF FIX #1 + #3: Fixed cache name (was hardcoded to v4), removed mode:'cors'
       // that was breaking CDN edge caching, added connection-aware prefetch depth
+      /* Task 109 batch 3 (TikTok Data Saver): only the reel on screen downloads. */
+      function sgDataSaver(){ try { return localStorage.getItem('sg_data_saver') === '1'; } catch(e){ return false; } }
       function prefetchAhead(fromIndex){
+        if(sgDataSaver()) return;
         // PERF FIX #3: Adaptive prefetch depth based on connection speed
         var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         var prefetchCount = PREFETCH_AHEAD;
@@ -3682,6 +3685,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           + window.sgSheetOption('\uD83D\uDD58', 'Watch history')
           + window.sgSheetOption('\uD83D\uDEAB', 'Filter keywords')
           + window.sgSheetOption('\uD83D\uDD04', 'Refresh For You')
+          + window.sgSheetOption('\uD83D\uDCF6', sgDataSaver() ? 'Data saver: On' : 'Data saver: Off')
           + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : ''),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
@@ -3703,7 +3707,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         o[9].addEventListener('click', function(){ sh.close(); openWatchHistory(); });
         o[10].addEventListener('click', function(){ sh.close(); openKeywordFilter(); });
         o[11].addEventListener('click', function(){ sh.close(); refreshForYou(); });
-        if(pipVid && o[12]) o[12].addEventListener('click', function(){ sh.close();
+        o[12].addEventListener('click', function(){ sh.close(); var on = !sgDataSaver(); try { localStorage.setItem('sg_data_saver', on ? '1' : '0'); } catch(e){} showToast(on ? 'Data saver on \u2014 only the video on screen downloads' : 'Data saver off'); });
+        if(pipVid && o[13]) o[13].addEventListener('click', function(){ sh.close();
           pipVid.requestPictureInPicture().then(function(){ showToast('Playing in a small window'); }).catch(function(){ showToast('Picture-in-picture is not available here'); }); });
       }
       function doubleTapLike(x, y){
