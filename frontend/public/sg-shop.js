@@ -444,23 +444,22 @@ window._sgShopOpenSell=function(opts){
   /* Task 161 (owner, 2026-10-02): a digital product is a prompt, a PDF, a
      presentation or an affiliate link. From a Create result it starts on
      Prompt with the exact prompt that made it, and the creation is the cover. */
-  var kinds=[['prompt','\uD83D\uDCAC Prompt'],['pdf','\uD83D\uDCC4 PDF'],['presentation','\uD83D\uDCCA Presentation'],['affiliate','\uD83D\uDD17 Affiliate link']];
-  window._sgShopSellKind='prompt';
-  var src=window._sgShopSellSource;
+  /* Owner 2026-10-02: "just item, price, link". Three boxes. A link sells as a
+     link; no link under a Create result sells the prompt that made it; a PDF
+     or slides file is one optional tap away, not on the screen by default. */
+  window._sgShopSellKind=src?'prompt':'affiliate';
   window._sgShopSimpleSheet(
-    '<h2 style="margin:0 0 4px;font-size:19px;font-weight:900">Sell a digital product</h2>'
-    +'<p style="margin:0 0 12px;color:rgba(255,255,255,.5);font-size:12px">You keep 70% of every sale.'+(src?' It is sold right inside your video.':'')+'</p>'
-    +(src?'<div style="display:flex;align-items:center;gap:10px;margin:0 0 12px">'+(opts&&opts.kind==='image'?'<img alt="" src="'+src+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover">':'<video muted playsinline preload="metadata" src="'+src+'#t=0.1" style="width:44px;height:56px;border-radius:8px;object-fit:cover"></video>')+'<span style="font-size:13px;color:rgba(255,255,255,.7)">For this creation ✓</span></div>':'')
-    +'<div id="sg-sell-kinds" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px">'+kinds.map(function(k){return '<button type="button" data-k="'+k[0]+'" class="sg-glass-chip" onclick="window._sgShopSellPick(\''+k[0]+'\')" style="border-radius:16px;padding:7px 12px;font-size:13px;font-weight:700;color:#fff;cursor:pointer">'+k[1]+'</button>';}).join('')+'</div>'
-    +'<input id="sg-shop-title" placeholder="Title — e.g. Neon gym reel prompt" maxlength="120" style="'+field+'">'
-    +'<textarea id="sg-shop-text" rows="4" placeholder="" style="'+field+'"></textarea>'
-    +'<input id="sg-shop-file" type="file" style="'+field+'display:none">'
-    +'<textarea id="sg-shop-desc" placeholder="What the buyer gets (optional)" rows="2" style="'+field+'"></textarea>'
-    +'<input id="sg-shop-price" type="number" min="1" max="500" step="0.01" placeholder="Price in £ (min £1)" style="'+field+'">'
+    '<h2 style="margin:0 0 4px;font-size:20px;font-weight:900">Sell</h2>'
+    +'<p style="margin:0 0 14px;color:rgba(255,255,255,.55);font-size:13px">You keep 70%.'+(src?' Buyers tap Shop on your video.':'')+'</p>'
+    +(src?'<div style="display:flex;align-items:center;gap:10px;margin:0 0 14px">'+(opts&&opts.kind==='image'?'<img alt="" src="'+src+'" style="width:44px;height:44px;border-radius:10px;object-fit:cover">':'<video muted playsinline preload="metadata" src="'+src+'#t=0.1" style="width:40px;height:52px;border-radius:10px;object-fit:cover"></video>')+'<span style="font-size:13px;color:rgba(255,255,255,.75)">Sold with this video</span></div>':'')
+    +'<input id="sg-shop-title" placeholder="Item" maxlength="120" style="'+field+'">'
+    +'<input id="sg-shop-price" type="number" inputmode="decimal" min="1" max="500" step="0.01" placeholder="Price £" style="'+field+'">'
+    +'<input id="sg-shop-text" type="url" inputmode="url" placeholder="'+(src?'Link (optional, else we sell the prompt)':'Link')+'" style="'+field+'">'
+    +'<input id="sg-shop-file" type="file" accept=".pdf,.pptx,.ppt" style="'+field+'display:none">'
+    +'<button type="button" onclick="var f=document.getElementById(\'sg-shop-file\');f.style.display=\'block\';this.remove();" style="border:0;background:none;color:rgba(255,255,255,.6);font-size:13px;padding:0 0 12px;cursor:pointer">+ Attach a PDF or slides instead</button>'
     +'<div id="sg-shop-sell-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
-    +'<button type="button" id="sg-shop-sell-btn" onclick="window._sgShopSubmitProduct()" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">List it</button>'
+    +'<button type="button" id="sg-shop-sell-btn" onclick="window._sgShopSubmitProduct()" style="width:100%;border:0;border-radius:999px;padding:15px;background:linear-gradient(135deg,#FF8A1F,#FF5A00);color:#fff;font-weight:800;font-size:16px;cursor:pointer">List it</button>'
   );
-  window._sgShopSellPick('prompt');
 };
 window._sgShopSellPick=function(k){
   window._sgShopSellKind=k;
@@ -480,10 +479,19 @@ window._sgShopSubmitProduct=async function(){
   var price=(document.getElementById('sg-shop-price')||{}).value||'';
   var fileInput=document.getElementById('sg-shop-file');
   function fail(message){ if(err){err.textContent=message;err.style.display='block';} }
-  if(!title.trim())return fail('Give your product a title');
+  if(!title.trim())return fail('Add the item name');
   if(!(parseFloat(price)>=1))return fail('Price must be at least £1.00');
   var src=window._sgShopSellSource,kind=window._sgShopSellKind||'prompt';
   var txt=((document.getElementById('sg-shop-text')||{}).value||'').trim();
+  /* Simple sheet: work out the kind from what was filled in. */
+  if(document.getElementById('sg-shop-text')&&!document.getElementById('sg-sell-kinds')){
+    var hasFile=fileInput&&fileInput.files&&fileInput.files[0];
+    if(txt){kind='affiliate';}
+    else if(hasFile){kind=/\.pptx?$/i.test(hasFile.name)?'presentation':'pdf';}
+    else if(src){kind='prompt';}
+    else return fail('Add the link you are selling');
+    if(kind==='affiliate'&&!/^https?:\/\//i.test(txt))txt='https://'+txt;
+  }
   var isText=kind==='prompt'||kind==='affiliate';
   if(kind==='affiliate'&&!/^https?:\/\//i.test(txt))return fail('Paste the full affiliate link (https://…)');
   if(kind==='prompt'&&!txt&&!src)return fail('Write the prompt buyers get');

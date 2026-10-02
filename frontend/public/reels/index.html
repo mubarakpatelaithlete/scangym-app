@@ -922,7 +922,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           return r.ok ? r.json() : Promise.reject();
         }).then(function(d){
           if(d){ social[key] = {likes:d.likes, comments:d.comments, reposts:d.reposts, liked:d.liked, reposted:d.reposted}; paintSocial(key); }
-          if(d && kind === 'repost' && on && typeof showToast === 'function') showToast('Reposted to your profile');
+          if(d && kind === 'repost' && on && typeof showToast === 'function') showToast('Reposted \u2713 Find it in Create \u2192 Your reposts');
         }).catch(function(){ st[flag] = before.v; st[cnt] = before.n; paintSocial(key); });
       }
 
@@ -2956,7 +2956,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
               var deepLinkId = urlParams.get('v');
               if(deepLinkId){
                 for(var di = 0; di < allVideos.length; di++){
-                  if(String(allVideos[di].id) === String(deepLinkId)){
+                  if(String(allVideos[di].id) === String(deepLinkId) || String(allVideos[di].cdnKey) === String(deepLinkId)){
                     startIndex = di;
                     break;
                   }
@@ -2966,7 +2966,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
                  list once and put that reel first, so the link always opens it. */
               if(deepLinkId && startIndex === 0 && String((allVideos[0] || {}).id) !== String(deepLinkId)){
                 fetch('/api/reels/feed?limit=200&offset=0&shuffle=false').then(function(r){ return r.json(); }).then(function(d){
-                  var hit = (d.videos || []).filter(function(x){ return String(x.id) === String(deepLinkId); })[0];
+                  var hit = (d.videos || []).filter(function(x){ return String(x.id) === String(deepLinkId) || String(x.cdnKey) === String(deepLinkId); })[0];
                   if(hit) applyVideoList([hit].concat(allVideos.filter(function(x){ return String(x.id) !== String(deepLinkId); })), {hasMore: feedHasMore, total: feedServerTotal, offset: feedOffset});
                 }).catch(function(){});
               }
@@ -4604,8 +4604,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
     })();
     </script>
   <script src="/sg-tabbar.js?v=1.3" defer></script>
-  <script src="/sg-home-post.js?v=1.1" defer></script>
-  <link rel="stylesheet" href="/sg-glass.css?v=1.3">
+  <script src="/sg-home-post.js?v=1.2" defer></script>
+  <link rel="stylesheet" href="/sg-glass.css?v=1.4">
   <link rel="stylesheet" href="/sg-fast.css?v=1.0">
 
   <!--

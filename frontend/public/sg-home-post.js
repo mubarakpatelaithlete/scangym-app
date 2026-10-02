@@ -156,5 +156,8 @@
   }
 
   window.sgHomePost = { open: menu, compose: compose, upload: upload, drafts: drafts };
-  if (document.body) plus(); else document.addEventListener('DOMContentLoaded', plus);
+  /* Owner 2026-10-02: "why are search and + in a random place" — the + is gone
+     from the top (Create tab is where you make and post); search stays, as a
+     plain icon like TikTok. */
+  void plus;
 })();

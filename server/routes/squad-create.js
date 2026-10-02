@@ -230,6 +230,7 @@ router.get('/library', requireCreator, async (req, res) => {
     status: row.status,
     url: row.url,
     text: row.params && row.params.text ? row.params.text : null,
+    name: row.params && row.params.name ? row.params.name : null,
     settings: row.params || {},
     costUsd: row.cost_usd != null ? Number(row.cost_usd) : null,
     downloads: row.download_count || 0,
@@ -246,6 +247,31 @@ router.get('/library', requireCreator, async (req, res) => {
       ? `Any gym, £5 a day, no membership. Book yours: ${refLink}`
       : 'Any gym, £5 a day, no membership — on ScanGym.',
   });
+});
+
+// ─── POST /api/squad-create/name — give a creation a name (owner 2026-10-02) ───
+/* "Tag" should give what I made an identity, so later I type @Mike and the
+   generation knows who Mike is. The name lives on the job (params.name) and
+   comes back from /library, which the @ picker and the chatbots read. */
+router.post('/name', requireCreator, express.json({ limit: '4kb' }), async (req, res) => {
+  const userId = req.user.id || req.user.userId;
+  const url = String((req.body && req.body.url) || '').slice(0, 1000);
+  const name = String((req.body && req.body.name) || '').replace(/[<>@#]/g, '').trim().slice(0, 40);
+  if (!url) return res.status(400).json({ error: 'url required' });
+  try {
+    const pool = require('../middleware/db');
+    const r = await pool.query(
+      `UPDATE squad_video_jobs
+          SET params = COALESCE(params, '{}'::jsonb) || jsonb_build_object('name', $3::text)
+        WHERE user_id = $1 AND (video_url = $2 OR $2 LIKE '%' || video_url)
+        RETURNING id`,
+      [String(userId), url, name],
+    );
+    res.json({ ok: r.rowCount > 0, name });
+  } catch (e) {
+    console.error('[SquadCreate] name failed:', e.message);
+    res.status(500).json({ error: 'Could not save the name' });
+  }
 });
 
 // ─── POST /api/squad-create/events — a download or a share, recorded ───

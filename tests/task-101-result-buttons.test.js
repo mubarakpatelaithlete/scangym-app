@@ -9,14 +9,16 @@ const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 
 test('the result row has all eight actions', () => {
   const s = read('frontend/public/squad-create.js');
-  for (const label of ['🚀 Post', '✏️ Edit', '➕ More versions', '⏩ Extend', '🔀 Different model', '📎 Reference', '🏷️ Tag', '💰 Sell']) {
+  for (const label of ['🚀 Post', '✏️ Edit', '➕ More versions', '⏩ Extend', '🔀 Different model', '📎 Reference', '🏷️ Name it', '💰 Sell']) {
     assert.ok(s.includes("chip('" + label), 'missing ' + label);
   }
 });
 
 test('the actions come before Share/Download, in one scrollable line', () => {
   const s = read('frontend/public/squad-create.js');
-  assert.match(s, /out\.appendChild\(nextRow\(url, mode, jobId\)\);\s*out\.appendChild\(row\);/);
+  assert.match(s, /out\.appendChild\(nextRow\(url, mode, jobId\)\);[\s\S]{0,200}out\.appendChild\(row\);/);
+  // Owner 2026-10-02: Post, Name it, Sell, Edit up front; the rest under More.
+  assert.match(s, /var front = \/Post\|Name it\|Sell\|Edit\//);
   assert.match(s, /\.sv-next\{flex-wrap:nowrap;overflow-x:auto/);
 });
 

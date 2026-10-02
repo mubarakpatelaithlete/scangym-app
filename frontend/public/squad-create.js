@@ -354,6 +354,9 @@
     /* Task 154 Create 10: the What next buttons fit on screen without sideways scrolling. */
     '.sv-next{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible !important;flex-wrap:wrap;}',
     '.sv-next .sv-mchip{min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;padding:9px 4px;}',
+    '.sv-next{grid-template-columns:repeat(4,minmax(0,1fr)) !important;}',
+    '.sv-next .sv-post-main{grid-column:1/-1;background:linear-gradient(135deg,#FF8A1F,#FF5A00) !important;border:0 !important;color:#fff;font-size:15px !important;font-weight:800;padding:13px 4px !important;border-radius:999px !important;}',
+    '.sv-x-row{margin-top:6px;}',
     /* Owner 2026-10-02 "Create looks ugly": Higgsfield/YouTube look. Outline
        icons, see-through chips (no blur: blur is the costliest paint on phones),
        one row of tools, model cards with a preview, one bright Generate. */
@@ -550,6 +553,8 @@
       .then(function (d) { _lib = (d.items || []).filter(function (x) { return x.status === 'done' && x.url && x.prompt; }); return _lib; })
       .catch(function () { return []; });
   }
+  function slugName(n) { return String(n || '').replace(/[^a-zA-Z0-9 ]+/g, ' ').trim().split(/\s+/).join('-').toLowerCase(); }
+  function itemLabel(it) { return it.name ? slugName(it.name) : mentionLabel(it.prompt); }
   function mentionLabel(p) {
     return String(p || '').replace(/[|].*$/, '').replace(/[^a-zA-Z0-9 ]+/g, ' ').trim().split(/\s+/).slice(0, 3).join('-').toLowerCase() || 'creation';
   }
@@ -558,7 +563,7 @@
     var out = prompt;
     ms.forEach(function (m) {
       if (out.indexOf('@' + m.label) < 0) return;
-      out = out.replace('@' + m.label, '(my earlier creation: ' + String(m.prompt).replace(/\s*\|.*$/, '').slice(0, 300) + ')');
+      out = out.replace('@' + m.label, '(' + (m.name ? m.name + ', ' : '') + 'my earlier creation: ' + String(m.prompt).replace(/\s*\|.*$/, '').slice(0, 300) + ')');
     });
     return out;
   }
@@ -568,12 +573,12 @@
     sh.appendChild(box);
     function q() { var m = ta.value.slice(0, ta.selectionStart).match(/(^|\s)@([\w-]*)$/); return m ? m[2].toLowerCase() : null; }
     function pick(it) {
-      var label = mentionLabel(it.prompt);
+      var label = itemLabel(it);
       var cur = ta.selectionStart, before = ta.value.slice(0, cur).replace(/@[\w-]*$/, '@' + label + ' ');
       ta.value = before + ta.value.slice(cur);
       ta.focus(); ta.selectionStart = ta.selectionEnd = before.length;
       var st = state[mode.key];
-      st.__mentions = (st.__mentions || []).filter(function (m) { return m.label !== label; }).concat([{ label: label, prompt: it.prompt, url: it.url, kind: it.kind }]);
+      st.__mentions = (st.__mentions || []).filter(function (m) { return m.label !== label; }).concat([{ label: label, name: it.name || '', prompt: it.prompt, url: it.url, kind: it.kind }]);
       if (mode.key === 'image' && it.kind === 'image') { st.__ref = it.url; renderFrames(sh, mode); }
       box.style.display = 'none';
       toast('\uD83D\uDCDA Building on your earlier creation' + (mode.key === 'image' && it.kind === 'image' ? ' (added as reference)' : ''), 'info', 2500);
@@ -583,7 +588,7 @@
       if (k == null) { box.style.display = 'none'; return; }
       libLoad().then(function (items) {
         var words = k.split('-').filter(Boolean);
-        var list = items.filter(function (it) { var p = it.prompt.toLowerCase(); return words.every(function (w) { return p.indexOf(w) >= 0; }); }).slice(0, 8);
+        var list = items.filter(function (it) { var p = ((it.name || '') + ' ' + it.prompt).toLowerCase(); return words.every(function (w) { return p.indexOf(w) >= 0; }); }).slice(0, 8);
         box.innerHTML = '';
         if (!list.length) {
           box.appendChild(el('div', '', items.length ? 'No creation matches \u201c' + k + '\u201d' : 'Your library is empty \u2014 make something first'));
@@ -595,7 +600,7 @@
           r.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px;border-radius:10px;cursor:pointer';
           r.innerHTML = (it.kind === 'video' ? '<video muted playsinline preload="metadata" src="' + it.url + '#t=0.1" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none"></video>'
             : '<img alt="" src="' + it.url + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">')
-            + '<span style="min-width:0;font-size:12px;color:#fff;line-height:1.3"><b>@' + mentionLabel(it.prompt) + '</b><br><span style="color:rgba(255,255,255,.6)">' + String(it.prompt).slice(0, 70).replace(/[<>&]/g, '') + '</span></span>';
+            + '<span style="min-width:0;font-size:12px;color:#fff;line-height:1.3"><b>@' + itemLabel(it) + '</b><br><span style="color:rgba(255,255,255,.6)">' + String(it.prompt).slice(0, 70).replace(/[<>&]/g, '') + '</span></span>';
           r.addEventListener('mousedown', function (e) { e.preventDefault(); pick(it); });
           box.appendChild(r);
         });
@@ -1833,6 +1838,8 @@
        Download, so a phone shows them without scrolling (they were hidden
        under the tab bar). */
     out.appendChild(nextRow(url, mode, jobId));
+    Array.prototype.forEach.call(row.children, function (c) { c.classList.add('sv-x'); c.style.display = 'none'; });
+    row.classList.add('sv-x-row');
     out.appendChild(row);
   }
 
@@ -1890,7 +1897,7 @@
               : '<div style="color:#9aa3b2;font-size:12px;margin-top:4px">Link Instagram, TikTok or YouTube once in Profile to post there too.</div>')
             + '<div style="display:flex;gap:8px;margin-top:10px">'
             + '<a href="' + watch + '" style="flex:1;text-align:center;padding:10px;border-radius:999px;background:linear-gradient(135deg,#FF8A1F,#FF5A00);color:#fff;font-weight:800;text-decoration:none">Watch on Home</a>'
-            + '<a href="/more/profile" style="flex:1;text-align:center;padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:700;text-decoration:none">My posts</a></div>';
+            + '<a href="/create#cf-myposts" style="flex:1;text-align:center;padding:10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:700;text-decoration:none">My posts</a></div>';
         })
         .catch(function (e) {
           done();
@@ -1932,21 +1939,51 @@
       window.sgSquadCreate.open('image', keep);
       toast('Reference attached — describe the new image.', 'info', 3000);
     });
-    chip('🏷️ Tag', function () {
-      var cur = (shareInfo && shareInfo.tags) || '';
-      var t = window.prompt('Tag people and topics (they go on your post):', cur || '@friend #gym #scangym');
-      if (t == null) return;
-      t = String(t).replace(/[<>]/g, '').trim().slice(0, 200);
-      shareInfo = shareInfo || {};
-      var base = (shareInfo.shareText || 'Made with ScanGym').replace(/\n\n[@#][^\n]*$/, '');
-      shareInfo.tags = t;
-      shareInfo.shareText = t ? base + '\n\n' + t : base;
-      toast(t ? 'Tagged — Post and Caption will include: ' + t : 'Tags removed.', 'success', 3000);
+    /* Owner 2026-10-02: Tag = give what I made an identity ("Mike", "my gym"),
+       so typing @Mike later builds on it. Saved on the server (/name). */
+    chip('🏷️ Name it', function () {
+      var old = document.getElementById('sv-name-sheet'); if (old) old.remove();
+      var bg = el('div', ''); bg.id = 'sv-name-sheet';
+      bg.style.cssText = 'position:fixed;inset:0;z-index:11400;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center';
+      bg.innerHTML = '<div style="width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));background:rgba(22,24,33,.94);border-top:1px solid rgba(255,255,255,.16);color:#fff">'
+        + '<b style="display:block;font-size:19px;margin-bottom:4px">Name it</b>'
+        + '<div style="color:rgba(255,255,255,.55);font-size:13px;margin-bottom:12px">Later, type @ and this name in any prompt and ScanGym uses this creation.</div>'
+        + '<input id="sv-name-in" maxlength="40" placeholder="e.g. Mike, My gym, Red hoodie" style="width:100%;box-sizing:border-box;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font-size:16px;margin-bottom:12px">'
+        + '<button type="button" id="sv-name-go" style="width:100%;border:0;border-radius:999px;padding:15px;background:linear-gradient(135deg,#FF8A1F,#FF5A00);color:#fff;font-weight:800;font-size:16px">Save</button></div>';
+      bg.addEventListener('click', function (e) { if (e.target === bg) bg.remove(); });
+      document.body.appendChild(bg);
+      var inp = bg.querySelector('#sv-name-in'); setTimeout(function () { inp.focus(); }, 50);
+      function save() {
+        var n = inp.value.replace(/[<>@#]/g, '').trim();
+        if (!n) { inp.focus(); return; }
+        var go = bg.querySelector('#sv-name-go'); go.textContent = 'Saving\u2026'; go.disabled = true;
+        fetch('/api/squad-create/name', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: abs, name: n }) })
+          .then(function (r) { return r.json(); })
+          .then(function (o) {
+            bg.remove(); _lib = null;
+            toast(o && o.ok ? 'Saved \u2713 Type @' + slugName(n) + ' in a prompt to use it' : 'Could not save the name, try again', o && o.ok ? 'success' : 'error', 3500);
+          }).catch(function () { go.textContent = 'Save'; go.disabled = false; });
+      }
+      bg.querySelector('#sv-name-go').onclick = save;
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') save(); });
     });
     chip('💰 Sell', function () {
       if (typeof window._sgShopOpenSell !== 'function') { location.href = '/shop'; return; }
       window._sgShopOpenSell({ sourceUrl: abs, kind: isVid ? 'video' : mode.resultKind });
     });
+    /* Owner 2026-10-02 "too complicated": four buttons up front, rest under More. */
+    var front = /Post|Name it|Sell|Edit/;
+    var extra = [];
+    Array.prototype.slice.call(row.children).forEach(function (c) { if (!front.test(c.textContent)) { c.style.display = 'none'; c.classList.add('sv-x'); extra.push(c); } });
+    var post = row.firstChild; if (post) post.classList.add('sv-post-main');
+    var more = el('div', 'sv-mchip', 'More'); more.setAttribute('role', 'button');
+    more.addEventListener('click', function () {
+      var open = more.dataset.open !== '1'; more.dataset.open = open ? '1' : '';
+      more.textContent = open ? 'Less' : 'More';
+      var all = (row.parentNode ? row.parentNode.querySelectorAll('.sv-x') : extra);
+      Array.prototype.forEach.call(all, function (c) { c.style.display = open ? '' : 'none'; });
+    });
+    row.appendChild(more);
     return row;
   }
 
