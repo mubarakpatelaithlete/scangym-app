@@ -471,6 +471,8 @@ async function myMemory(args, ctx) {
   const mem = await memory.loadMemory(key);
   const id = await memory.loadIdentity(ctx.user);
   const recent = await memory.recentMessages(key, 20);
+  let libItems = [];
+  try { libItems = ((await require('../lib/gen-jobs').libraryFor(ctx.user.userId, { limit: 8 })) || {}).items || []; } catch (e) { libItems = []; }
   return {
     name: ctx.user.firstName || null,
     email: ctx.user.email || null,
@@ -481,7 +483,9 @@ async function myMemory(args, ctx) {
     mobile: id && id.mobile ? String(id.mobile).replace(/\d(?=\d{4})/g, '•') : null,
     savedCard: (id && id.card) || null,
     recent: recent.length ? recent : (mem.history || []).slice(-10),
-    summary: memory.formatMemory(mem, ctx.user, id),
+    summary: memory.formatMemory(mem, ctx.user, id, libItems),
+    /* Task 164: what to build on when creating or replying. */
+    context: memory.contextNote(mem, libItems),
   };
 }
 

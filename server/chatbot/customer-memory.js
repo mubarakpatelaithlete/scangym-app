@@ -246,8 +246,32 @@ function learnProfile(profile, { text, city, create, prefs }) {
   return p;
 }
 
-/** Short text the AI reads before answering (summary + personality). */
-function contextNote(mem) {
+/* Task 164 (2026-10-02): the shared library (every chatbot + the website
+   Create tab) feeds the AI too, so replies and new creations build on what
+   the customer already made. No AI cost: plain text from squad_video_jobs. */
+function libraryNote(items, n = 5) {
+  const list = (Array.isArray(items) ? items : []).filter((i) => i && i.prompt && i.status !== 'failed').slice(0, n);
+  if (!list.length) return '';
+  const lines = list.map((i) => `"${String(i.prompt).replace(/\s+/g, ' ').slice(0, 80)}" (${i.kind || 'creation'}${i.model ? ', ' + String(i.model).split('/').pop().slice(0, 30) : ''})`);
+  const models = {};
+  for (const i of list) if (i.model) models[String(i.model).split('/').pop()] = (models[String(i.model).split('/').pop()] || 0) + 1;
+  const fav = top(models, 2);
+  return `Recent creations in their shared library: ${lines.join('; ')}` + (fav.length ? `. Most used models: ${fav.join(', ')}` : '');
+}
+
+/** Newest thing to remix: chatbot memory or the shared library, whichever is newer. */
+function lastCreation(mem, items, kind = null) {
+  const lc = mem && mem.lastCreate && mem.lastCreate.prompt && (!kind || mem.lastCreate.kind === kind) ? mem.lastCreate : null;
+  const li = (Array.isArray(items) ? items : []).find((i) => i && i.prompt && i.status !== 'failed' && (!kind || i.kind === kind));
+  if (!li) return lc ? { kind: lc.kind, prompt: lc.prompt } : null;
+  const liAt = new Date(li.created_at || 0).getTime();
+  const lcAt = lc ? new Date(lc.at || 0).getTime() : -1;
+  if (lc && lcAt >= liAt) return { kind: lc.kind, prompt: lc.prompt };
+  return { kind: li.kind, prompt: String(li.prompt).slice(0, 600), model: li.model || null };
+}
+
+/** Short text the AI reads before answering (summary + personality + library). */
+function contextNote(mem, libItems) {
   const p = (mem && mem.profile) || {};
   const bits = [];
   if (mem && mem.summary) bits.push(`Summary so far: ${mem.summary}`);
@@ -257,6 +281,8 @@ function contextNote(mem) {
   if (p.style) bits.push(`Wants ${p.style} replies`);
   if (p.language) bits.push(`Reply in ${p.language}`);
   if (p.notes && p.notes.length) bits.push(`Things they asked me to remember: ${p.notes.join('; ')}`);
+  const lib = libraryNote(libItems);
+  if (lib) bits.push(lib);
   return bits.length ? `[What you know about this customer — use it, don't repeat it back] ${bits.join('. ')}.` : '';
 }
 
@@ -368,7 +394,7 @@ function formatLibrary(items, platform) {
     `All ${done.length > 5 ? 'of them' : 'creations'}: ${BASE}/creator\n🔁 Say "remix my last" to make a new version.`;
 }
 
-function formatMemory(mem, customer, id) {
+function formatMemory(mem, customer, id, libItems) {
   const bits = [];
   if (id && id.name) bits.push(`👋 You're ${id.name}.`);
   else if (customer && customer.firstName) bits.push(`👋 You're ${customer.firstName}.`);
@@ -387,6 +413,8 @@ function formatMemory(mem, customer, id) {
   if (p.language) bits.push(`🌐 Language: ${p.language}`);
   if (p.notes && p.notes.length) bits.push(`📝 You asked me to remember: ${p.notes.join('; ')}`);
   if (mem.summary) bits.push(`🧾 So far: ${mem.summary}`);
+  const recent = (Array.isArray(libItems) ? libItems : []).filter((i) => i && i.prompt && i.status !== 'failed').slice(0, 3);
+  if (recent.length) bits.push(`📚 Recent creations I build on: ${recent.map((i) => `"${String(i.prompt).replace(/\s+/g, ' ').slice(0, 50)}"`).join(', ')}`);
   if (!bits.length) bits.push("I don't know much yet — search a gym or create something and I'll remember it.");
   return `🧠 *What I remember:*\n${bits.join('\n')}\n\n🗑️ Say "forget …" to remove something, or "delete my memory" to wipe it all.`;
 }
@@ -394,7 +422,7 @@ function formatMemory(mem, customer, id) {
 module.exports = {
   resolveCustomer, memoryKey, loadMemory, saveMemory, remember,
   logExchange, recentMessages, loadIdentity,
-  learnProfile, contextNote, maybeSummarise, forget, deleteMemory, SUMMARY_EVERY, FORGET_RE, NOTE_RE,
+  learnProfile, contextNote, libraryNote, lastCreation, maybeSummarise, forget, deleteMemory, SUMMARY_EVERY, FORGET_RE, NOTE_RE,
   detectMemoryAsk, kindFromText, linkPrompt, formatLibrary, formatMemory,
   PLATFORM_LABEL, _linkCache: linkCache,
 };

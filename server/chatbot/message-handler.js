@@ -627,6 +627,13 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
         const src = log.length ? log : (Array.isArray(session.memory.history) ? session.memory.history : []);
         if (src.length) session.history = src.map((h) => ({ role: h.role, text: h.text }));
       }
+      /* Task 164: shared library (chatbots + website Create) as memory context. */
+      if (customer && customer.userId) {
+        try {
+          const lib = await (deps.libraryFor || require('../lib/gen-jobs').libraryFor)(customer.userId, { limit: 8 });
+          session.libItems = (lib && lib.items) || [];
+        } catch (e) { session.libItems = []; }
+      }
     }
   } catch (e) { console.error('[Memory] wrapper setup failed:', e.message); }
 
@@ -717,10 +724,11 @@ async function handleMessage(userId, text, meta = {}, deps = {}) {
     const known = session.memory || {};
     if (ask === 'memory') {
       const id = customer && mem.loadIdentity ? await mem.loadIdentity(customer, deps) : null;
-      result = { text: mem.formatMemory(known, customer, id) + (customer ? '' : '\n\n' + linkHint()) };
+      result = { text: mem.formatMemory(known, customer, id, session.libItems) + (customer ? '' : '\n\n' + linkHint()) };
     } else if (ask === 'remix') {
-      if (known.lastCreate && known.lastCreate.prompt) {
-        create = { kind: known.lastCreate.kind, prompt: known.lastCreate.prompt };
+      const last = mem.lastCreation ? mem.lastCreation(known, session.libItems, mem.kindFromText(text)) : (known.lastCreate && known.lastCreate.prompt ? known.lastCreate : null);
+      if (last && last.prompt) {
+        create = { kind: last.kind, prompt: last.prompt };
         if (customer && chatCreateOn(deps)) {
           result = beginCreate(create, '🔁 Remixing your last idea.\n\n');
         } else if (inChatLink) {
@@ -990,7 +998,7 @@ async function handleMessageCore(userId, text, meta = {}) {
     // ── AI fallback ──
     else {
       // ScanGym ID: summary + personality go in front of the recent chat.
-      const note = memory.contextNote ? memory.contextNote(session.memory || {}) : '';
+      const note = memory.contextNote ? memory.contextNote(session.memory || {}, session.libItems) : '';
       const hist = session.history || [];
       const aiReply = await callAI(text, note ? [{ role: 'user', text: note }, { role: 'assistant', text: 'Got it.' }, ...hist] : hist);
       if (aiReply) {
