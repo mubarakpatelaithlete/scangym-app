@@ -29,9 +29,11 @@ const TABS = [
   { key: 'nearme', label: 'Near me' },
   { key: 'trending', label: 'Trending' },
   { key: 'drama', label: 'Drama', queries: ['short drama series episode', 'mini drama shorts'] },
-  { key: 'movie', label: 'Movie', queries: ['movie trailer official shorts', 'movie scene shorts'] },
+  { key: 'movie', label: 'Movie', queries: ['official trailer', 'new movie trailer 2026'] },
   { key: 'podcast', label: 'Podcast', queries: ['podcast clips shorts', 'fitness podcast clip'] },
-  { key: 'live', label: 'Live', queries: ['live'], live: true },
+  // Live: three broad searches, worldwide — one word in one region found no
+  // streams on the first live run (2026-10-02).
+  { key: 'live', label: 'Live', queries: ['live stream', 'live workout', 'live music'], live: true, worldwide: true },
 ];
 const TAB_BY_KEY = Object.fromEntries(TABS.map((t) => [t.key, t]));
 
@@ -48,7 +50,7 @@ function youtubeParams({ query, live, lat, lng, regionCode, pageToken }) {
     part: 'snippet', q: query, type: 'video', videoEmbeddable: 'true',
     maxResults: '25', safeSearch: 'strict', key: GOOGLE_API_KEY || '',
   });
-  if (live) { p.set('eventType', 'live'); p.set('order', 'viewCount'); }
+  if (live) { p.set('eventType', 'live'); p.set('order', 'viewCount'); p.set('safeSearch', 'moderate'); }
   else { p.set('videoDuration', 'short'); p.set('order', 'relevance'); }
   if (lat != null && lng != null) { p.set('location', `${lat},${lng}`); p.set('locationRadius', '50km'); }
   if (regionCode) p.set('regionCode', regionCode);
@@ -178,7 +180,8 @@ async function buildTab(key, { all = [], perf = new Map(), follows = null, lat, 
 
   const category = tabCategory(key);
   for (const q of tab.queries) {
-    await fetchInto({ cacheKey: `tab:${key}:${q}`, hours: tab.live ? CACHE_HOURS.live : CACHE_HOURS.topic, query: q, live: !!tab.live, regionCode: country && /^[A-Z]{2}$/.test(country) ? country : 'GB', category });
+    await fetchInto({ cacheKey: `tab:${key}:${q}`, hours: tab.live ? CACHE_HOURS.live : CACHE_HOURS.topic, query: q, live: !!tab.live,
+      regionCode: tab.worldwide ? null : (country && /^[A-Z]{2}$/.test(country) ? country : 'GB'), category });
   }
   const videos = await rowsFor('category = $1', [category]);
   return { tab: key, videos, message: videos.length ? null : `Nothing in ${tab.label} right now — check back soon.` };
