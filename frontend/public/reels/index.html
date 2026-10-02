@@ -3692,11 +3692,23 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           + window.sgSheetOption('\uD83D\uDCF6', sgDataSaver() ? 'Data saver: On' : 'Data saver: Off')
           + window.sgSheetOption('\u23F1\uFE0F', 'Screen time: ' + (sgScreenLimit() ? sgScreenLimit() + ' min' : 'Off'))
           + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : '')
+          + window.sgSheetOption('\uD83D\uDE34', 'Sleep timer: ' + (window._sgSleepAt ? Math.max(1, Math.round((window._sgSleepAt - Date.now()) / 6e4)) + ' min left' : 'Off'))
           + window.sgSheetOption('\u23EE\uFE0F', 'Watch from start')
           + window.sgSheetOption('\uD83D\uDD17', 'Copy link'),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
         /* Batch 6 (Tasks 104/109): TikTok-style Copy link — always the last option. */
+        /* Batch 8 (Tasks 104/109): YouTube/Spotify-style Sleep timer — third to last; tap cycles Off/15/30/60 min, then pauses. */
+        o[o.length - 3].addEventListener('click', function(){
+          sh.close();
+          var steps = [0, 15, 30, 60], cur = window._sgSleepMin || 0, n = steps[(steps.indexOf(cur) + 1) % steps.length];
+          clearTimeout(window._sgSleepT); window._sgSleepMin = n; window._sgSleepAt = n ? Date.now() + n * 6e4 : 0;
+          if(n) window._sgSleepT = setTimeout(function(){
+            var vs = document.querySelectorAll('.reel video'); for(var i = 0; i < vs.length; i++) vs[i].pause();
+            window._sgSleepMin = 0; window._sgSleepAt = 0; showToast('Sleep timer \u2014 paused. Sweet dreams \uD83D\uDE34');
+          }, n * 6e4);
+          showToast(n ? 'Videos pause in ' + n + ' min' : 'Sleep timer off');
+        });
         /* Batch 7 (Tasks 104/109): Watch from start — second to last. */
         o[o.length - 2].addEventListener('click', function(){
           sh.close(); var v = reel.querySelector('video'); if(v){ v.currentTime = 0; var pr = v.play(); if(pr && pr.catch) pr.catch(function(){}); } showToast('Playing from start');

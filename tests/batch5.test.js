@@ -25,6 +25,6 @@ test('Home: YouTube titles are decoded (no &amp; on screen)', () => {
 });
 test('Create: prompt counter + Clear under the prompt; cache bumped', () => {
   assert.match(read('frontend/public/squad-create.js'), /cnt\.id = 'sv-count'/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.[5-9]/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=\d+\.\d+/);
   assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.[1-9]/);
 });

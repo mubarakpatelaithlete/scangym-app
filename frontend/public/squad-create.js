@@ -543,6 +543,15 @@
       });
       cnt.appendChild(mic);
     }
+    /* Batch 8 (Tasks 112/120): 📥 Paste a prompt from the clipboard in one tap. */
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+      var pst = el('span', 'sv-paste', '\uD83D\uDCE5 Paste');
+      pst.setAttribute('role', 'button'); pst.style.cursor = 'pointer';
+      pst.addEventListener('click', function () {
+        navigator.clipboard.readText().then(function (t) { if (t) { ta.value = (ta.value ? ta.value + ' ' : '') + t.trim(); upd(); } }, function () { toast('Allow clipboard to paste', 'info', 2000); });
+      });
+      cnt.appendChild(pst);
+    }
     cnt.appendChild(cntN); cnt.appendChild(cpy); cnt.appendChild(clr);
     function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = cpy.style.visibility = n ? 'visible' : 'hidden'; }
     ta.addEventListener('input', upd); upd();

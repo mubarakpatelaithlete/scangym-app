@@ -422,10 +422,13 @@ function renderMsgs(){
   else if(grew){S.newUp=(S.newUp||0)+1;}
   updBot();
 }
+/* Batch 8 (Tasks 107/118): WhatsApp-style link preview card under a message with a link (no server call). */
+function linkPreview(b){var m=/https?:\/\/[^\s<]+/.exec(b||'');if(!m)return '';var h;try{h=new URL(m[0]).hostname.replace(/^www\./,'');}catch(e){return '';}
+  return '<a class="lp" href="'+esc(m[0])+'" target="_blank" rel="noopener" style="display:flex;gap:8px;align-items:center;margin-top:6px;padding:8px;border-radius:8px;background:rgba(0,0,0,.25);color:#e9edef;text-decoration:none;border-left:3px solid #FF6D00"><span style="font-size:20px">🔗</span><span style="min-width:0"><b style="display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(h)+'</b><small style="color:#8696a0">Tap to open link</small></span></a>';}
 function bodyHtml(b){
   if(b&&b.indexOf('> ')===0){var nl=b.indexOf('\n');var qt=nl<0?b.slice(2):b.slice(2,nl);return '<div class="q">'+esc(qt)+'</div>'+bodyHtml(nl<0?'':b.slice(nl+1));}
   if(b&&b.indexOf('↪ Forwarded\n')===0)return '<div class="fw">↪ Forwarded</div>'+bodyHtml(b.slice(12));
-  if(!b||b.indexOf('📎 /api/dm/file/')!==0)return linkify(b);
+  if(!b||b.indexOf('📎 /api/dm/file/')!==0)return linkify(b)+linkPreview(b);
   var p=b.slice(2).trim().split('|'),u=p[0],n=p[1]||'file',l=n.toLowerCase();
   if(!/^\/api\/dm\/file\/dm_\d+_[a-f0-9]{16}\.[a-z0-9]{1,5}$/.test(u))return linkify(b);
   if(/^voice-note\./.test(l))return '<div style="display:flex;align-items:center;gap:6px">🎤<audio controls preload="metadata" src="'+u+'" style="max-width:200px;height:40px"></audio><button type="button" class="vspd" onclick="event.stopPropagation();var a=this.previousElementSibling;var r={1:1.5,1.5:2,2:1}[a.playbackRate]||1;a.playbackRate=r;this.textContent=r+\'×\'">1×</button></div>';
