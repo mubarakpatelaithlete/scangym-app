@@ -735,7 +735,7 @@ function getTabForRoute(path){
   if(path==='/photos'||path==='/carousel')return 'photos';
   if(path==='/chat'||path==='/community')return 'chat';
   if(path==='/ai-trainer'||path==='/trainer')return 'trainer';
-  if(path==='/creator'||path==='/creator/'||path==='/scansquad'||path==='/scansquad/')return 'creator';
+  if(path==='/creator'||path==='/creator/'||path==='/create'||path==='/create/'||path==='/scansquad'||path==='/scansquad/')return 'creator';
   if(path==='/partner'||path==='/partner/'||path.startsWith('/partner/'))return 'partner';
   return 'more';
 }
@@ -13718,7 +13718,7 @@ window._shareIDCard=function(){
 // ── Profile Edit Page ──
 function ProfilePage(){
   const u=state.user;
-  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at any gym</p><button onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
+  if(!u)return`<div style="text-align:center;padding:80px 20px"><p style="font-size:40px;margin-bottom:16px">🔒</p><p style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">Log in to view your profile</p><p style="color:rgba(255,255,255,.4);margin-bottom:24px">Your ScanGym profile works at any gym</p><button id="sg-profile-login" onclick="navigate('/login')" style="background:#FF6D00;color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer">Log In →</button></div>`;
   return`<div style="padding:16px;max-width:480px;margin:0 auto">
     <div onclick="navigate('/more')" style="display:flex;align-items:center;gap:8px;padding:12px 0;cursor:pointer;color:rgba(255,255,255,.6);font-size:14px;font-weight:600;margin-bottom:4px">← Back</div>
     <h2 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px">My Profile</h2>
@@ -16349,7 +16349,7 @@ function _sgChunkForView(path,tab){
   if(tab==='creator')return 'sg-scansquad';
   if(tab==='shop'||p==='/shop'||p.indexOf('/shop/')===0)return 'sg-shop';
   if(p==='/creators'||p==='/scansquad'||p==='/creator'||p==='/creator-hub'||
-     p==='/creator-earnings'||p==='/creator-reels'||p==='/become-a-creator'||
+     p==='/create'||p==='/creator-earnings'||p==='/creator-reels'||p==='/become-a-creator'||
      p==='/become-creator'||p==='/upload'||p==='/be')return 'sg-scansquad';
   return '';
 }
@@ -16766,7 +16766,8 @@ function _renderInner(){
   else if(path==='/careers')page=InfoPage('Careers at ScanGym',`<p class="text-xl text-white font-bold">Join the Team</p><p>We\'re building the future of gym access in the UK. Currently a lean team based in Manchester.</p><p>Interested in working with us? Send your CV to:</p><p>📧 <strong>hello@scangym.com</strong></p>`);
   // #79: AI Trainer page
   else if(path==='/ai-trainer')page=TrainerTabPage();
-  else if(path==='/creator'||path==='/creator/')page=CreatorFullPage();
+  /* Task 154: /create is what people type and share; it rendered Page Not Found. */
+  else if(path==='/creator'||path==='/creator/'||path==='/create'||path==='/create/')page=CreatorFullPage();
   else if(path==='/partner'||path==='/partner/')page=PartnerFullPage();
   else if(path==='/apps'||path==='/apps/')page=AppsFullPage();
   else if(path==='/channels'||path==='/channels/')page=ChannelsFullPage();
@@ -16897,7 +16898,7 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // Initialize staff QR scanner camera when on /staff/scan
   if(path==='/staff/scan'){setTimeout(sgInitScanner,200);}
   // Load live data for Creator Full Page
-  if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/creator'||path==='/creator/'){setTimeout(function(){if(typeof _loadCreatorFullPage==='function')_loadCreatorFullPage();},200);}
+  if(path==='/become-a-creator'||path==='/become-creator'||path==='/upload'||path==='/creator'||path==='/creator/'||path==='/create'){setTimeout(function(){if(typeof _loadCreatorFullPage==='function')_loadCreatorFullPage();},200);}
   // Load live data for Creator Earnings Page
   if(path==='/creator-earnings'){setTimeout(function(){var cd=JSON.parse(localStorage.getItem('sg_creator')||'null');var h=cd&&(cd.handle||cd.slug);if(!h&&state.user)h=state.user.referral_code;if(h){if(typeof _loadCreatorEarnings==='function')_loadCreatorEarnings(h);if(typeof _loadWithdrawalData==='function')_loadWithdrawalData(h);}},200);}
   // Fix 1: Load channel connection status when on Channels page

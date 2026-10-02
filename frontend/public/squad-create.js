@@ -1101,6 +1101,14 @@
     return m || 'Something went wrong. Try again.';
   }
 
+  /* Task 157 B3: a failed run offers one-tap Try again (Higgsfield's retry). */
+  function addRetry(out, fn) {
+    var b = el('button', 'sv-chip', '\uD83D\uDD01 Try again');
+    b.style.cssText = 'margin-top:8px;cursor:pointer;';
+    b.addEventListener('click', function () { b.remove(); fn(); });
+    out.appendChild(b);
+  }
+
   function showPayNow(out, d, sh, mode) {
     out.innerHTML = '';
     var w = el('div', 'sv-warn');
@@ -1328,6 +1336,7 @@
             } else if (st.status === 'error') {
               clearInterval(job.timer);
               out.innerHTML = '<div class="sv-warn">❌ ' + friendlyError(st.error || 'Generation failed.') + '</div>';
+              addRetry(out, function () { startJob(sh, ta, gen, mode); });
               gen.disabled = false;
             } else {
               var t = document.getElementById('sv-prog-t');
@@ -1350,6 +1359,7 @@
       })
       .catch(function (e) {
         out.innerHTML = '<div class="sv-warn">❌ ' + friendlyError(e.message) + '</div>';
+        addRetry(out, function () { startJob(sh, ta, gen, mode); });
         gen.disabled = false;
       });
   }
