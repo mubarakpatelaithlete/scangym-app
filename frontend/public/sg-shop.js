@@ -284,7 +284,7 @@ window._sgShopReviews=async function(id,owned){
         +'<button type="button" onclick="window._sgShopSendReview('+id+')" style="width:100%;border:0;border-radius:12px;padding:10px;background:#FF6D00;color:#fff;font-weight:800;cursor:pointer">Post review</button></div>';
     }
     h+=(d.reviews||[]).map(function(r){return '<div style="padding:8px 0;border-top:1px solid rgba(255,255,255,.08)"><p style="margin:0;font-size:13px;font-weight:700">'+_sgShopEsc(r.name)+' <span style="color:#FFB020">'+_sgShopStarStr(r.rating)+'</span></p><p style="margin:2px 0;color:#FF9A4D;font-size:11px;font-weight:700">\u2705 Verified purchase</p>'+(r.body?'<p style="margin:2px 0 0;color:rgba(255,255,255,.75);font-size:13px;line-height:1.4">'+_sgShopEsc(r.body)+'</p>':'')+'</div>';}).join('');
-    if(!d.count&&!owned)h+='<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:13px">No reviews yet. Buyers can rate it after they download.</p>';
+    if(!d.count)h+='<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:13px"><span style="color:rgba(255,176,32,.5)">\u2606\u2606\u2606\u2606\u2606</span> No reviews yet \u2014 '+(owned?'you bought it, be the first to rate it below.':'only verified buyers can review, so every star is real.')+'</p>';
     el.innerHTML=h;
   }catch(e){el.innerHTML='';}
 };
@@ -325,7 +325,7 @@ window._sgShopOpen=function(productId){
     +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" onclick="window._sgShopZoom(this.src)" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px;cursor:zoom-in">':'')
     +_sgShopStars(p)
     +(owned?'':'<div style="margin:0 0 4px">'+_sgShopPrice(p.price)+'</div>')
-    +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout · <a href="/refunds" target="_blank" style="color:#86efac">Refunds</a></p>'
+    +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant '+fmt+' download · 🔒 Secure checkout · <a href="/refunds" target="_blank" style="color:#86efac">Refunds</a></p>'
     +'<div style="display:flex;gap:8px;margin:0 0 12px">'
     +'<button type="button" id="sg-shop-save" onclick="window._sgShopHeart('+p.id+');var s=_sgShopLS(\'sg_shop_saved\').indexOf('+p.id+')>=0;this.textContent=s?\'❤️ Saved\':\'🤍 Save for later\'" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">'+(saved?'❤️ Saved':'🤍 Save for later')+'</button>'
     +'<button type="button" onclick="window._sgShopShare('+p.id+')" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">↗️ Share</button></div>'
@@ -335,7 +335,7 @@ window._sgShopOpen=function(productId){
     +'<p id="sg-shop-desc" style="margin:0 0 6px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap;'+(desc.length>220?'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden':'')+'">'+_sgShopEsc(desc)+'</p>'
     +(desc.length>220?'<button type="button" onclick="var d=document.getElementById(\'sg-shop-desc\');var o=d.style.display===\'block\';d.style.display=o?\'-webkit-box\':\'block\';this.textContent=o?\'Read more\':\'Show less\'" style="border:0;background:none;color:#7dd3fc;font-weight:700;font-size:13px;padding:0;margin:0 0 14px;cursor:pointer">Read more</button>':'<div style="height:10px"></div>')
     +'<p style="margin:0 0 4px;font-size:14px;font-weight:800">Product details</p><table style="border-collapse:collapse;margin:0 0 14px">'
-    +dRow('Format',fmt)+(p.fileSizeKb?dRow('File size',p.fileSizeKb+' KB'):'')+dRow('Category',_sgShopEsc(p.category))+dRow('Sold by','<a href="#" onclick="event.preventDefault();window._sgShopStore(\''+_sgShopEsc(p.creatorHandle).replace(/'/g,'')+'\')" style="color:#7dd3fc;text-decoration:none">@'+_sgShopEsc(p.creatorHandle)+' \u203a Visit store</a>')+dRow('Delivery','Instant download + email copy')+'</table>'
+    +dRow('Format',fmt)+(p.fileSizeKb?dRow('File size',p.fileSizeKb+' KB'):'')+dRow('Category',_sgShopEsc(p.category))+dRow('Licence','Personal + commercial use in your own posts, ads and gym. No reselling or sharing the file.')+dRow('Sold by','<a href="#" onclick="event.preventDefault();window._sgShopStore(\''+_sgShopEsc(p.creatorHandle).replace(/'/g,'')+'\')" style="color:#7dd3fc;text-decoration:none">@'+_sgShopEsc(p.creatorHandle)+' \u203a Visit store</a>')+dRow('Delivery','Instant download + email copy')+'</table>'
     +(more.length?_sgShopRow('More from @'+_sgShopEsc(p.creatorHandle),more.map(_sgShopMini).join('')):'')
     +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
     +'<div id="sg-shop-reviews"></div>'
@@ -347,7 +347,9 @@ window._sgShopOpen=function(productId){
         /* Task 158 B3: Amazon's second button. */
         +'<button type="button" id="sg-shop-add-basket" onclick="window._sgShopAddBasket('+p.id+')" style="width:100%;margin-top:8px;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:12px;background:transparent;color:#fff;font-weight:700;font-size:14px;cursor:pointer">'+(_sgShopLS('sg_shop_basket').indexOf(p.id)>=0?'\u2713 In your basket':'\uD83D\uDED2 Add to basket')+'</button>')
     +'</div>'
-    +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
+    +/* Task 158 B5 (71/72/77): Amazon-style trust strip under the button, matching /refunds. */
+    +'<div class="sg-glass-chip" style="display:flex;justify-content:space-around;gap:6px;margin:10px 0 0;padding:9px 6px;border-radius:14px;font-size:11px;color:rgba(255,255,255,.8);text-align:center"><span>\uD83D\uDD12 Secure checkout<br><b>Stripe</b></span><span>\u21A9\uFE0F Refund if faulty<br><b>30 days</b></span><span>\uD83D\uDCE7 Copy by email<br><b>instant</b></span></div>'
+    +'<p style="margin:8px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Not downloaded yet? Refund within 14 days. <a href="/refunds" target="_blank" style="color:rgba(255,255,255,.6)">Refund policy</a> · <a href="mailto:bookings@scangym.com" style="color:rgba(255,255,255,.6)">Help</a></p>'
     +'</div>';
   window._sgShopSimpleSheet(body,{title:p.title,sub:'@'+p.creatorHandle+' \u00b7 '+p.category,icon:'\uD83D\uDCC4'});
 };
@@ -439,20 +441,36 @@ window._sgShopOpenSell=function(opts){
     return navigate('/login');
   }
   var field='width:100%;box-sizing:border-box;padding:12px;margin:0 0 10px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.05);color:#fff;font-size:15px';
-  var cats=['Prompt packs','Workout plans','Meal guides','Video programs','Templates'];
+  /* Task 161 (owner, 2026-10-02): a digital product is a prompt, a PDF, a
+     presentation or an affiliate link. From a Create result it starts on
+     Prompt with the exact prompt that made it, and the creation is the cover. */
+  var kinds=[['prompt','\uD83D\uDCAC Prompt'],['pdf','\uD83D\uDCC4 PDF'],['presentation','\uD83D\uDCCA Presentation'],['affiliate','\uD83D\uDD17 Affiliate link']];
+  window._sgShopSellKind='prompt';
+  var src=window._sgShopSellSource;
   window._sgShopSimpleSheet(
     '<h2 style="margin:0 0 4px;font-size:19px;font-weight:900">Sell a digital product</h2>'
-    +'<p style="margin:0 0 14px;color:rgba(255,255,255,.5);font-size:12px">PDF, ZIP, image, MP3 or MP4, up to 50MB. You keep 70% of every sale.</p>'
-    +'<input id="sg-shop-title" placeholder="Title — e.g. 50 Gym Reel Prompts" maxlength="120" style="'+field+'">'
-    +'<textarea id="sg-shop-desc" placeholder="What the buyer gets" rows="3" style="'+field+'"></textarea>'
-    +'<select id="sg-shop-cat" style="'+field+'">'+cats.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>'
+    +'<p style="margin:0 0 12px;color:rgba(255,255,255,.5);font-size:12px">You keep 70% of every sale.'+(src?' It is sold right inside your video.':'')+'</p>'
+    +(src?'<div style="display:flex;align-items:center;gap:10px;margin:0 0 12px">'+(opts&&opts.kind==='image'?'<img alt="" src="'+src+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover">':'<video muted playsinline preload="metadata" src="'+src+'#t=0.1" style="width:44px;height:56px;border-radius:8px;object-fit:cover"></video>')+'<span style="font-size:13px;color:rgba(255,255,255,.7)">For this creation ✓</span></div>':'')
+    +'<div id="sg-sell-kinds" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px">'+kinds.map(function(k){return '<button type="button" data-k="'+k[0]+'" class="sg-glass-chip" onclick="window._sgShopSellPick(\''+k[0]+'\')" style="border-radius:16px;padding:7px 12px;font-size:13px;font-weight:700;color:#fff;cursor:pointer">'+k[1]+'</button>';}).join('')+'</div>'
+    +'<input id="sg-shop-title" placeholder="Title — e.g. Neon gym reel prompt" maxlength="120" style="'+field+'">'
+    +'<textarea id="sg-shop-text" rows="4" placeholder="" style="'+field+'"></textarea>'
+    +'<input id="sg-shop-file" type="file" style="'+field+'display:none">'
+    +'<textarea id="sg-shop-desc" placeholder="What the buyer gets (optional)" rows="2" style="'+field+'"></textarea>'
     +'<input id="sg-shop-price" type="number" min="1" max="500" step="0.01" placeholder="Price in £ (min £1)" style="'+field+'">'
-    +(window._sgShopSellSource
-      ?'<div id="sg-shop-src" style="'+field+'display:flex;align-items:center;gap:10px">'+(opts&&opts.kind==='image'?'<img alt="" src="'+window._sgShopSellSource+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover">':'🎬')+'<span>Your creation is attached ✓</span></div>'
-      :'<input id="sg-shop-file" type="file" accept=".pdf,.zip,.epub,image/*,audio/mpeg,video/mp4" style="'+field+'">')
     +'<div id="sg-shop-sell-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
     +'<button type="button" id="sg-shop-sell-btn" onclick="window._sgShopSubmitProduct()" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">List it</button>'
   );
+  window._sgShopSellPick('prompt');
+};
+window._sgShopSellPick=function(k){
+  window._sgShopSellKind=k;
+  document.querySelectorAll('#sg-sell-kinds [data-k]').forEach(function(b){var on=b.getAttribute('data-k')===k;b.style.background=on?'rgba(255,109,0,.85)':'';b.style.borderColor=on?'rgba(255,154,77,.9)':'';});
+  var t=document.getElementById('sg-shop-text'),f=document.getElementById('sg-shop-file');
+  if(!t||!f)return;
+  var txt=k==='prompt'||k==='affiliate';
+  t.style.display=txt?'block':'none';f.style.display=txt?'none':'block';
+  t.placeholder=k==='prompt'?(window._sgShopSellSource?'Leave empty to sell the exact prompt that made this creation':'The prompt buyers get'):'https://… your affiliate link';
+  f.accept=k==='pdf'?'.pdf,application/pdf':'.pptx,.ppt,.pdf';
 };
 
 window._sgShopSubmitProduct=async function(){
@@ -464,15 +482,19 @@ window._sgShopSubmitProduct=async function(){
   function fail(message){ if(err){err.textContent=message;err.style.display='block';} }
   if(!title.trim())return fail('Give your product a title');
   if(!(parseFloat(price)>=1))return fail('Price must be at least £1.00');
-  var src=window._sgShopSellSource;
-  if(!src&&(!fileInput||!fileInput.files||!fileInput.files[0]))return fail('Attach the file buyers will download');
+  var src=window._sgShopSellSource,kind=window._sgShopSellKind||'prompt';
+  var txt=((document.getElementById('sg-shop-text')||{}).value||'').trim();
+  var isText=kind==='prompt'||kind==='affiliate';
+  if(kind==='affiliate'&&!/^https?:\/\//i.test(txt))return fail('Paste the full affiliate link (https://…)');
+  if(kind==='prompt'&&!txt&&!src)return fail('Write the prompt buyers get');
+  if(!isText&&(!fileInput||!fileInput.files||!fileInput.files[0]))return fail(kind==='pdf'?'Attach the PDF':'Attach the presentation (PPTX or PDF)');
   var form=new FormData();
   form.append('title',title.trim());
   form.append('description',((document.getElementById('sg-shop-desc')||{}).value||'').trim());
-  form.append('category',(document.getElementById('sg-shop-cat')||{}).value||'Prompt packs');
+  form.append('kind',kind);form.append('category',{prompt:'Prompt packs',pdf:'Templates',presentation:'Presentations',affiliate:'Affiliate links'}[kind]);
   form.append('price',price);
   if(src){form.append('sourceUrl',src);if(/\.(jpe?g|png)(\?|$)/i.test(src))form.append('coverImageUrl',src);}
-  else form.append('file',fileInput.files[0]);
+  if(isText)form.append('text',txt);else form.append('file',fileInput.files[0]);
   if(btn){btn.textContent='Uploading…';btn.disabled=true;}
   if(err)err.style.display='none';
   try{

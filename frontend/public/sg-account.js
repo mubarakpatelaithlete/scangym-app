@@ -114,11 +114,36 @@
         : '<p style="margin:0;color:rgba(255,255,255,.5);font-size:13px">Nothing yet. <a onclick="navigate(\'/create\')" style="color:#FF6D00;cursor:pointer">Make your first creation \u203a</a></p>';
       sec.innerHTML = h;
       before.parentNode.insertBefore(sec, before);
+      myPosts(sec);
       var c = document.getElementById('sg-aff-copy');
       if (c) c.onclick = function () {
         var done = function () { c.textContent = 'Copied \u2713'; };
         if (navigator.clipboard) navigator.clipboard.writeText(d.refLink).then(done, done); else done();
       };
+    }).catch(function () {});
+  }
+  /* Task 160/161: "is it in my studio?" — videos you posted to ScanGym Home,
+     each with the Shop product it sells. */
+  function myPosts(sec) {
+    fetch('/api/post-everywhere/mine', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d || document.getElementById('sg-posts-sec')) return;
+      var ps = d.posts || [];
+      var box = document.createElement('div');
+      box.id = 'sg-posts-sec';
+      box.style.cssText = 'margin-bottom:16px';
+      var h = '<div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">\uD83C\uDFAC My posts on ScanGym (' + ps.length + ')</div>';
+      h += ps.length
+        ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">' + ps.slice(0, 9).map(function (p) {
+            var u = esc(p.url);
+            return '<a href="/reels?v=' + p.id + '" style="position:relative;display:block;aspect-ratio:9/16;border-radius:8px;overflow:hidden;background:#111">'
+              + '<video src="' + u + '#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>'
+              + '<span style="position:absolute;top:4px;left:6px;font-size:10px;font-weight:800;color:#fff;background:rgba(34,197,94,.85);border-radius:8px;padding:1px 6px">' + (p.live ? 'Live' : 'Hidden') + '</span>'
+              + (p.product ? '<span style="position:absolute;bottom:4px;left:4px;right:4px;font-size:10px;font-weight:800;color:#fff;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:8px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\uD83D\uDECD\uFE0F ' + esc(p.product.price) + ' ' + esc(p.product.title) + '</span>' : '')
+              + '</a>';
+          }).join('') + '</div>'
+        : '<p style="margin:0;color:rgba(255,255,255,.5);font-size:13px">Nothing posted yet. Make something in Create and tap \uD83D\uDE80 Post.</p>';
+      box.innerHTML = h;
+      sec.insertBefore(box, sec.firstChild);
     }).catch(function () {});
   }
   var mo = new MutationObserver(function () { build(); });

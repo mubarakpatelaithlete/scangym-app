@@ -270,6 +270,26 @@ function lastCreation(mem, items, kind = null) {
   return { kind: li.kind, prompt: String(li.prompt).slice(0, 600), model: li.model || null };
 }
 
+/** Task 159/164 (owner, 2026-10-02): "@neon-gym at sunrise" — an @mention
+ *  of a past creation in the customer's shared library is swapped for that
+ *  creation's prompt, so the new generation builds on it in every chatbot.
+ *  Words after @ (split on - or _) must all appear in the creation's prompt;
+ *  the newest match wins. Unknown mentions are left as typed. */
+function expandMentions(text, items) {
+  const list = (Array.isArray(items) ? items : []).filter((i) => i && i.prompt && i.status !== 'failed');
+  if (!list.length || !/@[a-z0-9]/i.test(String(text || ''))) return { text, used: [] };
+  const used = [];
+  const out = String(text).replace(/(^|\s)@([a-z0-9][a-z0-9_-]{1,40})/gi, (m, sp, tag) => {
+    const words = tag.toLowerCase().split(/[-_]+/).filter((w) => w.length > 1);
+    if (!words.length) return m;
+    const hit = list.find((i) => { const p = String(i.prompt).toLowerCase(); return words.every((w) => p.includes(w)); });
+    if (!hit) return m;
+    used.push(hit);
+    return `${sp}(my earlier creation: ${String(hit.prompt).replace(/\s*\|.*$/, '').replace(/\s+/g, ' ').slice(0, 300)})`;
+  });
+  return { text: out, used };
+}
+
 /** Short text the AI reads before answering (summary + personality + library). */
 function contextNote(mem, libItems) {
   const p = (mem && mem.profile) || {};
@@ -422,7 +442,7 @@ function formatMemory(mem, customer, id, libItems) {
 module.exports = {
   resolveCustomer, memoryKey, loadMemory, saveMemory, remember,
   logExchange, recentMessages, loadIdentity,
-  learnProfile, contextNote, libraryNote, lastCreation, maybeSummarise, forget, deleteMemory, SUMMARY_EVERY, FORGET_RE, NOTE_RE,
+  learnProfile, contextNote, libraryNote, lastCreation, expandMentions, maybeSummarise, forget, deleteMemory, SUMMARY_EVERY, FORGET_RE, NOTE_RE,
   detectMemoryAsk, kindFromText, linkPrompt, formatLibrary, formatMemory,
   PLATFORM_LABEL, _linkCache: linkCache,
 };

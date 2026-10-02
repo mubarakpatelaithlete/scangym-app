@@ -4585,24 +4585,13 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         btn.textContent = 'AI \u2713';
         setTimeout(function(){ btn.style.background = 'rgba(0,0,0,.5)'; }, 1500);
       };
-      window._sgUploadReel = async function(){
-        // TODO: Upload to R2 then call /api/reels/moderate for #5 AI check
+      /* Task 156 B5: this used to say "uploaded!" without uploading anything.
+         Recorded clips now go through the real upload sheet (progress + drafts). */
+      window._sgUploadReel = function(){
         var caption = (document.getElementById('sg-reel-caption') || {}).value || '';
-        try{
-          // Run moderation check
-          var modResult = await fetch('/api/reels/moderate', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({thumbnailUrl:'pending',caption:caption})
-          }).then(function(r){return r.json();});
-          if(modResult.approved){
-            alert('Reel uploaded! \ud83c\udf89 It will appear in the feed shortly.');
-          } else {
-            alert('Your reel is under review. We\u2019ll notify you once approved.');
-          }
-        }catch(e){
-          alert('Upload failed \u2014 please try again.');
-        }
+        var blob = window._sgReelBlob;
         window._sgCloseCamera();
+        if (blob && window.sgHomePost) window.sgHomePost.compose(blob, caption, null);
       };
 
       // ── Floating Book CTA removed (C4 fix) ──
@@ -4614,6 +4603,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
     })();
     </script>
   <script src="/sg-tabbar.js?v=1.3" defer></script>
+  <script src="/sg-home-post.js?v=1.0" defer></script>
+  <link rel="stylesheet" href="/sg-glass.css?v=1.0">
 
   <!--
     Voice, on the tab most visitors land on.

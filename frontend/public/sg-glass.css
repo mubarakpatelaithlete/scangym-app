@@ -1,0 +1,75 @@
+/* Task 165 (owner, 2026-10-02): "more transparent / glass skin like Tango" on
+   every tab. One shared skin: chips, tags, pills and bars become frosted glass
+   (see-through + blur + thin white edge) instead of solid grey blocks.
+   Active items stay orange so the selected state is still obvious. */
+:root {
+  --sg-glass-bg: rgba(255, 255, 255, .10);
+  --sg-glass-bg-hover: rgba(255, 255, 255, .16);
+  --sg-glass-edge: rgba(255, 255, 255, .22);
+  --sg-glass-blur: blur(14px) saturate(160%);
+  --sg-glass-on: rgba(255, 109, 0, .78);
+  --sg-glass-on-edge: rgba(255, 170, 100, .9);
+}
+
+/* Utility for new UI */
+.sg-glass-chip,
+.sg-glass-sheet {
+  background: var(--sg-glass-bg) !important;
+  border: 1px solid var(--sg-glass-edge) !important;
+  -webkit-backdrop-filter: var(--sg-glass-blur);
+  backdrop-filter: var(--sg-glass-blur);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 18px rgba(0, 0, 0, .18);
+}
+.sg-glass-sheet { background: rgba(18, 20, 29, .62) !important; }
+
+/* Chips / tags / pills across Home, Create, Shop, Chats, Profile */
+[data-shop-cat],
+.sv-chip,
+.sv-mchip,
+.tt-chip,
+.sg-filter-pill,
+.topic-pill,
+.gd-pill,
+.sg-pass-chip,
+.sg-cal-quick-chip {
+  background: var(--sg-glass-bg) !important;
+  border: 1px solid var(--sg-glass-edge) !important;
+  -webkit-backdrop-filter: var(--sg-glass-blur);
+  backdrop-filter: var(--sg-glass-blur);
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
+  transition: background .15s ease, transform .1s ease;
+}
+[data-shop-cat]:active, .sv-chip:active, .sv-mchip:active, .tt-chip:active,
+.sg-filter-pill:active, .topic-pill:active, .gd-pill:active, .sg-glass-chip:active { transform: scale(.96); }
+@media (hover: hover) {
+  [data-shop-cat]:hover, .sv-chip:hover, .sv-mchip:hover, .tt-chip:hover,
+  .sg-filter-pill:hover, .topic-pill:hover, .gd-pill:hover, .sg-glass-chip:hover { background: var(--sg-glass-bg-hover) !important; }
+}
+
+/* Selected state: orange glass */
+[data-shop-cat][style*="#FF6D00"],
+.sv-chip.on,
+.sv-chip.active,
+.tt-chip.active,
+.sg-filter-pill.active,
+.topic-pill.active,
+.sg-pass-chip.selected {
+  background: var(--sg-glass-on) !important;
+  border-color: var(--sg-glass-on-edge) !important;
+}
+
+/* Bottom tab bar: frosted, video shows through (Tango) */
+.sg-tab-bar {
+  background: rgba(10, 10, 14, .38) !important;
+  -webkit-backdrop-filter: var(--sg-glass-blur) !important;
+  backdrop-filter: var(--sg-glass-blur) !important;
+  border-top: 1px solid rgba(255, 255, 255, .10) !important;
+}
+
+/* Browsers without backdrop-filter: keep text readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-shop-cat], .sv-chip, .sv-mchip, .tt-chip, .sg-filter-pill, .topic-pill, .gd-pill,
+  .sg-pass-chip, .sg-glass-chip { background: rgba(40, 44, 56, .85) !important; }
+  .sg-tab-bar, .sg-glass-sheet { background: rgba(14, 16, 22, .92) !important; }
+}
