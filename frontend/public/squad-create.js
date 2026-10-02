@@ -371,6 +371,25 @@
   state.video.generateAudio = true;
   // Edit defaults mirror the server's whitelist defaults (routes/squad-edit.js).
   state.edit.sourceSeconds = 8;
+  /* Task 154 Create 8: remember the last model, ratio and style per mode. */
+  var PREFS_KEY = 'sg_create_prefs';
+  function loadPrefs() {
+    var all; try { all = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}; } catch (e) { all = {}; }
+    MODES.forEach(function (m) {
+      var p = all[m.key]; if (!p || typeof p !== 'object') return;
+      (m.settings || []).forEach(function (st) { if (p[st.key] !== undefined && st.values.indexOf(p[st.key]) !== -1) state[m.key][st.key] = p[st.key]; });
+      if (typeof p.__model === 'string' && /^[a-z0-9._:/-]{1,80}$/i.test(p.__model)) state[m.key].__lastModel = p.__model;
+    });
+  }
+  function savePrefs(mode) {
+    try {
+      var all = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}, p = {};
+      (mode.settings || []).forEach(function (st) { p[st.key] = state[mode.key][st.key]; });
+      if (state[mode.key].__model) p.__model = state[mode.key].__model;
+      all[mode.key] = p; localStorage.setItem(PREFS_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+  loadPrefs();
 
   function cycle(mode, setting) {
     var vals = setting.values;
@@ -1236,6 +1255,7 @@
   // ── generation ──────────────────────────────────────────────────────────
   function startJob(sh, ta, gen, mode) {
     delete healthCache[mode.key]; // the quota is about to change
+    savePrefs(mode);
     if (!isConfigured(mode) || !mode.api) return; // belt and braces: never fire a dead mode
     var prompt = (ta.value || '').trim();
     /* An edit needs the clip first: without one there is nothing to change,
@@ -1447,6 +1467,7 @@
     /* Default to something the creator can actually run: picking a locked
        premium row for them is a 402 they did not ask for. */
     var runnable = list.filter(function (m) { return m.affordable !== false; });
+    if (!state[mode.key].__model && state[mode.key].__lastModel) state[mode.key].__model = state[mode.key].__lastModel;
     var known = list.some(function (m) { return m.id === state[mode.key].__model; });
     var chosen = (known && state[mode.key].__model)
       || (runnable.filter(function (m) { return m.tier === 'default'; })[0] || runnable[0] || list[0]).id;
@@ -1490,6 +1511,7 @@
           return;
         }
         state[mode.key].__model = m.id;
+        savePrefs(mode);
         state[mode.key].__price = m.price || null;
         state[mode.key].__pricePence = (m.pricePence != null) ? m.pricePence : null;
         state[mode.key].__durations = m.durations || null;

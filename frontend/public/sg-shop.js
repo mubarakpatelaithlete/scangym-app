@@ -24,7 +24,8 @@ function ShopPage(){
   return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:10px 12px 110px;color:#fff">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 8px 44px;min-height:30px">
       <h1 style="margin:0;font-size:17px;font-weight:900;white-space:nowrap">ScanGym <span style="color:#FF6D00">Digital Shop</span></h1>
-      <button type="button" id="sg-shop-basket-btn" aria-label="Basket" onclick="window._sgShopOpenBasket()" style="margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDED2 <span id="sg-shop-basket-n">${_sgShopLS('sg_shop_basket').length}</span></button>
+      <button type="button" id="sg-shop-orders-btn" aria-label="My orders" onclick="window._sgShopOpenOrders()" style="margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDCE6 Orders</button>
+      <button type="button" id="sg-shop-basket-btn" aria-label="Basket" onclick="window._sgShopOpenBasket()" style="flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDED2 <span id="sg-shop-basket-n">${_sgShopLS('sg_shop_basket').length}</span></button>
     </div>
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
@@ -540,3 +541,13 @@ window._sgShopBuyAll=async function(){
   if(done.length&&typeof window._sgShopRender==='function')window._sgShopRender();
 };
 
+/* Task 154 Shop 9: order history and downloads one tap from the Shop header. */
+window._sgShopOpenOrders=async function(){
+  if(!state.user){if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');return;}navigate('/login');return;}
+  var d;try{d=await fetch('/api/shop/my-orders',{credentials:'include'}).then(function(r){return r.json();});}catch(e){d={error:'Could not load your purchases'};}
+  var list=(d&&d.orders)||[];
+  var body=d&&d.error&&!list.length?'<p style="margin:16px 0;text-align:center;color:#fca5a5">'+_sgShopEsc(d.error)+'</p>'
+    :!list.length?'<p style="margin:16px 0;text-align:center;color:rgba(255,255,255,.6)">No orders yet. Anything you buy shows here with its download.</p>'
+    :list.map(function(o){return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)"><div style="flex:1;min-width:0"><p style="margin:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_sgShopEsc(o.title)+'</p><p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,.55)">'+_sgShopEsc(o.price)+(o.paidAt?' \u00b7 '+_sgShopEsc(new Date(o.paidAt).toLocaleDateString()):'')+'</p></div><a href="'+_sgShopEsc(o.downloadUrl)+'" style="flex:none;border-radius:12px;padding:8px 12px;background:#FF6D00;color:#fff;font-weight:800;font-size:13px;text-decoration:none">\u2B07 Download</a></div>';}).join('');
+  window._sgShopSimpleSheet('<div style="padding:4px 2px 8px">'+body+'</div>',{title:'My orders',sub:list.length+' purchase'+(list.length===1?'':'s'),icon:'\uD83D\uDCE6'});
+};
