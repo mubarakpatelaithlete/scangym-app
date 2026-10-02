@@ -409,7 +409,7 @@ test('a successful charge marks paid, credits history and lifts suspension', asy
   assert.equal(args.confirm, true);
   assert.equal(args.payment_method, 'pm_1');
   assert.ok(seen.some((s) => s.includes("status = 'paid'")));
-  assert.ok(seen.some((s) => s.includes('paid_invoices = paid_invoices + 1')));
+  assert.ok(seen.some((s) => s.includes('paid_invoices = paid_invoices + $3')));
   assert.ok(seen.some((s) => s.includes('suspended_at = NULL')));
   restore();
 });
