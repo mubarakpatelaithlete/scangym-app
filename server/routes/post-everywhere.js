@@ -295,6 +295,17 @@ router.post('/post', async (req, res) => {
     link: /^https?:\/\//i.test(b.link || '') ? String(b.link) : '',
   };
   if (!p.text && !p.mediaUrl) return res.status(400).json({ error: 'Write something or add a photo/video link' });
+  /* Task 160: 1-click Post — AI writes the title, caption and hashtags from
+     what was made, so the creator never types anything. The referral line the
+     client sent is kept at the end so the post still earns. */
+  let meta = null;
+  if (b.autoMeta && p.mediaUrl) {
+    meta = await writeMeta(req.user.id, p.mediaUrl).catch((e) => { console.warn('[PostEverywhere] meta', e.message); return null; });
+    if (meta) {
+      p.title = meta.title;
+      p.text = [meta.caption, meta.hashtags.join(' '), p.text].filter(Boolean).join('\n\n').slice(0, 2200);
+    }
+  }
   const now = Date.now(), k = String(req.user.id);
   const bk = buckets.get(k) && now - buckets.get(k).start < 3600e3 ? buckets.get(k) : { start: now, count: 0 };
   if (++bk.count > 20) return res.status(429).json({ error: 'Limit is 20 posts per hour' });
@@ -310,12 +321,38 @@ router.post('/post', async (req, res) => {
     if (sg) {
       const row = { app: 'scangym', appName: 'ScanGym', account: displayName(req.user), ...sg };
       const results = [row].concat(out.results || []);
-      return res.json({ ...out, error: undefined, noSocials: !!out.error, results, posted: (out.posted || 0) + (sg.status === 'posted' ? 1 : 0) });
+      return res.json({ ...out, error: undefined, noSocials: !!out.error, results, meta, text: p.text, posted: (out.posted || 0) + (sg.status === 'posted' ? 1 : 0) });
     }
     if (out.error) return res.status(400).json({ error: out.error });
     res.json(out);
   } catch (e) { res.status(502).json({ error: e.message }); }
 });
+
+/** Task 160: title + caption + hashtags for the creator's own creation, from its prompt. */
+async function writeMeta(userId, mediaUrl) {
+  const llm = require('../lib/llm');
+  if (!llm.configured()) return null;
+  const { rows: [job] } = await pool.query(
+    "SELECT prompt, kind FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1",
+    [String(userId), mediaUrl]);
+  if (!job || !job.prompt) return null;
+  const { completion } = await llm.chat('PostMeta', {
+    temperature: 0.8, max_tokens: 300,
+    messages: [
+      { role: 'system', content: 'You write social posts for TikTok, Instagram Reels and YouTube Shorts for ScanGym, a "book any gym for £5 a day" fitness app. Reply with JSON only: {"title": max 60 chars, "caption": 1-2 punchy lines with 1-2 emoji, "hashtags": 5-8 relevant hashtags each starting with #, always include #ScanGym}. No quotes around the JSON, no markdown.' },
+      { role: 'user', content: `This ${job.kind || 'video'} was made with the prompt: ${String(job.prompt).slice(0, 600)}` },
+    ],
+  });
+  const raw = String(completion?.choices?.[0]?.message?.content || '').replace(/^```(json)?|```$/g, '').trim();
+  let j; try { j = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); } catch (e) { return null; }
+  const tags = (Array.isArray(j.hashtags) ? j.hashtags : String(j.hashtags || '').split(/\s+/))
+    .map((t) => '#' + String(t).replace(/^#+/, '').replace(/[^\p{L}\p{N}_]/gu, '')).filter((t) => t.length > 1).slice(0, 8);
+  if (!tags.some((t) => /^#scangym$/i.test(t))) tags.push('#ScanGym');
+  const title = String(j.title || '').trim().slice(0, 60);
+  const caption = String(j.caption || '').trim().slice(0, 300);
+  if (!title && !caption) return null;
+  return { title: title || caption.slice(0, 60), caption, hashtags: tags };
+}
 
 function displayName(u) {
   const n = [u && u.first_name, u && u.last_name ? String(u.last_name)[0] + '.' : ''].filter(Boolean).join(' ');
@@ -328,7 +365,7 @@ async function postToScanGym(user, p) {
     "SELECT id FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1",
     [String(user.id), p.mediaUrl]);
   if (!job) return { status: 'skipped', note: 'Only your own creations can go on ScanGym' };
-  const name = (p.text || 'New creation').split('\n')[0].slice(0, 90) + ' \u00b7 by ' + displayName(user);
+  const name = (p.title || p.text || 'New creation').split('\n')[0].slice(0, 90) + ' \u00b7 by ' + displayName(user);
   const r = await pool.query(
     `INSERT INTO video_catalog (name, category, source, url, cdn_key, orientation, dopamine_tier, active)
      VALUES ($1, 'ScanGym creators', 'creation', $2, $3, 'vertical', 3, true)
@@ -359,3 +396,4 @@ module.exports.postEverywhere = postEverywhere;
 module.exports.myAccounts = myAccounts;
 module.exports.isConfigured = configured;
 module.exports._internals = { postToScanGym, displayName };
+module.exports.writeMeta = writeMeta;

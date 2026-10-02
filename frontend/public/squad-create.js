@@ -1678,7 +1678,7 @@
          every linked account, with the name and email you are signed in with. */
       toast('Posting\u2026', 'info', 2000);
       fetch('/api/post-everywhere/post', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image', toScanGym: true }) })
+        body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image', toScanGym: true, autoMeta: true }) })
         .then(function (r) { if (r.status === 401) return Promise.reject(401); return r.json(); })
         .then(function (o) {
           if (!o || !o.results) { toast((o && o.error) || 'Could not post right now.', 'error', 4000); return; }
