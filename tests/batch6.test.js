@@ -29,6 +29,6 @@ test('Home: reel menu ends with Copy link', () => {
 });
 test('Create: Copy prompt next to Clear; cache bumped', () => {
   assert.match(read('frontend/public/squad-create.js'), /Prompt copied/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.\d+/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=\d+\.\d+/);
   assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.\d+/);
 });

@@ -42,9 +42,21 @@
     return items.filter(function (x) { return (x.salesCount || 0) > 0; })
       .sort(function (a, b) { return b.salesCount - a.salesCount; }).slice(0, 12);
   }
+  /* 5. Batch 8 (Tasks 108/119): \uD83C\uDF81 Free (Amazon/Skool free picks) — free products, newest first. */
+  function freebies(items) {
+    return items.filter(function (x) { return x.pricePence === 0; })
+      .sort(function (a, b) { return (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0); }).slice(0, 12);
+  }
   function after() {
     var st = window._sgShopState, box = document.getElementById('sg-digital-shop-results');
     if (!st || !box || st.q || st.category !== 'All' || document.getElementById('sg-shop-top')) return;
+    var fr = freebies(st.products || []);
+    if (fr.length >= 2 && !document.getElementById('sg-shop-free')) {
+      box.insertAdjacentHTML('afterbegin', dealsHtml(fr).replace('sg-shop-deals', 'sg-shop-free').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83C\uDF81 Free'));
+      Array.prototype.forEach.call(box.querySelectorAll('#sg-shop-free [data-id]'), function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-id'), x = fr.filter(function (p) { return String(p.id) === id; })[0]; if (x && window._sgShopOpen) window._sgShopOpen(x.id); });
+      });
+    }
     var bs = bestSellers(st.products || []);
     if (bs.length >= 2 && !document.getElementById('sg-shop-best')) {
       box.insertAdjacentHTML('afterbegin', dealsHtml(bs).replace('sg-shop-deals', 'sg-shop-best').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83D\uDD25 Best sellers'));
@@ -82,5 +94,5 @@
     return true;
   }
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
-  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers };
+  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers, freebies: freebies };
 })();
