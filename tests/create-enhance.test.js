@@ -18,5 +18,5 @@ test('client: Enhance, Undo and Surprise me sit under the prompt box', () => {
   assert.match(js, /\\u2728 Enhance prompt/);
   assert.match(js, /\/api\/squad-image\/enhance/);
   assert.match(js, /\\uD83C\\uDFB2 Surprise me/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=2\.8/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=\d+\.\d+/);
 });

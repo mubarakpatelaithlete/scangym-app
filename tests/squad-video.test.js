@@ -153,7 +153,7 @@ test('choosing Veo still sends Veo-shaped settings to Gemini', async () => {
       aspectRatio: '16:9',
       durationSeconds: 4,
       resolution: '1080p',
-      generateAudio: false,
+      // Task 102: the Gemini API rejects generateAudio ("isn't supported by this model").
     });
     assert.strictEqual(res.body.model.id, 'veo-3.1-fast');
   } finally {
