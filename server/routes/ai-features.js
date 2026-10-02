@@ -7,11 +7,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../middleware/db');
 
-// Auth middleware (optional — some endpoints work without login)
-function optionalAuth(req, res, next) {
-  // Simplified: check for user in session/token
-  next();
-}
+/* This file carried its own `optionalAuth` stub that called next() and set
+   nothing, so req.user was always undefined and GET /api/ai/progress answered
+   401 "Login required" to every signed-in member — the Progress screen could
+   never show data. Use the real middleware, which reads the session. */
+const { optionalAuth } = require('../middleware/auth');
 
 // ── #79: HeyGen Live Avatar Trainer ──
 router.post('/avatar-trainer', express.json(), async (req, res) => {
@@ -113,7 +113,7 @@ router.get('/calendar', async (req, res) => {
 });
 
 // ── #81: Progress Tracking with Science Corrections ──
-router.get('/progress', async (req, res) => {
+router.get('/progress', optionalAuth, async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: 'Login required' });
