@@ -147,7 +147,12 @@
     b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
     b.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:14px;z-index:9990;width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0';
     b.onclick = menu;
-    document.body.appendChild(b);
+    /* Sit in the Home top bar, left of Search (live check: fixed position covered the search icon). */
+    var srch = document.getElementById('reels-search-button');
+    if (srch && srch.parentNode) {
+      b.style.cssText = 'flex:0 0 auto;pointer-events:auto;width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;margin-right:6px';
+      srch.parentNode.insertBefore(b, srch);
+    } else document.body.appendChild(b);
   }
 
   window.sgHomePost = { open: menu, compose: compose, upload: upload, drafts: drafts };

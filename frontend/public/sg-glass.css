@@ -13,6 +13,7 @@
 
 /* Utility for new UI */
 .sg-glass-chip,
+#reels-search-button,
 .sg-glass-sheet {
   background: var(--sg-glass-bg) !important;
   border: 1px solid var(--sg-glass-edge) !important;
