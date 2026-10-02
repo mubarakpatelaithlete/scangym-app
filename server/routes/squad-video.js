@@ -261,7 +261,16 @@ router.post('/generate', requireBillable, express.json(), async (req, res) => {
   const refusal = genJobs.screenPrompt(prompt);
   if (refusal) return res.status(400).json({ error: refusal });
 
-  const model = models.resolveAvailable('video', req.body?.model, genProvider.configured);
+  let model = models.resolveAvailable('video', req.body?.model, genProvider.configured);
+  /* Task 103: start frame (+ optional end frame) → Veo 3.1 Fast on fal, the
+     proven image-to-video / first-last-frame endpoints (schemas read 2026-10-02). */
+  const startFrame = cleanFrameUrl(req.body?.startFrameUrl);
+  const endFrame = cleanFrameUrl(req.body?.endFrameUrl);
+  if (endFrame && !startFrame) return res.status(400).json({ error: 'Add a start frame first' });
+  if (startFrame) {
+    model = framesModel(!!endFrame);
+    if (!model) return res.status(503).json({ error: 'Start and end frames are not switched on yet.' });
+  }
   if (!model) {
     return res.status(503).json({ error: 'Video generation is not configured yet.' });
   }
@@ -292,7 +301,7 @@ router.post('/generate', requireBillable, express.json(), async (req, res) => {
 
   try {
     const op = model.provider === 'fal'
-      ? (await genProvider.submit(model, falInput(prompt, settings, model))).op
+      ? (await genProvider.submit(model, withFrames(falInput(prompt, settings, model), startFrame, endFrame))).op
       : await veoSubmit(prompt, settings);
 
     const jobId = crypto.randomBytes(8).toString('hex');
@@ -454,6 +463,24 @@ function effectiveSeconds(model, requested) {
 function falInput(prompt, settings, model) {
   const seconds = effectiveSeconds(model, settings.durationSeconds);
   return profileFor(model).build(prompt, { ...settings, durationSeconds: seconds });
+}
+
+/** Task 103 helpers. */
+function cleanFrameUrl(u) {
+  const url = String(u || '').trim();
+  if (!url || url.length > 800 || !/^https:\/\/[^\s"'<>]+$/i.test(url)) return null;
+  return url;
+}
+function framesModel(withEnd) {
+  const base = models.resolveAvailable('video', 'veo-3.1-fal', genProvider.configured);
+  if (!base || base.id !== 'veo-3.1-fal') return null;
+  // Same queue app (fal-ai/veo3.1), so /status polls exactly as before.
+  return { ...base, label: 'Veo 3.1 Fast (frames)', usdPerSecond: 0.15,
+    providerModel: `fal-ai/veo3.1/fast/${withEnd ? 'first-last-frame' : 'image'}-to-video` };
+}
+function withFrames(input, start, end) {
+  if (!start) return input;
+  return end ? { ...input, first_frame_url: start, last_frame_url: end } : { ...input, image_url: start };
 }
 
 /** Task 102 bug: the Gemini API rejects generateAudio ("isn't supported by this
@@ -663,4 +690,4 @@ async function rehost(url, jobId) {
 }
 
 module.exports = router;
-module.exports._internals = { veoParams, falInput, cleanSettings, VIDEO_PROFILES, effectiveSeconds, profileFor };
+module.exports._internals = { cleanFrameUrl, withFrames, veoParams, falInput, cleanSettings, VIDEO_PROFILES, effectiveSeconds, profileFor };

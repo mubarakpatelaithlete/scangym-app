@@ -22,7 +22,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, authenticateUser } = require('../middleware/auth');
 const { requireBillable } = require('../lib/gen-guard');
 const spend = require('../lib/gen-budget');
 const eta = require('../lib/gen-eta');
@@ -255,6 +255,34 @@ router.get('/history', optionalAuth, async (req, res) => {
   res.json({ ...out, quota: await jobs.quotaFor(req, KIND) });
 });
 
+/* Task 103: upload your own reference image, start/end frame or video from the
+   phone (Higgsfield / CapCut / ElevenLabs all start from "upload"). Stored on
+   R2 so every model (fal) can fetch it by https URL. */
+const multer = require('multer');
+const refUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => { const ok = /^(image\/(jpeg|png|webp|gif|heic|heif)|video\/(mp4|quicktime|webm))$/i.test(file.mimetype || ''); cb(ok ? null : new Error('Pick a photo or a video'), ok); } });
+const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many uploads — try again in a minute' } });
+const REF_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic', 'image/heif': 'heif', 'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm' };
+function refKey(userId, mime) {
+  return `refs/${String(userId).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'u'}/${Date.now()}_${crypto.randomBytes(6).toString('hex')}.${REF_EXT[String(mime).toLowerCase()] || 'bin'}`;
+}
+router.post('/upload', authenticateUser, uploadLimiter, (req, res) => {
+  refUpload.single('file')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Max 25 MB' : err.message });
+    if (!req.file) return res.status(400).json({ error: 'Pick a photo or a video' });
+    try {
+      const r2 = require('../lib/r2-upload');
+      if (!r2.r2Configured()) return res.status(503).json({ error: 'Uploads are not set up yet' });
+      const out = await r2.uploadBufferToR2(req.file.buffer, refKey(req.user.id, req.file.mimetype), { contentType: req.file.mimetype });
+      res.status(201).json({ url: out.url, kind: /^video\//.test(req.file.mimetype) ? 'video' : 'image' });
+    } catch (e) {
+      console.error('[ref-upload]', e.message);
+      res.status(502).json({ error: 'Upload failed — try again' });
+    }
+  });
+});
+
 /* Task 120 step 1: ✨ Enhance prompt — Higgsfield, CapCut and ElevenLabs all
    turn a short idea into a detailed prompt in one tap. Text only, no charge. */
 const enhanceLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
@@ -295,4 +323,4 @@ router.post('/enhance', express.json({ limit: '8kb' }), enhanceLimiter, async (r
 });
 
 module.exports = router;
-module.exports._internals = { cleanEnhanced, buildInput, cleanSettings, IMAGE_PROFILES, cleanReferenceUrl, referenceModel };
+module.exports._internals = { refKey, cleanEnhanced, buildInput, cleanSettings, IMAGE_PROFILES, cleanReferenceUrl, referenceModel };
