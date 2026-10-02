@@ -36,7 +36,7 @@ function ShopPage(){
       <div id="sg-shop-recent" style="display:none;margin-top:8px"></div>
     </div>
     <div aria-label="Digital product categories" style="display:flex;gap:6px;overflow-x:auto;white-space:nowrap;max-width:100%;scrollbar-width:none;padding:2px 0 8px">${chips}</div>
-    <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure · No physical goods</p>
+    <p style="margin:0 0 12px;padding:8px 10px;border-radius:10px;background:rgba(34,197,94,.10);color:#86efac;font-size:12px;font-weight:600">⚡ Instant download · 🔒 Secure · No physical goods · <a href="/refunds" target="_blank" style="color:#86efac">Refunds</a></p>
     <div id="sg-digital-shop-results" style="min-height:210px">
       ${_sgShopSkeleton()}
     </div>
@@ -325,7 +325,7 @@ window._sgShopOpen=function(productId){
     +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" onclick="window._sgShopZoom(this.src)" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px;cursor:zoom-in">':'')
     +_sgShopStars(p)
     +(owned?'':'<div style="margin:0 0 4px">'+_sgShopPrice(p.price)+'</div>')
-    +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout</p>'
+    +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout · <a href="/refunds" target="_blank" style="color:#86efac">Refunds</a></p>'
     +'<div style="display:flex;gap:8px;margin:0 0 12px">'
     +'<button type="button" id="sg-shop-save" onclick="window._sgShopHeart('+p.id+');var s=_sgShopLS(\'sg_shop_saved\').indexOf('+p.id+')>=0;this.textContent=s?\'❤️ Saved\':\'🤍 Save for later\'" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">'+(saved?'❤️ Saved':'🤍 Save for later')+'</button>'
     +'<button type="button" onclick="window._sgShopShare('+p.id+')" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">↗️ Share</button></div>'
