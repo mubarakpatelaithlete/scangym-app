@@ -236,7 +236,7 @@ function renderList(){
   if(!q)list=list.filter(function(t){return S.showArch?LOC.arch[t.id]:!LOC.arch[t.id];});
   if(S.labF!=null)list=list.filter(function(t){return LOC.lab[t.id]===S.labF;});
   if(S.tab==='unread')list=list.concat(S.threads.filter(function(t){return LOC.unr[t.id]&&!t.unread&&list.indexOf(t)<0;}));
-  list.sort(function(a,b){return (LOC.pin[b.id]?1:0)-(LOC.pin[a.id]?1:0);});
+  list.sort(function(a,b){return ((LOC.pin[b.id]?1:0)-(LOC.pin[a.id]?1:0))||(Date.parse(b.lastMessageAt||0)||0)-(Date.parse(a.lastMessageAt||0)||0);}); /* Task 154 Chats 2: newest first */
   var h='';
   if(S.labF!=null)h+='<button class="row" id="labClear"><div class="av" style="background:'+LABELS[S.labF][1]+'">🏷️</div><div class="rc"><div class="r1"><span class="nm">'+LABELS[S.labF][0]+'</span></div><div class="r2"><span class="pv">Showing this label · tap to show all</span></div></div></button>';
   if(S.showArch)h+='<button class="row" id="archBack"><div class="av" style="background:#2a2a3a">‹</div><div class="rc"><div class="r1"><span class="nm">Archived</span></div><div class="r2"><span class="pv">Tap to go back to all chats</span></div></div></button>';

@@ -1074,6 +1074,9 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           return !_kw.some(function(w){ return t.indexOf(w) !== -1; }); // TikTok "Filter video keywords"
         });
         if(_kept.length) videos = _kept; // Not interested reels stay out of the feed
+        /* Task 154 Home 10: no duplicate videos in one feed. */
+        var _seenV = {};
+        videos = videos.filter(function(v){ var k = String(v.id || v.url || v.videoUrl || ''); if(!k) return true; if(_seenV[k]) return false; _seenV[k] = 1; return true; });
         allVideos = videos;
         posterCache = {};
         currentIndex = 0;
@@ -1137,7 +1140,11 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
               var videos = data.videos || [];
               if(!videos.length){
                 setCounterText(data.message || ('No reels in ' + cat.label));
-                if(data.needsLogin){ try { window.parent.postMessage({type:'sg-auth-request', action:'following'}, '*'); } catch(e){} }
+                if(data.needsLogin){ try { window.parent.postMessage({type:'sg-auth-request', action:'following'}, '*'); } catch(e){} return; }
+                /* Task 154 Home 2: never leave an empty tab on screen. */
+                showToast('Nothing new in ' + cat.label + ' yet \u2014 showing For You');
+                var fy = railCategories.filter(function(c){ return c.value === FEED_ALL; })[0];
+                if(fy) selectCategory(fy);
                 return;
               }
               feedSeed = null;
@@ -1145,7 +1152,11 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
             })
             .catch(function(){ setCounterText('Could not load ' + cat.label); });
         };
-        if(key === 'nearme') withPlace(go); else go('');
+        if(key === 'nearme'){
+          /* Task 154 Home 8: say why before the phone asks for location (once). */
+          try { if(!localStorage.getItem('sg_loc_explained')){ localStorage.setItem('sg_loc_explained', '1'); showToast('\uD83D\uDCCD Allow location once to see videos and gyms near you'); } } catch(e){}
+          withPlace(go);
+        } else go('');
       }
 
       /* Task 104 step 1: Stories row (Instagram/Snapchat/Facebook) + Snapchat-style daily streak. */
@@ -1183,6 +1194,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         if(cat.value === 'stories:'){ openStories(); return; }
         if(cat.value === (activeCategory || FEED_ALL)) return;
         activeCategory = cat.value === FEED_ALL ? null : cat.value;
+        try { sessionStorage.setItem('sg_home_tab', cat.value); } catch(e){} // Task 154 Home 6
         renderCatRail();
         setCounterText('Loading…');
         if(activeCategory && activeCategory.indexOf('tab:') === 0) return loadTab(cat);
@@ -1211,6 +1223,12 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           return {label: t[1], value: 'tab:' + t[0], count: 0};
         }));
         renderCatRail();
+        /* Task 154 Home 6: come back to the tab you left. */
+        try {
+          var _lt = sessionStorage.getItem('sg_home_tab');
+          var _ltc = _lt && _lt !== FEED_ALL && railCategories.filter(function(c){ return c.value === _lt && c.value.indexOf('tab:') === 0; })[0];
+          if(_ltc) setTimeout(function(){ selectCategory(_ltc); }, 0);
+        } catch(e){}
         fetch('/api/reels/categories')
           .then(function(r){ if(!r.ok) throw new Error('Categories error'); return r.json(); })
           .then(function(data){
