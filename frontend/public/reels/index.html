@@ -2790,6 +2790,10 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
       // PERF FIX #1 + #3: Fixed cache name (was hardcoded to v4), removed mode:'cors'
       // that was breaking CDN edge caching, added connection-aware prefetch depth
       /* Task 109 batch 3 (TikTok Data Saver): only the reel on screen downloads. */
+      /* Task 109 batch 4 (TikTok Screen time): a gentle reminder after 30/60/90 min. */
+      var sgScreenStart = Date.now();
+      function sgScreenLimit(){ try { return parseInt(localStorage.getItem('sg_screen_limit') || '0', 10) || 0; } catch(e){ return 0; } }
+      setInterval(function(){ var n = sgScreenLimit(); if(n && !document.hidden && Date.now() - sgScreenStart > n * 60000){ sgScreenStart = Date.now(); showToast('\u23F1\uFE0F You\u2019ve been watching for ' + n + ' min \u2014 time for a stretch or a workout?'); } }, 30000);
       function sgDataSaver(){ try { return localStorage.getItem('sg_data_saver') === '1'; } catch(e){ return false; } }
       function prefetchAhead(fromIndex){
         if(sgDataSaver()) return;
@@ -3686,6 +3690,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           + window.sgSheetOption('\uD83D\uDEAB', 'Filter keywords')
           + window.sgSheetOption('\uD83D\uDD04', 'Refresh For You')
           + window.sgSheetOption('\uD83D\uDCF6', sgDataSaver() ? 'Data saver: On' : 'Data saver: Off')
+          + window.sgSheetOption('\u23F1\uFE0F', 'Screen time: ' + (sgScreenLimit() ? sgScreenLimit() + ' min' : 'Off'))
           + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : ''),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
@@ -3708,7 +3713,9 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         o[10].addEventListener('click', function(){ sh.close(); openKeywordFilter(); });
         o[11].addEventListener('click', function(){ sh.close(); refreshForYou(); });
         o[12].addEventListener('click', function(){ sh.close(); var on = !sgDataSaver(); try { localStorage.setItem('sg_data_saver', on ? '1' : '0'); } catch(e){} showToast(on ? 'Data saver on \u2014 only the video on screen downloads' : 'Data saver off'); });
-        if(pipVid && o[13]) o[13].addEventListener('click', function(){ sh.close();
+        o[13].addEventListener('click', function(){ sh.close(); var n = {0: 30, 30: 60, 60: 90, 90: 0}[sgScreenLimit()] || 0;
+          try { localStorage.setItem('sg_screen_limit', String(n)); } catch(e){} sgScreenStart = Date.now(); showToast(n ? 'We\u2019ll remind you after ' + n + ' min' : 'Screen time reminder off'); });
+        if(pipVid && o[14]) o[14].addEventListener('click', function(){ sh.close();
           pipVid.requestPictureInPicture().then(function(){ showToast('Playing in a small window'); }).catch(function(){ showToast('Picture-in-picture is not available here'); }); });
       }
       function doubleTapLike(x, y){

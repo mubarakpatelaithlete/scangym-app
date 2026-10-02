@@ -586,6 +586,13 @@
     sh.appendChild(tools);
     sh.appendChild(recBox);
     sh.appendChild(styleBox);
+    if (mode.key === 'video') {
+      var negIn = document.createElement('input');
+      negIn.id = 'sv-neg'; negIn.maxLength = 300;
+      negIn.placeholder = '\u2796 Avoid\u2026 (e.g. text, blur, extra fingers) \u00b7 Veo models';
+      negIn.style.cssText = 'width:100%;box-sizing:border-box;margin:6px 0 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 12px;color:#f1f5f9;font-size:13px;';
+      sh.appendChild(negIn);
+    }
     var frames = el('div', 'sv-row');
     frames.id = 'sv-frames';
     frames.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px';
@@ -1063,6 +1070,8 @@
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
     if (state[mode.key].__model) body.model = state[mode.key].__model;
     if (mode.key === 'image' && state.image.__ref) body.referenceUrl = state.image.__ref;
+    var neg = sh.querySelector('#sv-neg');
+    if (mode.key === 'video' && neg && neg.value.trim()) body.negativePrompt = neg.value.trim();
     if (mode.key === 'video' && state.video.__start) {
       body.startFrameUrl = state.video.__start;
       if (state.video.__end) body.endFrameUrl = state.video.__end;
