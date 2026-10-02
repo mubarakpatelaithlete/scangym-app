@@ -531,6 +531,23 @@
     function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = cpy.style.visibility = n ? 'visible' : 'hidden'; }
     ta.addEventListener('input', upd); upd();
     sh.appendChild(cnt);
+    /* Batch 7 (Tasks 112/120): Higgsfield-style 🕘 Recent prompts — last 5, tap to reuse. */
+    var rec = [];
+    try { rec = JSON.parse(localStorage.getItem('sg_recent_prompts') || '[]') || []; } catch (e) {}
+    if (rec.length) {
+      var rp = el('div', 'sv-recent');
+      rp.id = 'sv-recent';
+      rp.style.cssText = 'display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:6px 0 0;font-size:11px';
+      rp.appendChild(el('span', '', '\uD83D\uDD58'));
+      rec.slice(0, 5).forEach(function (t) {
+        var c = el('span', '', t.length > 28 ? t.slice(0, 28) + '\u2026' : t);
+        c.setAttribute('role', 'button');
+        c.style.cssText = 'flex:none;padding:4px 10px;border-radius:12px;background:#1e2c47;color:#e2e8f0;cursor:pointer;white-space:nowrap';
+        c.addEventListener('click', function () { ta.value = t; upd(); ta.focus(); });
+        rp.appendChild(c);
+      });
+      sh.appendChild(rp);
+    }
 
     /* Task 120 step 1: ✨ Enhance (Higgsfield / CapCut / ElevenLabs) + 🎲 Surprise me. */
     var tools = el('div', 'sv-row sv-ptools');
@@ -686,7 +703,11 @@
     var gen = el('button', 'sv-gen', mode.gen);
     gen.id = 'sv-gen';
     gen.disabled = true; // stays disabled until the server says the mode can run
-    gen.addEventListener('click', function () { startJob(sh, ta, gen, mode); });
+    gen.addEventListener('click', function () {
+      var v = (ta.value || '').trim();
+      if (v) { try { var r = JSON.parse(localStorage.getItem('sg_recent_prompts') || '[]') || []; r = [v].concat(r.filter(function (x) { return x !== v; })).slice(0, 5); localStorage.setItem('sg_recent_prompts', JSON.stringify(r)); } catch (e) {} }
+      startJob(sh, ta, gen, mode);
+    });
     sh.appendChild(gen);
 
     var out = el('div');

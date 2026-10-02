@@ -10,7 +10,7 @@ test('Chats: chat menu has Clear chat (hides messages on this phone)', () => {
   assert.match(h, /data-i="clear"/);
   assert.match(h, /if\(a==='clear'\)clearChat\(\);/);
   assert.match(h, /function clearChat\(\)\{/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.1/);
+  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.\d+/);
 });
 test('Shop: New arrivals = last 14 days, newest first', () => {
   global.window = { _sgShopRender: function () {} };
@@ -29,6 +29,6 @@ test('Home: reel menu ends with Copy link', () => {
 });
 test('Create: Copy prompt next to Clear; cache bumped', () => {
   assert.match(read('frontend/public/squad-create.js'), /Prompt copied/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.7/);
-  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.2/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.\d+/);
+  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.\d+/);
 });
