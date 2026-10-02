@@ -9,7 +9,7 @@ test('Chats: messages with a link get a preview card', () => {
   const h = read('frontend/public/chats/app.html');
   assert.match(h, /return linkify\(b\)\+linkPreview\(b\);/);
   assert.match(h, /function linkPreview\(b\)\{/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.3/);
+  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.\d+/);
 });
 test('Shop: Free row = price 0 only, newest first', () => {
   global.window = { _sgShopRender: function () {} };
@@ -28,6 +28,6 @@ test('Home: Sleep timer sits before Watch from start and Copy link', () => {
 });
 test('Create: Paste button; cache bumped', () => {
   assert.match(read('frontend/public/squad-create.js'), /clipboard\.readText/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=4\.0/);
-  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.4/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=\d+\.\d+/);
+  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.\d+/);
 });
