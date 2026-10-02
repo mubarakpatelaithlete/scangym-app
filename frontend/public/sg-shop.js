@@ -320,7 +320,8 @@ window._sgShopOpen=function(productId){
   var desc=String(p.description||'');
   var dRow=function(k,v){return '<tr><td style="padding:6px 8px 6px 0;color:rgba(255,255,255,.5);font-size:13px;white-space:nowrap">'+k+'</td><td style="padding:6px 0;font-size:13px;font-weight:600">'+v+'</td></tr>';};
   var body='<div style="padding:4px 2px 8px">'
-    +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px">':'')
+    /* Task 158 B2: tap the picture to see it full screen (Amazon zoom). */
+    +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" onclick="window._sgShopZoom(this.src)" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px;cursor:zoom-in">':'')
     +_sgShopStars(p)
     +(owned?'':'<div style="margin:0 0 4px">'+_sgShopPrice(p.price)+'</div>')
     +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout</p>'
@@ -329,6 +330,7 @@ window._sgShopOpen=function(productId){
     +'<button type="button" onclick="window._sgShopShare('+p.id+')" style="flex:1;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:9px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:13px;cursor:pointer">↗️ Share</button></div>'
     +(p.salesCount?'<p style="margin:0 0 8px;color:#FF6D00;font-size:12px;font-weight:800">\uD83D\uDD25 '+p.salesCount+' people bought this</p>':'')
     +(p.fileSizeKb?'<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:12px">'+p.fileSizeKb+' KB</p>':'')
+    +_sgShopAbout(desc)
     +'<p id="sg-shop-desc" style="margin:0 0 6px;color:rgba(255,255,255,.75);font-size:14px;line-height:1.5;white-space:pre-wrap;'+(desc.length>220?'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden':'')+'">'+_sgShopEsc(desc)+'</p>'
     +(desc.length>220?'<button type="button" onclick="var d=document.getElementById(\'sg-shop-desc\');var o=d.style.display===\'block\';d.style.display=o?\'-webkit-box\':\'block\';this.textContent=o?\'Read more\':\'Show less\'" style="border:0;background:none;color:#7dd3fc;font-weight:700;font-size:13px;padding:0;margin:0 0 14px;cursor:pointer">Read more</button>':'<div style="height:10px"></div>')
     +'<p style="margin:0 0 4px;font-size:14px;font-weight:800">Product details</p><table style="border-collapse:collapse;margin:0 0 14px">'
@@ -345,6 +347,24 @@ window._sgShopOpen=function(productId){
     +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
     +'</div>';
   window._sgShopSimpleSheet(body,{title:p.title,sub:'@'+p.creatorHandle+' \u00b7 '+p.category,icon:'\uD83D\uDCC4'});
+};
+
+/* Task 158 B2: Amazon's "About this item" — the description's own bullet
+   lines, or its first sentences, as up to 5 scannable points above the prose. */
+function _sgShopAbout(desc){
+  var d=String(desc||'').trim(); if(d.length<80)return '';
+  var pts=d.split(/\n+/).map(function(l){return l.replace(/^\s*[-•*✅✔️▪️]+\s*/,'').trim();}).filter(function(l){return l.length>3;});
+  if(pts.length<2)pts=d.split(/(?<=[.!?])\s+/).filter(function(x){return x.trim().length>12;});
+  pts=pts.slice(0,5); if(pts.length<2)return '';
+  return '<p style="margin:0 0 4px;font-size:14px;font-weight:800">About this item</p><ul style="margin:0 0 12px;padding-left:18px;color:rgba(255,255,255,.85);font-size:13px;line-height:1.5">'
+    +pts.map(function(x){return '<li style="margin:0 0 4px">'+_sgShopEsc(x.length>140?x.slice(0,137)+'…':x)+'</li>';}).join('')+'</ul>';
+}
+window._sgShopZoom=function(src){
+  var z=document.createElement('div');
+  z.style.cssText='position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom';
+  z.innerHTML='<img src="'+_sgShopEsc(src)+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain"><div style="position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;width:40px;height:40px;border-radius:50%;background:#ef4444;color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center">\u2715</div>';
+  z.addEventListener('click',function(){z.remove();});
+  document.body.appendChild(z);
 };
 
 /* The app has several bespoke sheets and no shared one; this is the smallest
