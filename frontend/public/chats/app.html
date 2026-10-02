@@ -346,8 +346,8 @@ function rowMenu(b,x,y){
 $('btnMore').onclick=function(e){
   e.stopPropagation();document.querySelectorAll('.menu').forEach(function(n){n.remove();});
   var d=document.createElement('div');d.className='menu';d.style.right='12px';d.style.top='52px';
-  d.innerHTML='<button data-a="new">🆕 New chat</button><button data-a="invite">✉️ Invite a friend</button><button data-a="fav">★ Favourites</button><button data-a="unread">🔵 Unread chats</button><button data-a="quick">⚡ Quick replies</button><button data-a="star">⭐ Starred messages</button><button data-a="labs">🏷️ Labels</button>';
-  d.onclick=function(ev){var a=ev.target.dataset.a;d.remove();if(a==='star')starredSheet();if(a==='labs')labelFilterSheet();
+  d.innerHTML='<button data-a="new">🆕 New chat</button><button data-a="invite">✉️ Invite a friend</button><button data-a="fav">★ Favourites</button><button data-a="unread">🔵 Unread chats</button><button data-a="quick">⚡ Quick replies</button><button data-a="star">⭐ Starred messages</button><button data-a="labs">🏷️ Labels</button><button data-a="biz">💼 Greeting & away messages</button>';
+  d.onclick=function(ev){var a=ev.target.dataset.a;d.remove();if(a==='biz')bizSheet();if(a==='star')starredSheet();if(a==='labs')labelFilterSheet();
     if(a==='new')newChatSheet();if(a==='invite')inviteSheet();if(a==='quick')quickSheet(null);
     if(a==='fav'||a==='unread'){document.querySelector('.seg button[data-sec="chats"]').click();var fb=document.querySelector('#filters button[data-tab="'+a+'"]');if(fb)fb.click();}};
   document.body.appendChild(d);setTimeout(function(){document.addEventListener('click',function c(){d.remove();document.removeEventListener('click',c);});},0);
@@ -358,7 +358,7 @@ function openChat(id){
   var t=S.threads.find(function(x){return x.id===id;})||{name:'',online:false};
   if(LOC.unr[id]){delete LOC.unr[id];locSave();}
   setTimeout(function(){$('txt').value=LOC.draft[id]||'';updSend();qpop();},0);
-  S.open=id;S.msgs=[];S.lastId=0;S.unreadN=t.unread||0;S._jumpUnread=true;S.newUp=0;cancelReply();$('toBot').classList.add('hidden');
+  S.open=id;applyWall();S.msgs=[];S.lastId=0;S.unreadN=t.unread||0;S._jumpUnread=true;S.newUp=0;cancelReply();$('toBot').classList.add('hidden');
   $('cAv').outerHTML='<div class="av" id="cAv" style="background:'+color(t.name)+'">'+esc(initials(t.name))+'</div>';
   $('cName').textContent=t.name;$('cSub').textContent='';$('msgs').innerHTML='';
   $('vList').classList.add('hidden');$('vChat').classList.remove('hidden');
@@ -502,11 +502,28 @@ document.querySelector('#vChat .ch').addEventListener('click',function(e){if(!e.
   openSheet(sheetHead('Contact info')+'<div class="info"><div class="big" style="background:'+color(nm)+'">'+esc(initials(nm))+'</div><b style="font-size:20px">'+esc(nm)+'</b><div style="color:#8696a0;font-size:14px;margin-top:2px">'+$('cSub').innerHTML+'</div>'
     +'<div class="acts"><button data-i="voice"><span>📞</span>Voice</button><button data-i="video"><span>📹</span>Video</button><button data-i="fav"><span>'+(FAV[id]?'★':'☆')+'</span>'+(FAV[id]?'Favourite':'Add to favs')+'</button><button data-i="mute"><span>'+(LOC.mute[id]?'🔔':'🔕')+'</span>'+(LOC.mute[id]?'Unmute':'Mute')+'</button><button data-i="search"><span>🔍</span>Search</button></div>'
     +'<button class="tool" data-i="label"><div class="ti">🏷️</div><div><b>Label</b><small>'+(LOC.lab[id]!=null&&LABELS[LOC.lab[id]]?LABELS[LOC.lab[id]][0]:'New customer, Paid, VIP…')+'</small></div></button>'
+    +'<button class="tool" data-i="wall"><div class="ti">🖼️</div><div><b>Wallpaper</b><small>Pick a background for this chat</small></div></button>'
+    +'<button class="tool" data-i="export"><div class="ti">📤</div><div><b>Export chat</b><small>Save this chat as a text file</small></div></button>'
     +'<p style="color:#8696a0;font-size:12px">🔒 Messages are private to you two.</p></div>');
   Array.prototype.forEach.call($('sheetIn').querySelectorAll('[data-i]'),function(b){b.onclick=function(){var a=b.dataset.i;closeSheet();
     if(a==='voice')callStart(id,'voice');if(a==='video')callStart(id,'video');
     if(a==='fav'){if(FAV[id])delete FAV[id];else FAV[id]=1;saveFav();toast(FAV[id]?'Added to favourites':'Removed from favourites');}
-    if(a==='mute')locToggle('mute',id,'Chat muted','Chat unmuted');if(a==='search')chatSearch();if(a==='label')labelSheet(id);};});});
+    if(a==='mute')locToggle('mute',id,'Chat muted','Chat unmuted');if(a==='search')chatSearch();if(a==='label')labelSheet(id);if(a==='wall')wallSheet(id);if(a==='export')exportChat(nm);};});});
+/* Task 107 batch 2: wallpaper per chat, export chat, greeting + away messages (WhatsApp Business). */
+var WALLS=[['Default',''],['Midnight','linear-gradient(160deg,#0f172a,#1e1b4b)'],['Ember','linear-gradient(160deg,#1a0f08,#3a1a08)'],['Forest','linear-gradient(160deg,#052e16,#0b3b2e)'],['Ocean','linear-gradient(160deg,#082f49,#0c4a6e)'],['Rose','linear-gradient(160deg,#3b0a1e,#4c0519)'],['Plain black','#000']];
+function applyWall(){var w=(LOC.wall||{})[S.open];$('msgs').style.background=w||'';}
+function wallSheet(id){openSheet(sheetHead('Chat wallpaper')+WALLS.map(function(w,i){return '<button class="tool" data-w="'+i+'"><div class="ti" style="background:'+(w[1]||'#0b0b14')+'"></div><div><b>'+w[0]+'</b>'+(((LOC.wall||{})[id]||'')===w[1]?'<small>✓ Current</small>':'')+'</div></button>';}).join(''));
+  Array.prototype.forEach.call($('sheetIn').querySelectorAll('[data-w]'),function(b){b.onclick=function(){LOC.wall=LOC.wall||{};var w=WALLS[+b.dataset.w][1];if(w)LOC.wall[id]=w;else delete LOC.wall[id];locSave();closeSheet();applyWall();toast('Wallpaper set');};});}
+function exportChat(nm){var lines=S.msgs.filter(function(m){return !m.deleted&&!LOC.hid[m.id];}).map(function(m){return '['+new Date(m.at||Date.now()).toLocaleString()+'] '+(m.mine?'You':nm)+': '+preview(m.body)+(m.edited?' (edited)':'');});
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));a.download='ScanGym chat with '+nm.replace(/[^\w ]+/g,'')+'.txt';document.body.appendChild(a);a.click();a.remove();toast('Chat exported ('+lines.length+' messages)');}
+function bizSheet(){api('GET','/business').then(function(b){
+  var ta=function(id,v,ph){return '<textarea id="'+id+'" maxlength="1000" placeholder="'+ph+'" style="width:100%;min-height:70px;background:#1b1b28;color:#fff;border:1px solid #33334a;border-radius:10px;padding:10px;font:inherit;margin:4px 0 10px">'+esc(v)+'</textarea>';};
+  var sw=function(id,on,t){return '<label style="display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'> '+t+'</label>';};
+  openSheet(sheetHead('Greeting & away messages')+sw('bgOn',b.greetingOn,'👋 Greeting message')+'<small style="color:#8696a0">Sent automatically the first time someone messages you.</small>'+ta('bg',b.greeting||'Hi! Thanks for messaging. How can I help?','Greeting')
+    +sw('baOn',b.awayOn,'🌙 Away message')+'<small style="color:#8696a0">Sent when you\'re away (max once an hour per chat).</small>'+ta('ba',b.away||'Thanks for your message! I\'m away right now and will reply soon.','Away message')
+    +'<button class="cta" id="bSave" style="width:100%;border:0">Save</button>');
+  $('bSave').onclick=function(){api('PUT','/business',{greeting:$('bg').value,greetingOn:$('bgOn').checked,away:$('ba').value,awayOn:$('baOn').checked}).then(function(){closeSheet();toast('Saved');}).catch(function(e){toast(e.message);});};
+}).catch(function(e){toast(e.status===401?'Sign in first':e.message);});}
 /* WhatsApp Business: type / to pick a quick reply. */
 function qpop(){var v=$('txt').value,p=$('qpop');if(v.charAt(0)!=='/'||!S.open){p.classList.add('hidden');return;}
   var f=v.slice(1).toLowerCase(),l=quickList().filter(function(q){return q.toLowerCase().indexOf(f)>=0;});

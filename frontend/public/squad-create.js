@@ -457,6 +457,15 @@
     });
   }
 
+  function promptHistory(key) {
+    try { var l = JSON.parse(localStorage.getItem('sg_prompt_hist_' + key) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+  }
+  function rememberPrompt(key, p) {
+    p = String(p || '').trim(); if (!p) return;
+    var l = promptHistory(key).filter(function (x) { return x !== p; }); l.unshift(p);
+    try { localStorage.setItem('sg_prompt_hist_' + key, JSON.stringify(l.slice(0, 10))); } catch (e) {}
+  }
+
   function openGrid(mode) {
     var sh = document.getElementById(SHEET_ID);
     var ta = sh && sh.querySelector('.sv-prompt');
@@ -534,9 +543,28 @@
       if (!t.length) return;
       ta.value = t[Math.floor(Math.random() * t.length)].prompt;
     });
-    tools.appendChild(enh); tools.appendChild(undo);
+    /* Task 112/120 batch 2 (Higgsfield "prompt history"): your last 10 prompts per type. */
+    var rec = el('div', 'sv-chip', '\uD83D\uDD58 Recent');
+    var recBox = el('div', 'sv-recent');
+    recBox.style.cssText = 'display:none;flex-direction:column;gap:4px;margin:4px 0;max-height:180px;overflow-y:auto;';
+    rec.addEventListener('click', function () {
+      var l = promptHistory(mode.key);
+      if (!l.length) { toast('Your prompts will show here after you create', 'info', 2200); return; }
+      if (recBox.style.display === 'flex') { recBox.style.display = 'none'; return; }
+      recBox.innerHTML = '';
+      l.forEach(function (p) {
+        var r = el('div', 'sv-chip');
+        r.textContent = p.length > 90 ? p.slice(0, 90) + '\u2026' : p;
+        r.style.cssText = 'text-align:left;white-space:normal;';
+        r.addEventListener('click', function () { ta.value = p; recBox.style.display = 'none'; });
+        recBox.appendChild(r);
+      });
+      recBox.style.display = 'flex';
+    });
+    tools.appendChild(enh); tools.appendChild(undo); tools.appendChild(rec);
     if ((mode.templates || []).length) tools.appendChild(dice);
     sh.appendChild(tools);
+    sh.appendChild(recBox);
     var frames = el('div', 'sv-row');
     frames.id = 'sv-frames';
     frames.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px';
@@ -1009,6 +1037,7 @@
     out.innerHTML = '<div class="sv-prog"><div class="sv-spin"></div><span>Sending…</span></div>';
 
     var body = { prompt: prompt };
+    rememberPrompt(mode.key, prompt);
     if (sourceUrl) body.videoUrl = sourceUrl;
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
     if (state[mode.key].__model) body.model = state[mode.key].__model;

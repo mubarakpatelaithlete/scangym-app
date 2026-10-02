@@ -96,3 +96,18 @@ test('Chats: long-press menu has emoji bar + Edit; bubbles show reactions + edit
   assert.match(html, /rxHtml\(m\)/);
   assert.match(html, /class="edt">edited/);
 });
+
+// Task 107 batch 2: greeting + away messages, wallpaper, export chat.
+test('Chats: greeting/away auto-replies are stored and sent by the server', () => {
+  const dm = read('server/routes/dm.js');
+  assert.match(dm, /router\.put\('\/business'/);
+  assert.match(dm, /autoReply\(t\.id, t\.user_a === uid \? t\.user_b : t\.user_a\)/);
+  assert.match(read('migrations/20261002c_dm_business.sql'), /CREATE TABLE IF NOT EXISTS dm_business/);
+});
+test('Chats: contact info has Wallpaper + Export chat; menu has Greeting & away', () => {
+  const html = read('frontend/public/chats/app.html');
+  assert.match(html, /data-i="wall"/);
+  assert.match(html, /data-i="export"/);
+  assert.match(html, /data-a="biz">💼 Greeting & away messages/);
+  assert.match(html, /S\.open=id;applyWall\(\);/);
+});
