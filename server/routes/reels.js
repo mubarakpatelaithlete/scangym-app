@@ -24,7 +24,8 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const pool = require('../middleware/db');
-const { authenticateUser, requireAdmin } = require('../middleware/auth');
+const { authenticateUser, requireAdmin, optionalAuth } = require('../middleware/auth');
+const homeTabs = require('../lib/home-tabs');
 
 // ═══════════════════════════════════════════════════════════
 //  M10 UPGRADE: TikTok/Instagram-grade feed algorithm
@@ -217,6 +218,7 @@ async function loadSocialReels() {
             thumbnail_url, video_url, duration_sec, category
        FROM social_reels
       WHERE is_approved = true AND is_hidden = false
+        AND (category IS NULL OR category NOT LIKE 'Tab: %')
       ORDER BY fetched_at DESC, id DESC
       LIMIT 500`
   );
@@ -660,6 +662,58 @@ router.get('/categories', async (req, res) => {
     res.json({ categories, total: categories.reduce((s, c) => s + c.count, 0) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load categories' });
+  }
+});
+
+/**
+ * GET /api/reels/tabs — the Home top tabs (Task 105), in order.
+ * GET /api/reels/tab/:tab?lat=&lng= — one tab's reels, same slide shape as /feed.
+ * @see lib/home-tabs.js for where each tab's videos come from.
+ */
+router.get('/tabs', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ tabs: homeTabs.TABS.map((t) => ({ key: t.key, label: t.label })) });
+});
+
+router.get('/tab/:tab', optionalAuth, async (req, res) => {
+  const key = String(req.params.tab || '').toLowerCase();
+  if (!homeTabs.TAB_BY_KEY[key]) return res.status(404).json({ error: 'Unknown tab' });
+  try {
+    let all = [];
+    if (['foryou', 'following', 'trending'].includes(key)) {
+      if (_feedCache && (Date.now() - _feedCacheTime) < FEED_CACHE_TTL * 5) {
+        all = _feedCache.map((v) => ({ ...v }));
+      } else {
+        all = await loadCatalogFromDB();
+        try {
+          const up = await pool.query(
+            `SELECT id, creator_handle, creator_name, caption, category, affiliate_link, file_name, created_at
+               FROM creator_uploads WHERE status = 'approved' ORDER BY created_at DESC LIMIT 300`);
+          all = up.rows.map((u) => ({
+            id: `upload_${u.id}`, name: u.caption || u.file_name || 'Creator Upload', category: u.category || 'Creator',
+            source: 'upload', url: `/api/reels/video/${u.id}`, thumb: null, type: 'upload',
+            creator: { handle: u.creator_handle, name: u.creator_name, affiliateLink: u.affiliate_link }, uploadedAt: u.created_at,
+          })).concat(all);
+        } catch (e) { /* uploads are a top-up */ }
+        try { all = all.concat(await loadSocialReels()); } catch (e) { /* social is a top-up */ }
+      }
+    }
+    let follows = null;
+    if (key === 'following' && req.user) {
+      const q = await pool.query('SELECT creator FROM reel_follows WHERE user_id = $1 LIMIT 500', [String(req.user.id)]);
+      follows = q.rows.map((r) => r.creator);
+    }
+    const perf = key === 'trending' ? await loadPerformanceScores() : new Map();
+    const out = await homeTabs.buildTab(key, {
+      all, perf, follows,
+      lat: req.query.lat, lng: req.query.lng,
+      country: String(req.query.country || req.headers['cf-ipcountry'] || 'GB').toUpperCase(),
+    });
+    res.set('Cache-Control', key === 'following' ? 'private, no-store' : 'public, max-age=60');
+    res.json({ ...out, total: out.videos.length, hasMore: false });
+  } catch (err) {
+    console.error('[reels/tab]', key, err.message);
+    res.json({ tab: key, videos: [], total: 0, hasMore: false, degraded: true, message: 'Could not load this tab — pull to refresh.' });
   }
 });
 
