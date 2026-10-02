@@ -21,6 +21,7 @@
  */
 const express = require('express');
 const { authenticateUser } = require('../middleware/auth');
+const pool = require('../middleware/db');
 
 const router = express.Router();
 router.use(express.json({ limit: '64kb' }));
@@ -299,11 +300,41 @@ router.post('/post', async (req, res) => {
   if (++bk.count > 20) return res.status(429).json({ error: 'Limit is 20 posts per hour' });
   buckets.set(k, bk);
   try {
-    const out = await postEverywhere(req.user.id, p, b.apps);
+    /* Task 110: one tap also publishes to the creator's own ScanGym profile
+       (Home feed), using the name we already have — and works with no socials
+       linked yet, so Post is never a dead end. */
+    const sg = b.toScanGym ? await postToScanGym(req.user, p).catch((e) => ({ status: 'failed', note: e.message })) : null;
+    const out = sg
+      ? await postEverywhere(req.user.id, p, b.apps).catch((e) => ({ error: e.message, results: [], posted: 0 }))
+      : await postEverywhere(req.user.id, p, b.apps);
+    if (sg) {
+      const row = { app: 'scangym', appName: 'ScanGym', account: displayName(req.user), ...sg };
+      const results = [row].concat(out.results || []);
+      return res.json({ ...out, error: undefined, noSocials: !!out.error, results, posted: (out.posted || 0) + (sg.status === 'posted' ? 1 : 0) });
+    }
     if (out.error) return res.status(400).json({ error: out.error });
     res.json(out);
   } catch (e) { res.status(502).json({ error: e.message }); }
 });
+
+function displayName(u) {
+  const n = [u && u.first_name, u && u.last_name ? String(u.last_name)[0] + '.' : ''].filter(Boolean).join(' ');
+  return n || (u && u.email ? String(u.email).split('@')[0] : 'ScanGym creator');
+}
+/** Publish the caller's own finished video creation to ScanGym Home. */
+async function postToScanGym(user, p) {
+  if (p.mediaType !== 'video' || !p.mediaUrl) return { status: 'skipped', note: 'Home shows videos only' };
+  const { rows: [job] } = await pool.query(
+    "SELECT id FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1",
+    [String(user.id), p.mediaUrl]);
+  if (!job) return { status: 'skipped', note: 'Only your own creations can go on ScanGym' };
+  const name = (p.text || 'New creation').split('\n')[0].slice(0, 90) + ' \u00b7 by ' + displayName(user);
+  const r = await pool.query(
+    `INSERT INTO video_catalog (name, category, source, url, cdn_key, orientation, dopamine_tier, active)
+     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, 'vertical', 3, true)
+     ON CONFLICT (cdn_key) DO NOTHING RETURNING id`, [name, p.mediaUrl, 'creation:' + job.id]);
+  return r.rowCount ? { status: 'posted', id: r.rows[0].id } : { status: 'skipped', note: 'Already on ScanGym' };
+}
 
 /** One post to every connected account (or just `apps`). Shared by the
  *  route above, the Create tab's one-tap Post and every chatbot (Task 56). */
@@ -327,3 +358,4 @@ module.exports.APPS = APPS;
 module.exports.postEverywhere = postEverywhere;
 module.exports.myAccounts = myAccounts;
 module.exports.isConfigured = configured;
+module.exports._internals = { postToScanGym, displayName };

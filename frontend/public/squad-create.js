@@ -295,7 +295,7 @@
        back to it, the red ✕ and a swipe down close it, and so does the phone's
        back button. Same shape as the chat sheet and sg-half-sheet.js. */
     '#sg-sv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9490;}',
-    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:#0b0f1a;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));will-change:transform;transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
+    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:linear-gradient(to top,rgba(8,10,18,.95) 0%,rgba(8,10,18,.82) 60%,rgba(8,10,18,.6) 100%);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));will-change:transform;transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
     '#' + SHEET_ID + '.open{transform:translateY(0);}',
     '.sv-step-hidden{display:none !important;}',
@@ -1395,22 +1395,18 @@
       var q = '?media=' + encodeURIComponent(abs) + '&type=' + (isVid ? 'video' : 'image') + '&text=' + encodeURIComponent(text);
       var page = function () { window.open('/post-everywhere/' + q, '_blank', 'noopener'); };
       var c = this;
-      fetch('/api/post-everywhere/accounts', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-        .then(function (d) {
-          var acc = (d && d.accounts) || [];
-          if (!acc.length) { toast('Link your socials once, then tap Post again.', 'info', 3500); page(); return; }
-          var names = acc.map(function (a) { return a.appName; }).filter(function (n, i, all) { return all.indexOf(n) === i; });
-          if (!window.confirm('Post this to ' + names.join(', ') + '?')) return;
-          toast('Posting to ' + names.length + (names.length === 1 ? ' account…' : ' accounts…'), 'info', 2500);
-          return fetch('/api/post-everywhere/post', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image' }) })
-            .then(function (r) { return r.json(); })
-            .then(function (o) {
-              if (!o || !o.results) { toast((o && o.error) || 'Could not post right now.', 'error', 4000); return; }
-              var msg = o.results.map(function (x) { return (x.status === 'posted' ? '✅ ' : x.status === 'skipped' ? '⏭️ ' : '❌ ') + x.appName; }).join('  ');
-              toast('Posted to ' + o.posted + '/' + o.results.length + ': ' + msg, o.posted ? 'success' : 'error', 6000);
-            });
-        }).catch(function () { page(); });
+      /* Task 110: no confirm, no page — one tap posts to your ScanGym profile and
+         every linked account, with the name and email you are signed in with. */
+      toast('Posting\u2026', 'info', 2000);
+      fetch('/api/post-everywhere/post', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, mediaUrl: abs, mediaType: isVid ? 'video' : 'image', toScanGym: true }) })
+        .then(function (r) { if (r.status === 401) return Promise.reject(401); return r.json(); })
+        .then(function (o) {
+          if (!o || !o.results) { toast((o && o.error) || 'Could not post right now.', 'error', 4000); return; }
+          var msg = o.results.map(function (x) { return (x.status === 'posted' ? '\u2705 ' : x.status === 'skipped' ? '\u23ED\uFE0F ' : '\u274C ') + x.appName; }).join('  ');
+          toast('Posted to ' + o.posted + '/' + o.results.length + ': ' + msg + (o.noSocials ? ' \u00b7 Link Instagram, YouTube, TikTok\u2026 once in Profile \u203a Connect to post everywhere' : ''), o.posted ? 'success' : 'error', 6500);
+        })
+        .catch(function (e) { if (e === 401) toast('Sign in to post', 'info', 3000); else page(); });
     });
     chip('✏️ Edit', function () {
       if (isVid) { window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs }); return; }
