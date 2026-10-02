@@ -242,7 +242,7 @@ function renderList(){
   if(S.showArch)h+='<button class="row" id="archBack"><div class="av" style="background:#2a2a3a">‹</div><div class="rc"><div class="r1"><span class="nm">Archived</span></div><div class="r2"><span class="pv">Tap to go back to all chats</span></div></div></button>';
   else if(!q&&S.tab==='chats'&&nArch)h+='<button class="row" id="archRow"><div class="av" style="background:#2a2a3a">🗄️</div><div class="rc"><div class="r1"><span class="nm">Archived</span><span class="tm">'+nArch+'</span></div></div></button>';
   list.forEach(function(t){
-    h+='<button class="row" data-id="'+t.id+'">'+avatar(t.name,t.online)+'<div class="rc"><div class="r1"><span class="nm">'+(FAV[t.id]?'<span class="fav">★</span> ':'')+esc(t.name)+(LOC.lab[t.id]!=null&&LABELS[LOC.lab[t.id]]?'<span class="lab" style="background:'+LABELS[LOC.lab[t.id]][1]+'">'+LABELS[LOC.lab[t.id]][0]+'</span>':'')+'</span><span class="tm'+(t.unread||LOC.unr[t.id]?' new':'')+'">'+(t.lastMessage?when(t.lastMessageAt):'')+'</span></div><div class="r2"><span class="pv">'+(t.lastFromMe&&t.lastMessage?'<span class="tick'+(t.lastRead?' read':'')+'">✓✓</span> ':'')+(LOC.draft[t.id]?'<span class="dr">Draft:</span> '+esc(LOC.draft[t.id]):esc(preview(t.lastMessage)||'Tap to start chatting'))+'</span>'+(LOC.mute[t.id]?'<span style="color:#8696a0;font-size:13px">🔕</span>':'')+(LOC.pin[t.id]?'<span style="color:#8696a0;font-size:13px">📌</span>':'')+(t.unread?'<span class="badge'+(LOC.mute[t.id]?' mute':'')+'">'+t.unread+'</span>':LOC.unr[t.id]?'<span class="badge" aria-label="Marked unread"></span>':'')+'</div></div></button>';
+    h+='<button class="row" data-id="'+t.id+'">'+avatar(t.name,t.online)+'<div class="rc"><div class="r1"><span class="nm">'+(FAV[t.id]?'<span class="fav">★</span> ':'')+(t.group?'👥 ':'')+esc(t.name)+(LOC.lab[t.id]!=null&&LABELS[LOC.lab[t.id]]?'<span class="lab" style="background:'+LABELS[LOC.lab[t.id]][1]+'">'+LABELS[LOC.lab[t.id]][0]+'</span>':'')+'</span><span class="tm'+(t.unread||LOC.unr[t.id]?' new':'')+'">'+(t.lastMessage?when(t.lastMessageAt):'')+'</span></div><div class="r2"><span class="pv">'+(t.lastFromMe&&t.lastMessage?'<span class="tick'+(t.lastRead?' read':'')+'">✓✓</span> ':'')+(LOC.draft[t.id]?'<span class="dr">Draft:</span> '+esc(LOC.draft[t.id]):esc(preview(t.lastMessage)||'Tap to start chatting'))+'</span>'+(LOC.mute[t.id]?'<span style="color:#8696a0;font-size:13px">🔕</span>':'')+(LOC.pin[t.id]?'<span style="color:#8696a0;font-size:13px">📌</span>':'')+(t.unread?'<span class="badge'+(LOC.mute[t.id]?' mute':'')+'">'+t.unread+'</span>':LOC.unr[t.id]?'<span class="badge" aria-label="Marked unread"></span>':'')+'</div></div></button>';
   });
   if(q.length>=2){h+='<div id="people"></div>';}
   if(!list.length&&q.length<2)h='<div class="empty"><b>'+(S.tab==='unread'?'No unread chats':S.tab==='fav'?'No favourites yet':'No chats yet')+'</b>'+(S.tab==='unread'?'You\'re all caught up.':S.tab==='fav'?'Long-press a chat and tap ★ Add to favourites.':'Tap 💬 to find a friend on ScanGym, or invite one by SMS.')+'</div>';
@@ -305,9 +305,25 @@ function inviteSheet(){
   openSheet('<h3>Invite by SMS <button onclick="this.closest(\'.sheet\').classList.add(\'hidden\')">✕</button></h3><p style="color:#8696a0;font-size:14px;margin-bottom:10px">We\'ll text them a link to chat with you on ScanGym.</p><div class="search" style="margin:0 0 12px"><input id="ph" type="tel" placeholder="+44 7700 900123"></div><button class="cta" id="phGo" style="border:0;margin:0">Send invite</button>');
   $('ph').focus();$('phGo').onclick=function(){var p=$('ph').value.replace(/[\s()-]/g,'');api('POST','/invite',{phone:p}).then(function(){closeSheet();toast('Invite sent ✓');}).catch(function(e){toast(e.message);});};
 }
+/* Task 154 Chats 4: WhatsApp groups — name, pick people, create. */
+function groupSheet(){
+  var pick={};
+  openSheet(sheetHead('👥 New group')+field('gName','Group name')+'<div id="gSel" style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px"></div>'+field('gq','Add people: name, email or phone')+'<div id="gRes" style="overflow-y:auto;max-height:40vh"></div><button class="tool" id="gGo" style="justify-content:center;background:#25d366;color:#0b0b14;font-weight:800;margin-top:8px">Create group</button>');
+  function paint(){var k=Object.keys(pick);$('gSel').innerHTML=k.map(function(id){return '<span data-x="'+esc(id)+'" style="background:#1f2c34;border-radius:14px;padding:5px 10px;font-size:13px;cursor:pointer">'+esc(pick[id])+' ✕</span>';}).join('');
+    Array.prototype.forEach.call($('gSel').querySelectorAll('[data-x]'),function(x){x.onclick=function(){delete pick[x.dataset.x];paint();};});
+    $('gGo').textContent=k.length?'Create group ('+(k.length+1)+')':'Create group';}
+  var gq=$('gq'),gt;$('gName').focus();
+  gq.oninput=function(){var v=gq.value.trim();clearTimeout(gt);if(v.length<2){$('gRes').innerHTML='';return;}gt=setTimeout(function(){api('GET','/users?q='+encodeURIComponent(v)).then(function(j){
+    $('gRes').innerHTML=j.users.map(function(u){return '<button class="row" data-g="'+esc(u.id)+'" data-n="'+esc(u.name)+'">'+avatar(u.name,u.online)+'<div class="rc"><div class="r1"><span class="nm">'+esc(u.name)+'</span></div><div class="r2"><span class="pv">Tap to add</span></div></div></button>';}).join('')||'<div class="empty">No one found</div>';
+    Array.prototype.forEach.call($('gRes').querySelectorAll('[data-g]'),function(b){b.onclick=function(){pick[b.dataset.g]=b.dataset.n;gq.value='';$('gRes').innerHTML='';paint();gq.focus();};});}).catch(function(){});},250);};
+  $('gGo').onclick=function(){var n=$('gName').value.trim(),ids=Object.keys(pick);if(!n){toast('Give the group a name');return;}if(!ids.length){toast('Add at least one person');return;}
+    $('gGo').disabled=true;api('POST','/groups',{name:n,userIds:ids}).then(function(j){closeSheet();return loadThreads().then(function(){openChat(j.id);});}).catch(function(e){$('gGo').disabled=false;toast(e.message||'Could not create the group');});};
+}
 function newChatSheet(){
   openSheet('<h3>New chat <button onclick="this.closest(\'.sheet\').classList.add(\'hidden\')">✕</button></h3><div class="search" style="margin:0 0 8px"><span>🔍</span><input id="nq" placeholder="Name, email or phone"></div><button class="tool" id="nInv"><div class="ti">✉️</div><div><b>Invite a friend</b><small>Not on ScanGym yet? Send an SMS</small></div></button><div id="nRes" style="overflow-y:auto"></div>');
   $('nInv').onclick=inviteSheet;
+  var gb=document.createElement('button');gb.className='tool';gb.id='nGrp';gb.innerHTML='<div class="ti">👥</div><div><b>New group</b><small>Chat with several people at once</small></div>';
+  $('nInv').parentNode.insertBefore(gb,$('nInv'));gb.onclick=groupSheet;
   var nq=$('nq');nq.focus();nq.oninput=function(){var v=nq.value.trim();if(v.length<2){$('nRes').innerHTML='';return;}searchPeople(v,$('nRes'));};
 }
 $('fab').onclick=newChatSheet;
@@ -365,7 +381,7 @@ function openChat(id){
   var t=S.threads.find(function(x){return x.id===id;})||{name:'',online:false};
   if(LOC.unr[id]){delete LOC.unr[id];locSave();}
   setTimeout(function(){$('txt').value=LOC.draft[id]||'';updSend();qpop();},0);
-  S.open=id;applyWall();S.msgs=[];S.lastId=0;S.unreadN=t.unread||0;S._jumpUnread=true;S.newUp=0;cancelReply();$('toBot').classList.add('hidden');
+  S.open=id;S.isGroup=!!t.group;$('cVideo').style.display=$('cCall').style.display=S.isGroup?'none':'';applyWall();S.msgs=[];S.lastId=0;S.unreadN=t.unread||0;S._jumpUnread=true;S.newUp=0;cancelReply();$('toBot').classList.add('hidden');
   $('cAv').outerHTML='<div class="av" id="cAv" style="background:'+color(t.name)+'">'+esc(initials(t.name))+'</div>';
   $('cName').textContent=t.name;$('cSub').textContent='';$('msgs').innerHTML='';
   $('vList').classList.add('hidden');$('vChat').classList.remove('hidden');
@@ -379,7 +395,8 @@ function poll(){
   var id=S.open;if(!id||document.hidden)return; // no polling while the app is in the background
   api('GET','/threads/'+id+'/messages?after='+S.lastId).then(function(j){
     if(S.open!==id)return;
-    $('cName').textContent=j.other.name;var sub=$('cSub');sub.innerHTML=lastSeen(j.other);sub.className='sub'+(j.other.online&&!j.other.typing?' on':'');
+    $('cName').textContent=j.other.name;var sub=$('cSub');sub.innerHTML=j.other.group?esc((j.other.memberNames||[]).join(', ')):lastSeen(j.other);sub.className='sub'+(j.other.online&&!j.other.typing?' on':'');
+    S.isGroup=!!j.other.group;$('cVideo').style.display=$('cCall').style.display=S.isGroup?'none':'';
     var changed=false;
     j.messages.forEach(function(m){var i=S.msgs.findIndex(function(x){return x.id===m.id;});if(i<0){S.msgs=S.msgs.filter(function(x){return !(x.pending&&x.body===m.body&&m.mine);});S.msgs.push(m);changed=true;}if(m.id>S.lastId)S.lastId=m.id;});
     j.ticks.forEach(function(t){var m=S.msgs.find(function(x){return x.id===t.id;});if(m&&(m.read!==t.read||m.delivered!==t.delivered||m.deleted!==t.deleted)){m.read=t.read;m.delivered=t.delivered;if(t.deleted){m.deleted=true;m.body='';}changed=true;}});
@@ -399,7 +416,7 @@ function editSheet(m){openSheet(sheetHead('Edit message')+'<textarea id="edT" st
     api('PATCH','/messages/'+m.id,{body:v}).then(function(j){m.body=j.body;m.edited=true;closeSheet();renderMsgs();toast('Edited');}).catch(function(err){toast(err.message);});};}
 function renderMsgs(){
   var box=$('msgs'),atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80,h='',day='';
-  if(!S.msgs.length)h='<div class="day"><span>🔒 Say hi 👋 — messages are private to you two</span></div>';
+  if(!S.msgs.length)h='<div class="day"><span>'+(S.isGroup?'👥 Group created — say hi to everyone 👋':'🔒 Say hi 👋 — messages are private to you two')+'</span></div>';
   var them=0,unrAt=-1;if(S.unreadN>0){for(var k=S.msgs.length-1;k>=0;k--){if(!S.msgs[k].mine){them++;if(them===S.unreadN){unrAt=k;break;}}}}
   S.msgs.forEach(function(m,ix){
     if(ix===unrAt)h+='<div class="day unr"><span>'+S.unreadN+' unread message'+(S.unreadN>1?'s':'')+'</span></div>';
@@ -407,7 +424,7 @@ function renderMsgs(){
     if(d!==day){day=d;var w=when(m.at||Date.now());h+='<div class="day"><span>'+(/:/.test(w)?'Today':w)+'</span></div>';}
     if(LOC.hid[m.id])return; // deleted for me
     var big=!m.deleted&&/^(?:\p{Extended_Pictographic}|\uFE0F|\u200D|\s){1,12}$/u.test(m.body||'')&&((m.body||'').match(/\p{Extended_Pictographic}/gu)||[]).length<=3;
-    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+(big?' big':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':bodyHtml(m.body))+'<span class="meta">'+(LOC.star[m.id]?'<span class="star">★</span>':'')+(m.edited&&!m.deleted?'<span class="edt">edited</span>':'')+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>'+rxHtml(m);
+    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+(big?' big':'')+'" data-id="'+m.id+'">'+(m.from&&!m.deleted?'<div style="color:'+color(m.from)+';font-size:12.5px;font-weight:700;margin-bottom:2px">'+esc(m.from)+'</div>':'')+(m.deleted?'🚫 This message was deleted':bodyHtml(m.body))+'<span class="meta">'+(LOC.star[m.id]?'<span class="star">★</span>':'')+(m.edited&&!m.deleted?'<span class="edt">edited</span>':'')+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>'+rxHtml(m);
   });
   var grew=S._lastN!=null&&S.msgs.length>S._lastN;S._lastN=S.msgs.length;
   /* A playing voice note keeps playing when a new message arrives. */
