@@ -413,7 +413,7 @@ async function postToScanGym(user, p) {
      RETURNING id, (xmax = 0) AS inserted`, [name, p.mediaUrl, 'creation:' + job.id, productId, !!p.title]);
   const row = r.rows[0];
   if (!row) return { status: 'skipped', note: 'Already on ScanGym' };
-  if (!row.inserted) return (productId || p.title) ? { status: 'posted', id: row.id, productId, note: productId ? 'Product added to your video' : 'Title updated' } : { status: 'skipped', note: 'Already on ScanGym' };
+  if (!row.inserted) return (productId || p.title) ? { status: 'posted', id: row.id, productId, note: productId ? 'Product added to your video' : 'Title updated' } : { status: 'skipped', id: row.id, note: 'Already on ScanGym' };
   return { status: 'posted', id: row.id, productId };
 }
 
