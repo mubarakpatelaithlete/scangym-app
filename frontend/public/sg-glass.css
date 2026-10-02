@@ -74,3 +74,51 @@
   .sg-pass-chip, .sg-glass-chip { background: rgba(40, 44, 56, .85) !important; }
   .sg-tab-bar, .sg-glass-sheet { background: rgba(14, 16, 22, .92) !important; }
 }
+
+/* Task 165 pass 2 (owner, 2026-10-02, YouTube Shorts camera screenshots):
+   "make the heart transparent: just the icon border, inside see-through".
+   Every action icon is now a thin white outline (no solid fill), and the
+   Home rail sits in one see-through glass pill, like YouTube's side rail. */
+html:root {
+  --sg-btn-bg: rgba(255, 255, 255, .08);
+  --sg-btn-border-color: rgba(255, 255, 255, .24);
+  --sg-btn-blur: blur(14px) saturate(160%);
+  --sg-btn-shadow: inset 0 1px 0 rgba(255, 255, 255, .10);
+}
+html body #sg-reel-row-host .reel-actions,
+html body .reel-actions.sg-glass-rail {
+  background: rgba(30, 30, 34, .28) !important;
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+  -webkit-backdrop-filter: var(--sg-glass-blur) !important;
+  backdrop-filter: var(--sg-glass-blur) !important;
+  border-radius: 36px !important;
+  padding: 12px 0 !important;
+}
+html body #sg-reel-row-host .reel-actions .icon,
+html body #sg-reel-row-host .reel-actions .tt-action-btn {
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)) !important;
+}
+html body #sg-reel-row-host .reel-actions .icon svg,
+html body #sg-reel-row-host .reel-actions .icon svg.tt-fill,
+html body #sg-reel-row-host .reel-actions .icon svg.tt-bold,
+html body #sg-reel-row-host .reel-actions .tt-action-btn svg {
+  fill: none !important; stroke: #fff !important; stroke-width: 1.7 !important;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+html body #sg-reel-row-host .reel-actions .icon svg path,
+html body #sg-reel-row-host .reel-actions .icon svg rect,
+html body #sg-reel-row-host .reel-actions .tt-action-btn svg path { fill: none !important; stroke: #fff !important; }
+html body #sg-reel-row-host .reel-actions .icon svg circle { fill: #fff !important; stroke: none !important; }
+/* Liked / reposted keep their colour, still outline-first like YouTube */
+html body #sg-reel-row-host .reel-actions .reel-action[data-action="like"].sg-on .icon svg,
+html body #sg-reel-row-host .reel-actions .reel-action[data-action="like"].sg-on .icon svg path { fill: #fe2c55 !important; stroke: #fe2c55 !important; }
+html body #sg-reel-row-host .reel-actions .reel-action[data-action="repost"].sg-on .icon svg path { stroke: #22c55e !important; }
+
+/* Round icon buttons and pills everywhere: see-through glass, white edge */
+.sg-row-btn, .sg-sheet-x, .sg-icon-btn, #reels-top-bar button, #reels-top-bar a {
+  background: rgba(255, 255, 255, .08) !important;
+  border: 1px solid rgba(255, 255, 255, .24) !important;
+  -webkit-backdrop-filter: var(--sg-glass-blur); backdrop-filter: var(--sg-glass-blur);
+}
+#reels-top-bar svg, .sg-row-btn svg, .sg-icon-btn svg { fill: none !important; stroke: #fff !important; stroke-width: 1.7 !important; }
