@@ -2174,6 +2174,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         }
         var prevIndex = currentIndex;
         currentIndex  = index;
+        sgRememberWatch(allVideos[index]);
         // H7 FIX: Persist reel position so it survives tab-switches & reloads
         try { sessionStorage.setItem('sg_reel_idx', String(index)); } catch(e){}
         trackOffset   = -(index * screenH);
@@ -3585,17 +3586,46 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         if(v.paused){ v.play().catch(function(){}); reel.classList.remove('sg-paused'); }
         else { v.pause(); reel.classList.add('sg-paused'); }
       }
+      /* Task 109 step 1 (TikTok): Watch history + Picture-in-picture. */
+      function sgWatchList(){ try { var l = JSON.parse(localStorage.getItem('sg_watch_history') || '[]'); return Array.isArray(l) ? l : []; } catch(e){ return []; } }
+      function sgRememberWatch(v){
+        if(!v || v.id == null) return;
+        var l = sgWatchList().filter(function(x){ return String(x.id) !== String(v.id); });
+        l.unshift({ id: v.id, name: String(v.name || 'Reel').slice(0, 80), thumb: v.thumb || v.posterUrl || '', at: Date.now() });
+        try { localStorage.setItem('sg_watch_history', JSON.stringify(l.slice(0, 100))); } catch(e){}
+      }
+      function sgEscH(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+      function openWatchHistory(){
+        var l = sgWatchList();
+        var html = l.length ? l.map(function(x, i){
+          return '<button type="button" class="sg-wh" data-i="' + i + '" style="display:flex;gap:10px;align-items:center;width:100%;padding:8px 4px;border:0;background:none;color:#fff;text-align:left;cursor:pointer">'
+            + (x.thumb ? '<img src="' + sgEscH(x.thumb) + '" alt="" loading="lazy" style="width:44px;height:60px;object-fit:cover;border-radius:6px;flex:none">' : '<span style="width:44px;height:60px;border-radius:6px;background:#333;flex:none"></span>')
+            + '<span style="font-size:13px;font-weight:600;line-height:1.3">' + sgEscH(x.name) + '<br><small style="color:rgba(255,255,255,.5);font-weight:400">' + new Date(x.at).toLocaleString() + '</small></span></button>';
+        }).join('') + '<button type="button" id="sg-wh-clear" style="width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:none;color:#fff;font-weight:700;cursor:pointer">Clear watch history</button>'
+          : '<p style="color:rgba(255,255,255,.6);font-size:14px">Videos you watch will show here.</p>';
+        var sh = window.sgOpenSheet(html, { title: 'Watch history', sub: l.length + ' videos', icon: '\uD83D\uDD58' });
+        Array.prototype.forEach.call(sh.body.querySelectorAll('.sg-wh'), function(b){ b.addEventListener('click', function(){
+          var x = l[+b.dataset.i]; sh.close();
+          for(var k = 0; k < allVideos.length; k++){ if(String(allVideos[k].id) === String(x.id)){ snapTo(k, true); return; } }
+          location.href = '/reels?v=' + encodeURIComponent(x.id);
+        }); });
+        var c = sh.body.querySelector('#sg-wh-clear');
+        if(c) c.addEventListener('click', function(){ try { localStorage.removeItem('sg_watch_history'); } catch(e){} sh.close(); showToast('Watch history cleared'); });
+      }
       function hiddenReels(){ try { return JSON.parse(localStorage.getItem('sg_not_interested') || '[]'); } catch(e){ return []; } }
       function openReelMenu(video, reel){
         if(typeof window.sgOpenSheet !== 'function') return;
         var sp = [0.5, 1, 1.5, 2];
+        var pipVid = document.pictureInPictureEnabled && reel.querySelector('video');
         var sh = window.sgOpenSheet(
           window.sgSheetOption('\uD83D\uDC22', 'Speed 0.5x') + window.sgSheetOption('\u25B6\uFE0F', 'Speed 1x (normal)')
           + window.sgSheetOption('\u26A1', 'Speed 1.5x') + window.sgSheetOption('\uD83D\uDE80', 'Speed 2x')
           + window.sgSheetOption('\uD83D\uDEAB', 'Not interested') + window.sgSheetOption('\u2197\uFE0F', 'Share')
           + window.sgSheetOption('\u23EC', sgAutoScroll() ? 'Auto-scroll: On' : 'Auto-scroll: Off')
           + window.sgSheetOption('\uD83D\uDC41\uFE0F', document.body.classList.contains('sg-clear') ? 'Show buttons again' : 'Clear display')
-          + window.sgSheetOption('\uD83D\uDEA9', 'Report'),
+          + window.sgSheetOption('\uD83D\uDEA9', 'Report')
+          + window.sgSheetOption('\uD83D\uDD58', 'Watch history')
+          + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : ''),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
         sp.forEach(function(x, i){ o[i].addEventListener('click', function(){
@@ -3613,6 +3643,9 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         o[8].addEventListener('click', function(){ sh.close();
           window.open('mailto:support@scangym.com?subject=' + encodeURIComponent('Report reel ' + video.id) + '&body=' + encodeURIComponent('Reel: ' + location.origin + '/reels?v=' + video.id + '\nReason: '), '_blank');
           showToast('Thanks \u2014 we review every report'); });
+        o[9].addEventListener('click', function(){ sh.close(); openWatchHistory(); });
+        if(pipVid && o[10]) o[10].addEventListener('click', function(){ sh.close();
+          pipVid.requestPictureInPicture().then(function(){ showToast('Playing in a small window'); }).catch(function(){ showToast('Picture-in-picture is not available here'); }); });
       }
       function doubleTapLike(x, y){
         /* Task 52: a double tap is a real Like now (never an unlike, as on TikTok). */
