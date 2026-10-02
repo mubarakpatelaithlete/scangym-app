@@ -292,10 +292,8 @@ async function payOverdue(userId, db = pool, deps = {}) {
     [String(userId)],
   );
   let paid = 0; let failed = 0; let reason = null;
-  for (const inv of open.rows) {
-    const r = await chargeInvoice(inv, db, deps);
-    if (r.ok) paid += 1; else { failed += 1; reason = r.reason || reason; }
-  }
+  const r = await chargeInvoices(open.rows, db, deps);
+  if (r.ok) paid = open.rows.length; else if (!r.deferred) { failed = open.rows.length; reason = r.reason || null; }
   const state = await stateFor(userId, db);
   return { paid, failed, reason, suspended: !!(state && state.suspended_at), nothingDue: open.rows.length === 0 };
 }
@@ -390,6 +388,38 @@ async function linesFor(invoiceId, db = pool) {
  * retried, and after SUSPEND_AFTER_DAYS the account is suspended, which is what
  * gets the creator to come and re-authenticate.
  */
+/** Stripe will not take a GBP card payment under 30p. */
+const MIN_CHARGE_PENCE = 30;
+const ids = (inv, deps) => ((deps && deps._group) || [inv]).map((i) => Number(i.id));
+
+/**
+ * Task 151 ("illogical invoice error"): a creator owed 32p as two invoices of
+ * 16p, each charged on its own — and Stripe refuses anything under 30p, so
+ * the card "failed" forever and Create stayed locked. Everything owed is now
+ * charged as ONE payment. Under 30p nothing is charged or failed: it rolls
+ * into the next invoice, and a suspension for an uncollectable amount lifts.
+ */
+async function chargeInvoices(list, db = pool, deps = {}) {
+  const invs = (list || []).filter(Boolean);
+  if (!invs.length) return { ok: true, nothing: true };
+  const total = invs.reduce((t, i) => t + Number(i.gross_pence || 0), 0);
+  if (total < MIN_CHARGE_PENCE) {
+    try {
+      await db.query(
+        `UPDATE squad_billing SET suspended_at = NULL, suspend_reason = NULL, updated_at = NOW()
+          WHERE user_id = $1::text AND suspended_at IS NOT NULL`, [String(invs[0].user_id)]);
+    } catch (_) { /* best effort */ }
+    return { ok: false, deferred: true, reason: 'below_minimum' };
+  }
+  if (invs.length === 1) return chargeInvoice(invs[0], db, deps);
+  const combined = Object.assign({}, invs[0], {
+    gross_pence: total,
+    number: invs.map((i) => i.number).join('+').slice(0, 200),
+  });
+  const r = await chargeInvoice(combined, db, Object.assign({}, deps, { _group: invs }));
+  return r;
+}
+
 async function chargeInvoice(inv, db = pool, deps = {}) {
   const client = deps.stripe !== undefined ? deps.stripe : stripe;
   if (!client) return { ok: false, reason: 'no_stripe_key' };
@@ -405,8 +435,8 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
       await db.query(
         `UPDATE squad_invoices SET status = 'failed', last_error = $2,
                 charge_attempts = charge_attempts + 1, last_attempt_at = NOW()
-          WHERE id = $1`,
-        [inv.id, 'no saved card'],
+          WHERE id = ANY($1::bigint[])`,
+        [ids(inv, deps), 'no saved card'],
       );
       return { ok: false, reason: 'no_mandate' };
     }
@@ -428,8 +458,8 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
         `UPDATE squad_invoices SET status = 'failed', last_error = $2,
                 charge_attempts = charge_attempts + 1, last_attempt_at = NOW(),
                 stripe_payment_intent_id = $3
-          WHERE id = $1`,
-        [inv.id, `status ${intent.status}`, intent.id],
+          WHERE id = ANY($1::bigint[])`,
+        [ids(inv, deps), `status ${intent.status}`, intent.id],
       );
       return { ok: false, reason: intent.status };
     }
@@ -438,8 +468,8 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
       `UPDATE squad_invoices SET status = 'paid', paid_at = NOW(),
               stripe_payment_intent_id = $2, last_error = NULL,
               charge_attempts = charge_attempts + 1, last_attempt_at = NOW()
-        WHERE id = $1`,
-      [inv.id, intent.id],
+        WHERE id = ANY($1::bigint[])`,
+      [ids(inv, deps), intent.id],
     );
     await db.query(
       `UPDATE squad_billing
@@ -447,7 +477,7 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
               paid_gross_pence = paid_gross_pence + $2,
               updated_at = NOW()
         WHERE user_id = $1::text`,
-      [String(inv.user_id), inv.gross_pence],
+      [String(inv.user_id), inv.gross_pence, ids(inv, deps).length],
     );
     await liftSuspensionIfClear(inv.user_id, db);
     return { ok: true, paymentIntent: intent.id };
@@ -457,8 +487,8 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
       await db.query(
         `UPDATE squad_invoices SET status = 'failed', last_error = $2,
                 charge_attempts = charge_attempts + 1, last_attempt_at = NOW()
-          WHERE id = $1`,
-        [inv.id, e.message.slice(0, 300)],
+          WHERE id = ANY($1::bigint[])`,
+        [ids(inv, deps), e.message.slice(0, 300)],
       );
     } catch (_) { /* the charge already failed; the log is what matters */ }
     return { ok: false, reason: e.message };
@@ -493,10 +523,8 @@ async function chargeDue(db = pool, deps = {}) {
         ORDER BY issued_on`,
       [String(row.user_id)],
     );
-    for (const inv of open.rows) {
-      const r = await chargeInvoice(inv, db, deps);
-      if (r.ok) charged += 1; else failed += 1;
-    }
+    const r = await chargeInvoices(open.rows, db, deps);
+    if (r.ok) charged += open.rows.length; else if (!r.deferred) failed += open.rows.length;
   }
   return { charged, failed };
 }
@@ -716,6 +744,7 @@ module.exports = {
   buildInvoices,
   linesFor,
   chargeInvoice,
+  chargeInvoices,
   chargeDue,
   suspendOverdue,
   liftSuspensionIfClear,
