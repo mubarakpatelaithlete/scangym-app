@@ -225,7 +225,7 @@ window._sgShopRender=function(){
       +'<p style="margin:0 0 6px;color:rgba(255,255,255,.45);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">by @'+_sgShopEsc(p.creatorHandle)+'</p>'
       +_sgShopStars(p)
       +(owned?'<p style="margin:0;font-size:15px;font-weight:900;color:#22c55e">Owned</p>':_sgShopPrice(p.price))
-      +'<p style="margin:3px 0 0;color:#86efac;font-size:11px;font-weight:600">\u26A1 Instant PDF download</p>'
+      +'<p style="margin:3px 0 0;color:#86efac;font-size:11px;font-weight:600">\u26A1 Instant '+(/pdf/i.test(p.contentType||p.fileName||'')?'PDF ':'')+'download</p>'
       +(sold?'<p style="margin:2px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
       +'<span style="margin-top:auto;padding-top:9px;display:block"><span style="display:block;text-align:center;border-radius:18px;padding:8px 0;background:'+(owned?'#22c55e':'rgba(255,255,255,.1)')+';border:1px solid rgba(255,255,255,.18);color:#fff;font-size:13px;font-weight:800">'+(owned?'Download':'Buy now')+'</span></span>'
       +'</div></button>';
