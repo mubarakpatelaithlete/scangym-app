@@ -1146,7 +1146,39 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         if(key === 'nearme') withPlace(go); else go('');
       }
 
+      /* Task 104 step 1: Stories row (Instagram/Snapchat/Facebook) + Snapchat-style daily streak. */
+      function sgStreak(){
+        var d = new Date(), today = d.toDateString(), y = new Date(d.getTime() - 864e5).toDateString(), st;
+        try { st = JSON.parse(localStorage.getItem('sg_streak') || '{}'); } catch(e){ st = {}; }
+        if(st.last !== today){ st.n = st.last === y ? (st.n || 0) + 1 : 1; st.last = today; st.fresh = true; try { localStorage.setItem('sg_streak', JSON.stringify(st)); } catch(e){} }
+        else st.fresh = false;
+        return st;
+      }
+      function openStories(){
+        if(typeof window.sgOpenSheet !== 'function') return;
+        var st = sgStreak();
+        fetch('/api/reels/stories').then(function(r){ return r.json(); }).then(function(d){
+          var l = d.stories || [];
+          var html = '<p style="margin:0 0 10px;font-size:14px;font-weight:800">\uD83D\uDD25 ' + st.n + '-day streak <span style="font-weight:500;color:rgba(255,255,255,.6)">\u00b7 come back tomorrow to keep it</span></p>'
+            + (l.length ? '<div style="display:flex;gap:12px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none">' + l.map(function(x, i){
+              return '<button type="button" class="sg-story" data-i="' + i + '" style="flex:none;width:68px;border:0;background:none;color:#fff;padding:0;cursor:pointer;text-align:center">'
+                + '<span style="display:block;width:62px;height:62px;margin:0 auto 4px;border-radius:50%;padding:3px;background:linear-gradient(45deg,#FF6D00,#ff2e7e,#8b5cf6)">'
+                + (x.thumb ? '<img src="' + sgEscH(x.thumb) + '" alt="" loading="lazy" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #0b0f1a;box-sizing:border-box">'
+                  : '<span style="display:flex;width:100%;height:100%;border-radius:50%;border:2px solid #0b0f1a;box-sizing:border-box;background:#1f2937;align-items:center;justify-content:center;font-weight:900;font-size:22px">' + sgEscH(String(x.by).charAt(0).toUpperCase()) + '</span>')
+                + '</span><small style="display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sgEscH(x.by) + '</small></button>';
+            }).join('') + '</div>' : '<p style="color:rgba(255,255,255,.6);font-size:13px">No stories yet \u2014 tap \uD83D\uDE80 Post under a creation to add yours.</p>');
+          var sh = window.sgOpenSheet(html, { title: 'Stories', sub: l.length + ' new', icon: '\u2B55' });
+          Array.prototype.forEach.call(sh.body.querySelectorAll('.sg-story'), function(b){ b.addEventListener('click', function(){
+            var x = l[+b.dataset.i]; sh.close();
+            for(var k = 0; k < allVideos.length; k++){ if(String(allVideos[k].id) === String(x.id)){ snapTo(k, true); return; } }
+            location.href = '/reels?v=' + encodeURIComponent(x.id);
+          }); });
+        }).catch(function(){ showToast('Could not load stories'); });
+      }
+      setTimeout(function(){ var st = sgStreak(); if(st.fresh && st.n > 1) showToast('\uD83D\uDD25 ' + st.n + '-day streak! Keep it going'); }, 2500);
+
       function selectCategory(cat){
+        if(cat.value === 'stories:'){ openStories(); return; }
         if(cat.value === (activeCategory || FEED_ALL)) return;
         activeCategory = cat.value === FEED_ALL ? null : cat.value;
         renderCatRail();
@@ -1173,7 +1205,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         catRequest = true;
         /* Task 105: TikTok/YouTube top tabs first, each a real feed
            (/api/reels/tab/:tab), then the catalogue categories. */
-        railCategories = [{label:'For You', value:FEED_ALL, count:0}].concat(HOME_TABS.map(function(t){
+        railCategories = [{label:'\u2B55 Stories', value:'stories:', count:0}, {label:'For You', value:FEED_ALL, count:0}].concat(HOME_TABS.map(function(t){
           return {label: t[1], value: 'tab:' + t[0], count: 0};
         }));
         renderCatRail();

@@ -670,6 +670,30 @@ router.get('/categories', async (req, res) => {
  * GET /api/reels/tab/:tab?lat=&lng= — one tab's reels, same slide shape as /feed.
  * @see lib/home-tabs.js for where each tab's videos come from.
  */
+/* Task 104 step 1 (Instagram / Snapchat / Facebook): Stories — the newest
+   creator posts (one-tap Post from Create, Task 110) as a circle row. */
+router.get('/stories', async (req, res) => {
+  try {
+    let { rows } = await pool.query(
+      `SELECT id, name, url, thumb, created_at FROM video_catalog
+        WHERE active = true AND source = 'creation' ORDER BY created_at DESC LIMIT 20`);
+    if (rows.length < 6) {
+      const more = await pool.query(
+        `SELECT id, name, url, thumb, created_at FROM video_catalog
+          WHERE active = true AND category NOT LIKE 'Tab: %' AND url IS NOT NULL ORDER BY created_at DESC LIMIT $1`, [20 - rows.length]);
+      rows = rows.concat(more.rows.filter((m) => !rows.some((r) => r.id === m.id)));
+    }
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ stories: rows.map((r) => {
+      const by = String(r.name || '').split(' \u00b7 by ')[1] || '';
+      return { id: r.id, name: r.name, by: by || 'ScanGym', thumb: r.thumb || null, at: r.created_at };
+    }) });
+  } catch (e) {
+    console.error('[reels] stories', e.message);
+    res.json({ stories: [] });
+  }
+});
+
 router.get('/tabs', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300');
   res.json({ tabs: homeTabs.TABS.map((t) => ({ key: t.key, label: t.label })) });
