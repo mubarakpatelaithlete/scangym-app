@@ -102,7 +102,7 @@ test('a social slide renders from its poster, with no iframe in the initial mark
   assert.ok(!/createElement\('iframe'\)/.test(body),
     'createSocialReel must not build an iframe — that is what made the feed slow');
   // The onclick lives inside a JS string, so the quotes are backslash-escaped.
-  assert.match(body, /_ctaNavigate\(\\?'\/explore\\?'\)/, 'a social reel still offers the Book CTA');
+  assert.ok(!/creator-cta-text">Book a Gym/.test(body), 'owner 2026-10-02: no Book a Gym pill on social cards (Task 156)');
 });
 
 test('the dead patch file is gone and nothing loads it', () => {

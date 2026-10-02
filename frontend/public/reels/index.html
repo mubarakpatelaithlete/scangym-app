@@ -3175,13 +3175,10 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
 
         var info = document.createElement('div');
         info.className = 'reel-info';
+        /* Task 156 (owner, 2026-10-02): no Book a Gym pill on YouTube/social
+           cards. It sat on top of YouTube's own player UI. */
         info.innerHTML = tikTokCaption(video)
-          + (video.author ? '<span class="reel-social-source">' + escHtml(video.author) + '</span>' : '')
-          // Same CTA an uncredited catalog reel gets, so the tab behaves the same.
-          + '<a class="creator-cta" href="/explore" onclick="event.preventDefault();_ctaNavigate(\'/explore\')">'
-          + '<span class="creator-cta-icon">\uD83D\uDCAA</span>'
-          + '<div><div class="creator-cta-text">Book a Gym \u2014 ' + sgPrice('day').display + '</div>'
-          + '<div class="creator-cta-sub">No membership needed</div></div></a>';
+          + (video.author ? '<span class="reel-social-source">' + escHtml(video.author) + '</span>' : '');
         div.appendChild(info);
 
         var actions = document.createElement('div');
