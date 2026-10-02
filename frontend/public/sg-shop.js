@@ -406,9 +406,15 @@ window._sgShopBuy=async function(productId){
       var sheet=document.getElementById('sg-shop-sheet');
       if(sheet)sheet.remove();
       if(typeof window.sgCloseSheet==='function')window.sgCloseSheet();
-      sgToast(r.alreadyOwned?'You already own this — downloading':'Paid! Your download is ready 🎉','success',4000);
-      window.location.href=r.downloadUrl;
+      /* Task 158 B4 (52/53/56): confirmation screen with download, receipt and orders, instead of a toast + silent redirect. */
       window._sgShopRender();
+      var em=(state.user&&state.user.email)||'';
+      window._sgShopSimpleSheet('<div style="padding:6px 2px 10px;text-align:center"><div style="font-size:44px">\u2705</div>'
+        +'<p style="margin:6px 0 2px;font-size:17px;font-weight:800">'+(r.alreadyOwned?'You already own this':'Paid'+(r.amount?' '+_sgShopEsc(r.amount):''))+'</p>'
+        +'<p style="margin:0 0 14px;font-size:13px;color:rgba(255,255,255,.65)">'+(r.emailed&&em?'Receipt + download link sent to '+_sgShopEsc(em):'Your download is ready below')+'</p>'
+        +'<a href="'+_sgShopEsc(r.downloadUrl)+'" style="display:block;border-radius:14px;padding:13px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;text-decoration:none">\u2B07 Download now</a>'
+        +'<button type="button" onclick="window._sgShopOpenOrders()" style="margin-top:10px;width:100%;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:11px;background:transparent;color:#fff;font-weight:700;font-size:14px">\uD83D\uDCE6 My orders (re-download any time)</button></div>',
+        {title:'Order confirmed',icon:'\uD83C\uDF89'});
       return;
     }
     if(r.code==='needs_card'){
@@ -549,6 +555,6 @@ window._sgShopOpenOrders=async function(){
   var list=(d&&d.orders)||[];
   var body=d&&d.error&&!list.length?'<p style="margin:16px 0;text-align:center;color:#fca5a5">'+_sgShopEsc(d.error)+'</p>'
     :!list.length?'<p style="margin:16px 0;text-align:center;color:rgba(255,255,255,.6)">No orders yet. Anything you buy shows here with its download.</p>'
-    :list.map(function(o){return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)"><div style="flex:1;min-width:0"><p style="margin:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_sgShopEsc(o.title)+'</p><p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,.55)">'+_sgShopEsc(o.price)+(o.paidAt?' \u00b7 '+_sgShopEsc(new Date(o.paidAt).toLocaleDateString()):'')+'</p></div><a href="'+_sgShopEsc(o.downloadUrl)+'" style="flex:none;border-radius:12px;padding:8px 12px;background:#FF6D00;color:#fff;font-weight:800;font-size:13px;text-decoration:none">\u2B07 Download</a></div>';}).join('');
+    :list.map(function(o){return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)"><div style="flex:1;min-width:0"><p style="margin:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_sgShopEsc(o.title)+'</p><p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,.55)">'+_sgShopEsc(o.price)+(o.paidAt?' \u00b7 '+_sgShopEsc(new Date(o.paidAt).toLocaleDateString()):'')+' \u00b7 <span style="color:#86efac">Paid \u2713 Delivered</span> \u00b7 <a href="mailto:bookings@scangym.com?subject='+encodeURIComponent('Help with order #'+o.id)+'" style="color:rgba(255,255,255,.7)">Help</a></p></div><a href="'+_sgShopEsc(o.downloadUrl)+'" style="flex:none;border-radius:12px;padding:8px 12px;background:#FF6D00;color:#fff;font-weight:800;font-size:13px;text-decoration:none">\u2B07 Download</a></div>';}).join('');
   window._sgShopSimpleSheet('<div style="padding:4px 2px 8px">'+body+'</div>',{title:'My orders',sub:list.length+' purchase'+(list.length===1?'':'s'),icon:'\uD83D\uDCE6'});
 };

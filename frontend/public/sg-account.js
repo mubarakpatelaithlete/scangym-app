@@ -30,6 +30,60 @@
     var host = save.parentNode;
     host.insertBefore(box, save.nextSibling);
     creations(box);
+    topCard();
+    connected(box);
+  }
+  /* Task 154 Profile 4 / Task 115: every connected account in one place, connect once, status ticks. */
+  function connected(box) {
+    var j = function (r) { return r.ok ? r.json() : null; };
+    Promise.all([fetch('/api/post-everywhere/apps').then(j).catch(function () { return null; }),
+      fetch('/api/post-everywhere/accounts', { credentials: 'include' }).then(j).catch(function () { return null; })]).then(function (r) {
+      var apps = (r[0] && r[0].apps) || [];
+      if (!apps.length || document.getElementById('sg-conn-sec') || !box.parentNode) return;
+      var mine = {}; ((r[1] && r[1].accounts) || []).forEach(function (a) { mine[a.app] = a; });
+      var sec = document.createElement('div');
+      sec.id = 'sg-conn-sec';
+      sec.style.cssText = 'margin-top:24px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:6px 16px';
+      sec.innerHTML = '<div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:12px 0 4px">\uD83D\uDD17 Connected accounts</div>'
+        + apps.map(function (a) {
+          var m = mine[a.slug];
+          return '<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1;color:#fff;font-size:14px;font-weight:600">' + esc(a.name) + (m && m.name ? ' <span style="color:rgba(255,255,255,.45);font-weight:400;font-size:12px">' + esc(m.name) + '</span>' : '') + '</span>'
+            + (m ? '<span style="color:' + (m.healthy === false ? '#fbbf24' : '#86efac') + ';font-size:13px;font-weight:700">' + (m.healthy === false ? '\u26A0 Reconnect' : '\u2705 Connected') + '</span>'
+              : '<button type="button" data-app="' + esc(a.slug) + '" class="sg-conn-go" style="border:0;border-radius:12px;padding:7px 12px;background:#FF6D00;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Connect</button>') + '</div>';
+        }).join('') + '<p style="margin:8px 0 10px;color:rgba(255,255,255,.45);font-size:11px">Connect once \u2014 1-tap Post sends your creations everywhere.</p>';
+      box.parentNode.insertBefore(sec, box);
+      Array.prototype.forEach.call(sec.querySelectorAll('.sg-conn-go'), function (b) { b.addEventListener('click', function () {
+        b.disabled = true; b.textContent = '\u2026';
+        fetch('/api/post-everywhere/connect', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ app: b.dataset.app }) })
+          .then(j).then(function (d) { if (d && d.url) location.href = d.url; else { b.disabled = false; b.textContent = 'Connect'; if (window.sgToast) window.sgToast((d && d.error) || 'Could not connect right now'); } })
+          .catch(function () { b.disabled = false; b.textContent = 'Connect'; });
+      }); });
+    });
+  }
+  /* Task 154 Profile 1: clear top section — photo, name, followers, earnings, creations. */
+  function topCard() {
+    var msg = document.getElementById('profile-msg');
+    var u = window.state && window.state.user;
+    if (!msg || !u || document.getElementById('sg-top-card')) return;
+    var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || (u.email || 'You');
+    var pic = u.profile_image || u.avatar_url || u.picture || '';
+    var c = document.createElement('div');
+    c.id = 'sg-top-card';
+    c.style.cssText = 'display:flex;align-items:center;gap:14px;margin:0 0 16px;padding:14px 16px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)';
+    c.innerHTML = '<div style="flex:none;width:58px;height:58px;border-radius:50%;overflow:hidden;background:#FF6D00;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:24px">'
+      + (pic ? '<img src="' + esc(pic) + '" alt="" style="width:100%;height:100%;object-fit:cover">' : esc(name.charAt(0).toUpperCase())) + '</div>'
+      + '<div style="flex:1;min-width:0"><div style="color:#fff;font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(name) + '</div>'
+      + '<div id="sg-top-handle" style="color:rgba(255,255,255,.5);font-size:12px"></div>'
+      + '<div style="display:flex;gap:16px;margin-top:6px">' + stat('sg-top-f', 'Followers') + stat('sg-top-e', 'Earnings') + stat('sg-top-c', 'Creations') + '</div></div>';
+    msg.parentNode.insertBefore(c, msg);
+    function set(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+    var j = function (r) { return r.ok ? r.json() : null; };
+    fetch('/api/reels/social/me-stats', { credentials: 'include' }).then(j).then(function (d) { if (d) { set('sg-top-f', d.followers || 0); if (d.handle) set('sg-top-handle', '@' + d.handle); } }).catch(function () {});
+    fetch('/api/wallet', { credentials: 'include' }).then(j).then(function (d) { if (d && d.balance != null) set('sg-top-e', '\u00a3' + Number(d.balance).toFixed(2)); }).catch(function () {});
+    fetch('/api/squad-create/library?limit=100', { credentials: 'include' }).then(j).then(function (d) { if (d) set('sg-top-c', (d.items || []).filter(function (x) { return x.status === 'done'; }).length); }).catch(function () {});
+  }
+  function stat(id, label) {
+    return '<div><div id="' + id + '" style="color:#fff;font-size:15px;font-weight:800">\u2013</div><div style="color:rgba(255,255,255,.45);font-size:11px">' + label + '</div></div>';
   }
   /* Task 154 Profile 5 + 8: My creations grid (like Instagram) and the
      affiliate link card, both from /api/squad-create/library. */

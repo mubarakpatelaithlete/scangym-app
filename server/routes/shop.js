@@ -22,7 +22,7 @@ const multer = require('multer');
 
 const router = express.Router();
 const pool = require('../middleware/db');
-const { authenticateUser } = require('../middleware/auth');
+const { authenticateUser, optionalAuth } = require('../middleware/auth');
 const { splitEarnings, validatePrice, formatPence, PLATFORM_FEE_PERCENT } = require('../lib/shop-earnings');
 
 const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
@@ -495,7 +495,7 @@ async function markOrderPaid(orderId, paymentIntentId) {
 const DOWNLOAD_DAYS = 30;
 const MAX_DOWNLOADS = 20;
 
-router.get('/download/:token', async (req, res) => {
+router.get('/download/:token', optionalAuth, async (req, res) => {
   try {
     const token = String(req.params.token || '').slice(0, 64);
     const { rows } = await pool.query(
@@ -507,8 +507,11 @@ router.get('/download/:token', async (req, res) => {
     if (!order || order.status !== 'paid') return res.status(404).send('Download not found');
 
     const ageDays = (Date.now() - new Date(order.paid_at || order.created_at).getTime()) / 86400000;
-    if (ageDays > DOWNLOAD_DAYS) return res.status(410).send('This download link has expired — contact support');
-    if (order.download_count >= MAX_DOWNLOADS) return res.status(429).send('This link has been used too many times');
+    /* Task 158 B4 (54): the signed-in buyer can always re-download from My orders;
+       the 30-day / 20-download limits only guard a forwarded email link. */
+    const isBuyer = !!(req.user && String(req.user.id) === String(order.buyer_user_id));
+    if (!isBuyer && ageDays > DOWNLOAD_DAYS) return res.status(410).send('This download link has expired — contact support');
+    if (!isBuyer && order.download_count >= MAX_DOWNLOADS) return res.status(429).send('This link has been used too many times');
     if (!order.file_path || !fs.existsSync(order.file_path)) {
       console.error('[Shop] missing file for order', order.id, order.file_path);
       return res.status(410).send('The file is no longer available — contact support');

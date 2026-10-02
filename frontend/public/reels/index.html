@@ -1188,6 +1188,22 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           }); });
         }).catch(function(){ showToast('Could not load stories'); });
       }
+      /* Task 156 B4 (66): TikTok-style interest picker, once, after a few seconds of watching. */
+      setTimeout(function(){
+        try { if(localStorage.getItem('sg_interests') || typeof window.sgOpenSheet !== 'function' || document.getElementById('sg-half-sheet') || document.hidden) return; } catch(e){ return; }
+        var opts = HOME_TABS.filter(function(t){ return t[0] !== 'following'; });
+        var sh = window.sgOpenSheet('<p style="margin:0 0 10px;color:rgba(255,255,255,.7);font-size:13px">Pick what you like and we\u2019ll put it first.</p><div style="display:flex;flex-wrap:wrap;gap:8px">' + opts.map(function(t){
+          return '<button type="button" class="sg-int" data-k="' + t[0] + '" style="border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:8px 14px;background:rgba(255,255,255,.06);color:#fff;font-weight:700;font-size:14px">' + sgEscH(t[1]) + '</button>';
+        }).join('') + '</div><button type="button" id="sg-int-go" style="margin-top:14px;width:100%;border:0;border-radius:14px;padding:12px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px">Done</button>', { title: 'What do you like?', icon: '\u2728', onClose: function(){ save(); } });
+        var picked = [];
+        Array.prototype.forEach.call(sh.body.querySelectorAll('.sg-int'), function(b){ b.addEventListener('click', function(){
+          var i = picked.indexOf(b.dataset.k);
+          if(i < 0){ picked.push(b.dataset.k); b.style.background = '#FF6D00'; b.style.borderColor = '#FF6D00'; }
+          else { picked.splice(i, 1); b.style.background = 'rgba(255,255,255,.06)'; b.style.borderColor = 'rgba(255,255,255,.25)'; }
+        }); });
+        function save(){ try { localStorage.setItem('sg_interests', JSON.stringify(picked)); } catch(e){} }
+        sh.body.querySelector('#sg-int-go').addEventListener('click', function(){ save(); sh.close(); if(picked.length){ catRequest = false; loadCategories(); } });
+      }, 8000);
       setTimeout(function(){ var st = sgStreak(); if(st.fresh && st.n > 1) showToast('\uD83D\uDD25 ' + st.n + '-day streak! Keep it going'); }, 2500);
 
       function selectCategory(cat){
@@ -1219,7 +1235,10 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         catRequest = true;
         /* Task 105: TikTok/YouTube top tabs first, each a real feed
            (/api/reels/tab/:tab), then the catalogue categories. */
-        railCategories = [{label:'\u2B55 Stories', value:'stories:', count:0}, {label:'For You', value:FEED_ALL, count:0}].concat(HOME_TABS.map(function(t){
+        /* Task 156 B4 (66): tabs the customer picked come straight after For You. */
+        var _int = []; try { _int = JSON.parse(localStorage.getItem('sg_interests') || '[]'); } catch(e){}
+        var _tabs = HOME_TABS.slice().sort(function(a, b){ var ia = _int.indexOf(a[0]), ib = _int.indexOf(b[0]); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+        railCategories = [{label:'\u2B55 Stories', value:'stories:', count:0}, {label:'For You', value:FEED_ALL, count:0}].concat(_tabs.map(function(t){
           return {label: t[1], value: 'tab:' + t[0], count: 0};
         }));
         renderCatRail();
