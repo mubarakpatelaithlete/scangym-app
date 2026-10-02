@@ -47,9 +47,21 @@
     return items.filter(function (x) { return x.pricePence === 0; })
       .sort(function (a, b) { return (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0); }).slice(0, 12);
   }
+  /* 6. Batch 9 (Tasks 108/119): \uD83D\uDCB7 Under \u00a310 (Amazon price bands) — £5.01–£10, cheapest first (under £5 has its own row). */
+  function under10(items) {
+    return items.filter(function (x) { return x.pricePence > 500 && x.pricePence <= 1000; })
+      .sort(function (a, b) { return a.pricePence - b.pricePence; }).slice(0, 12);
+  }
   function after() {
     var st = window._sgShopState, box = document.getElementById('sg-digital-shop-results');
     if (!st || !box || st.q || st.category !== 'All' || document.getElementById('sg-shop-top')) return;
+    var u10 = under10(st.products || []);
+    if (u10.length >= 2 && !document.getElementById('sg-shop-u10')) {
+      box.insertAdjacentHTML('afterbegin', dealsHtml(u10).replace('sg-shop-deals', 'sg-shop-u10').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83D\uDCB7 Under \u00a310'));
+      Array.prototype.forEach.call(box.querySelectorAll('#sg-shop-u10 [data-id]'), function (b) {
+        b.addEventListener('click', function () { var id = b.getAttribute('data-id'), x = u10.filter(function (p) { return String(p.id) === id; })[0]; if (x && window._sgShopOpen) window._sgShopOpen(x.id); });
+      });
+    }
     var fr = freebies(st.products || []);
     if (fr.length >= 2 && !document.getElementById('sg-shop-free')) {
       box.insertAdjacentHTML('afterbegin', dealsHtml(fr).replace('sg-shop-deals', 'sg-shop-free').replace(/\uD83C\uDFF7\uFE0F Deals under \u00a35/, '\uD83C\uDF81 Free'));
@@ -94,5 +106,5 @@
     return true;
   }
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
-  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers, freebies: freebies };
+  window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers, freebies: freebies, under10: under10 };
 })();

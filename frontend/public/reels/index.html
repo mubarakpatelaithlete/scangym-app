@@ -3692,12 +3692,19 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           + window.sgSheetOption('\uD83D\uDCF6', sgDataSaver() ? 'Data saver: On' : 'Data saver: Off')
           + window.sgSheetOption('\u23F1\uFE0F', 'Screen time: ' + (sgScreenLimit() ? sgScreenLimit() + ' min' : 'Off'))
           + (pipVid ? window.sgSheetOption('\uD83D\uDDBC\uFE0F', 'Picture-in-picture') : '')
+          + window.sgSheetOption('\u23EA', 'Back 10s') + window.sgSheetOption('\u23E9', 'Forward 10s')
           + window.sgSheetOption('\uD83D\uDE34', 'Sleep timer: ' + (window._sgSleepAt ? Math.max(1, Math.round((window._sgSleepAt - Date.now()) / 6e4)) + ' min left' : 'Off'))
           + window.sgSheetOption('\u23EE\uFE0F', 'Watch from start')
           + window.sgSheetOption('\uD83D\uDD17', 'Copy link'),
           { title: 'Reel options', sub: 'Current speed ' + sgSpeed + 'x', icon: '\u2699\uFE0F' });
         var o = sh.body.querySelectorAll('.shs-opt');
         /* Batch 6 (Tasks 104/109): TikTok-style Copy link — always the last option. */
+        /* Batch 9 (Tasks 104/109): YouTube-style Back/Forward 10s — just before Sleep timer. */
+        [[o.length - 5, -10], [o.length - 4, 10]].forEach(function(p){ o[p[0]].addEventListener('click', function(){
+          sh.close(); var v = reel.querySelector('video'); if(!v) return;
+          var d = isFinite(v.duration) ? v.duration : 1e9; v.currentTime = Math.max(0, Math.min(d - 0.2, (v.currentTime || 0) + p[1]));
+          showToast(p[1] < 0 ? '\u23EA 10 seconds back' : '\u23E9 10 seconds forward');
+        }); });
         /* Batch 8 (Tasks 104/109): YouTube/Spotify-style Sleep timer — third to last; tap cycles Off/15/30/60 min, then pauses. */
         o[o.length - 3].addEventListener('click', function(){
           sh.close();

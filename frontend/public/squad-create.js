@@ -552,10 +552,38 @@
       });
       cnt.appendChild(pst);
     }
+    /* Batch 9 (Tasks 112/120): ⭐ Save a favourite prompt (up to 20, this phone) + a ⭐ Saved row to reuse it. */
+    function savedList() { try { return JSON.parse(localStorage.getItem('sg_saved_prompts') || '[]') || []; } catch (e) { return []; } }
+    var sav = el('span', 'sv-save', '\u2B50 Save');
+    sav.setAttribute('role', 'button'); sav.style.cursor = 'pointer';
+    sav.addEventListener('click', function () {
+      var v = (ta.value || '').trim(); if (!v) return;
+      var l = [v].concat(savedList().filter(function (x) { return x !== v; })).slice(0, 20);
+      try { localStorage.setItem('sg_saved_prompts', JSON.stringify(l)); } catch (e) {}
+      drawSaved(); toast('Prompt saved', 'success', 2000);
+    });
+    var savedRow = el('div', 'sv-saved');
+    savedRow.id = 'sv-saved';
+    savedRow.style.cssText = 'display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:6px 0 0;font-size:11px';
+    function drawSaved() {
+      var l = savedList(); savedRow.innerHTML = ''; savedRow.style.display = l.length ? 'flex' : 'none';
+      if (!l.length) return;
+      savedRow.appendChild(el('span', '', '\u2B50'));
+      l.forEach(function (t) {
+        var c = el('span', '', t.length > 28 ? t.slice(0, 28) + '\u2026' : t);
+        c.setAttribute('role', 'button'); c.title = 'Tap to use \u00b7 hold to remove';
+        c.style.cssText = 'flex:none;padding:4px 10px;border-radius:12px;background:#1e2c47;color:#e2e8f0;cursor:pointer;white-space:nowrap';
+        c.addEventListener('click', function () { ta.value = t; upd(); ta.focus(); });
+        c.addEventListener('contextmenu', function (e) { e.preventDefault(); try { localStorage.setItem('sg_saved_prompts', JSON.stringify(savedList().filter(function (x) { return x !== t; }))); } catch (er) {} drawSaved(); toast('Removed', 'info', 1500); });
+        savedRow.appendChild(c);
+      });
+    }
+    cnt.appendChild(sav);
     cnt.appendChild(cntN); cnt.appendChild(cpy); cnt.appendChild(clr);
-    function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = cpy.style.visibility = n ? 'visible' : 'hidden'; }
+    function upd() { var n = ta.value.length; cntN.textContent = n + (n === 1 ? ' character' : ' characters'); clr.style.visibility = cpy.style.visibility = sav.style.visibility = n ? 'visible' : 'hidden'; }
     ta.addEventListener('input', upd); upd();
     sh.appendChild(cnt);
+    sh.appendChild(savedRow); drawSaved();
 
     /* Task 120 step 1: ✨ Enhance (Higgsfield / CapCut / ElevenLabs) + 🎲 Surprise me. */
     var tools = el('div', 'sv-row sv-ptools');
