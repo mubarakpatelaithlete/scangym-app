@@ -7518,7 +7518,7 @@ function LoginPage(){
       <div class="max-w-md w-full text-center">
         <div class="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-2xl">✓</span></div>
         <h1 class="font-brand text-2xl font-bold text-white mb-2">Welcome back!</h1>
-        <p class="text-slate-400 mb-6">Logged in as ${state.user.phone}</p>
+        <p class="text-slate-400 mb-6">Logged in as ${state.user.name||state.user.email||state.user.phone||'your ScanGym account'}</p>
         <div class="space-y-3">
           <button onclick="navigate('/explore')" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Find a Gym</button>
           <button onclick="navigate('/my-bookings')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl transition">My Bookings</button>
@@ -7608,6 +7608,9 @@ function LoginPage(){
           <input id="auth-password" type="password" autocomplete="current-password" placeholder="Your password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-3 text-white text-sm placeholder-slate-500 outline-none focus:border-brand">
         </div>
         <button id="auth-btn" onclick="handlePasswordLogin()" class="w-full bg-brand hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition">Log in</button>
+        <div class="text-center">
+          <a onclick="var _e=document.getElementById('auth-email');state.authEmail=(_e&&_e.value.trim().toLowerCase())||state.authEmail||'';state.authStep='email';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Forgot password? Email me a 6-digit code</a>
+        </div>
         <div class="text-center">
           <a onclick="state.authStep='signup';render()" class="text-slate-400 text-sm hover:text-brand cursor-pointer">Create an account</a>
         </div>
@@ -10083,7 +10086,15 @@ function BookingSuccessPage(){
   const bookingId=params.get('booking_id');
 
   if(!bookingId){
-    return`<div class="pt-8 min-h-full px-4 text-center"><p class="text-red-400 mt-20">Invalid booking confirmation link.</p></div>`;
+    return`<div class="pt-8 min-h-full px-4 text-center">
+      <div style="max-width:420px;margin:60px auto 0">
+        <p style="font-size:44px;margin-bottom:12px">\ud83d\udd0d</p>
+        <p style="color:#fff;font-size:18px;font-weight:800;margin-bottom:6px">We can't find that booking</p>
+        <p style="color:rgba(255,255,255,.45);font-size:14px;margin-bottom:24px">This confirmation link is missing its booking reference, or it has already been used.</p>
+        <button onclick="navigate('/my-bookings')" style="width:100%;background:#FF6D00;color:#fff;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:10px">View my bookings</button>
+        <button onclick="navigate('/explore')" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.12);padding:13px;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer">Find a gym</button>
+      </div>
+    </div>`;
   }
   // Clean up pending booking marker (Fix #8)
   localStorage.removeItem('sg_pending_booking');
@@ -13598,8 +13609,8 @@ function ScanGymIDCard(u){
   const qrData=encodeURIComponent('https://scangym.com/member/'+u.id);
   const qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&bgcolor=0d0d1a&color=FF6D00&data='+qrData;
   // Enhanced stats (Fix #8E)
-  const totalSessions=u.stats?.totalSessions||0;
-  const totalGyms=u.stats?.totalGyms||0;
+  const totalSessions=u.stats?.totalSessions??u.stats?.total_bookings??0;
+  const totalGyms=u.stats?.totalGyms??u.stats?.gyms_visited??0;
   const streak=u.stats?.streak||0;
   // Tier system
   const tier=totalSessions>=100?{name:'Elite',icon:'👑',color:'#a855f7',bg:'rgba(168,85,247,.15)'}:
@@ -13777,7 +13788,7 @@ function ProfilePage(){
       <div style="color:rgba(255,255,255,.4);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">📊 Your Stats</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
         <div style="text-align:center;padding:12px 0">
-          <div style="color:#FF6D00;font-size:28px;font-weight:900">${u.stats?.totalSessions||0}</div>
+          <div style="color:#FF6D00;font-size:28px;font-weight:900">${(u.stats?.totalSessions??u.stats?.total_bookings??0)}</div>
           <div style="color:rgba(255,255,255,.35);font-size:11px">Sessions</div>
         </div>
         <div style="text-align:center;padding:12px 0">
@@ -13791,11 +13802,11 @@ function ProfilePage(){
       </div>
       <!-- Achievement Badges (Gamification Fix #8B) -->
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-        ${(u.stats?.totalSessions||0)>=1?'<div style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#FF6D00;font-weight:600">🏋️ First Session</div>':''}
+        ${((u.stats?.totalSessions??u.stats?.total_bookings??0))>=1?'<div style="background:rgba(255,109,0,.1);border:1px solid rgba(255,109,0,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#FF6D00;font-weight:600">🏋️ First Session</div>':''}
         ${(u.stats?.totalGyms||0)>=3?'<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#4ade80;font-weight:600">🌍 Gym Hopper</div>':''}
         ${(u.stats?.streak||0)>=7?'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#f87171;font-weight:600">🔥 7-Day Streak</div>':''}
-        ${(u.stats?.totalSessions||0)>=10?'<div style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#c084fc;font-weight:600">💪 10 Sessions</div>':''}
-        ${(u.stats?.totalSessions||0)<1?'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.3)">Book your first gym to earn badges!</div>':''}
+        ${((u.stats?.totalSessions??u.stats?.total_bookings??0))>=10?'<div style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);border-radius:10px;padding:6px 12px;font-size:12px;color:#c084fc;font-weight:600">💪 10 Sessions</div>':''}
+        ${((u.stats?.totalSessions??u.stats?.total_bookings??0))<1?'<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-size:12px;color:rgba(255,255,255,.3)">Book your first gym to earn badges!</div>':''}
       </div>
     </div>
 
@@ -16451,7 +16462,7 @@ function _renderInner(){
   else if(path==='/pay-next-visit')page=PayNextVisitPage();
   else if(path==='/more/passes'||path==='/passes')page=BookPassesPage();
   else if(path==='/wallet')page=WalletPage();
-  else if(path==='/dashboard'||path==='/admin'){const tk=localStorage.getItem('sg_token');if(!tk){page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">🔒</p><p class="text-white font-bold text-xl mb-2">Dashboard Access Required</p><p class="text-slate-400 mb-4">Please log in with your admin account to view the dashboard.</p><button onclick="navigate(\'/login\')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Log In →</button></div>`;}else{page=DashboardPage();}}
+  else if(path==='/dashboard'||path==='/admin'){const tk=localStorage.getItem('sg_token');if(!tk&&!state.user){page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">\ud83d\udd12</p><p class="text-white font-bold text-xl mb-2">Dashboard Access Required</p><p class="text-slate-400 mb-4">Please log in with your admin account to view the dashboard.</p><button onclick="navigate('/login')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Log In \u2192</button></div>`;}else if(!tk&&state.user){/* signed in, just not an admin — sending them to /login only said "you're already logged in" */page=`<div class="max-w-md mx-auto mt-20 text-center"><p class="text-2xl mb-4">\ud83d\udd12</p><p class="text-white font-bold text-xl mb-2">No admin access on this account</p><p class="text-slate-400 mb-4">You're signed in, but this ScanGym account isn't an admin. Ask an admin to grant access, or head back to the app.</p><button onclick="navigate('/explore')" class="bg-brand text-white px-6 py-3 rounded-lg font-bold">Back to ScanGym</button></div>`;}else{page=DashboardPage();}}
   else if(path==='/suppliers/vending')page=SupplierPage('vending');
   else if(path==='/suppliers/qr')page=SupplierPage('qr');
   else if(path==='/suppliers/loans')page=SupplierPage('loans');
@@ -16789,7 +16800,7 @@ function _renderInner(){
   else if(path==='/owner/controls')page=OwnerControlsPage();
   else if(path.startsWith('/scan/')&&path.split('/').length===3)page=QRScanVerifyPage(path.split('/')[2]);
   else if(path==='/scan')page=ScanInfoPage();
-  else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 ScanSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">\${c.badge}</span><div class="flex-1"><p class="text-white font-bold">\${c.name}</p><p class="text-slate-400 text-sm">\${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">\${c.earned}</p><p class="text-slate-500 text-xs">\${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join ScanSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
+  else if(path==='/top-creators')page=InfoPage('Top Creators',`<div class="text-center mb-8"><p class="text-xl text-white font-bold">🏆 ScanSquad Leaderboard</p><p class="text-slate-300">Our top-performing creators this month</p></div><div class="space-y-4">${[{rank:1,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥇'},{rank:2,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥈'},{rank:3,name:'Coming Soon',handle:'@your-name-here',bookings:'-',earned:'-',badge:'🥉'}].map(c=>`<div class="bg-slate-800 rounded-xl p-4 flex items-center gap-4 border border-slate-700"><span class="text-3xl">${c.badge}</span><div class="flex-1"><p class="text-white font-bold">${c.name}</p><p class="text-slate-400 text-sm">${c.handle}</p></div><div class="text-right"><p class="text-brand font-bold">${c.earned}</p><p class="text-slate-500 text-xs">${c.bookings} bookings</p></div></div>`).join("")}</div><div class="mt-8 bg-brand/10 border border-brand/30 rounded-xl p-6 text-center"><p class="text-white font-bold mb-2">Want to see your name here?</p><p class="text-slate-300 text-sm mb-4">Join ScanSquad and start earning 25% commission on every referred booking.</p><div class="flex gap-3 justify-center flex-wrap"><a onclick="navigate('/become-a-creator')" class="bg-brand hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Become a Creator →</a><a onclick="navigate('/creators')" class="border border-brand text-brand hover:bg-brand hover:text-white font-bold px-6 py-3 rounded-xl cursor-pointer transition inline-block">Browse Assets →</a></div></div>`);
 else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class="text-center mb-8"><h2 class="text-2xl text-white font-bold">ScanGym ScanSquad vs The Rest</h2><p class="text-slate-400">See why creators choose ScanGym</p></div><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-4 text-slate-400">Feature</th><th class="py-3 px-4 text-brand font-bold">ScanGym</th><th class="py-3 px-4 text-slate-400">ClassPass</th><th class="py-3 px-4 text-slate-400">Gymshark</th></tr></thead><tbody><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Commission</td><td class="py-3 px-4 text-brand font-semibold">25% recurring</td><td class="py-3 px-4 text-slate-400">5-10% one-time</td><td class="py-3 px-4 text-slate-400">Free products</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Cookie Duration</td><td class="py-3 px-4 text-brand font-semibold">30 days</td><td class="py-3 px-4 text-slate-400">7 days</td><td class="py-3 px-4 text-slate-400">N/A</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Min Followers</td><td class="py-3 px-4 text-brand font-semibold">None</td><td class="py-3 px-4 text-slate-400">10K+</td><td class="py-3 px-4 text-slate-400">50K+</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Ready Assets</td><td class="py-3 px-4 text-brand font-semibold">${SQUAD_ASSET_COUNT}+</td><td class="py-3 px-4 text-slate-400">Banners only</td><td class="py-3 px-4 text-slate-400">PDF guide</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Monthly (10K)</td><td class="py-3 px-4 text-brand font-semibold">\u00a3609/mo</td><td class="py-3 px-4 text-slate-400">\u00a350-100/mo</td><td class="py-3 px-4 text-slate-400">\u00a30</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Payouts</td><td class="py-3 px-4 text-brand font-semibold">Weekly</td><td class="py-3 px-4 text-slate-400">Monthly (60d delay)</td><td class="py-3 px-4 text-slate-400">Quarterly</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Free Gym Access</td><td class="py-3 px-4 text-brand font-semibold">Yes (25+/mo)</td><td class="py-3 px-4 text-slate-400">No</td><td class="py-3 px-4 text-slate-400">No</td></tr><tr class="border-b border-slate-800"><td class="py-3 px-4 text-white">Onboarding</td><td class="py-3 px-4 text-brand font-semibold">Instant</td><td class="py-3 px-4 text-slate-400">2-week wait</td><td class="py-3 px-4 text-slate-400">Invite only</td></tr></tbody></table></div><div class="mt-8 text-center"><a onclick="navigate(\'/become-a-creator\')" class="bg-brand hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-xl cursor-pointer transition inline-block">Join ScanSquad \u2014 It\'s Free \u2192</a></div>`);
 
   else if(path==='/booking')page=InfoPage('Book a Gym Session',`<p class="text-xl text-white font-bold mb-2">3 taps. That’s it.</p><p class="text-lg text-slate-300 mb-8">Find a gym, pick your time, and go. No membership required.</p><div class="relative space-y-6 mb-8">${[{step:"1",icon:"🔍",title:"Find a Gym",desc:"Search by city, area, or gym name. Filter by price, rating, facilities, and distance. gyms across the UK.",time:"30 sec"},{step:"2",icon:"📅",title:"Pick Your Session",desc:"Choose your date and time slot. Day passes are valid for 24 hours from scan-in. Day Pass from ${sgPrice('day').display}.",time:"20 sec"},{step:"3",icon:"💳",title:"Pay Securely",desc:"Apple Pay, Google Pay, or card. Sign in once and your card saves for 1-tap booking. Free cancellation up to 2 hours before.",time:"10 sec"},{step:"4",icon:"📱",title:"Get Your QR Code",desc:"Instant QR code on your phone. Walk up to the gym, scan at the entrance, and you’re in. Quick and easy.",time:"Instant"},{step:"5",icon:"🏋️",title:"Train & Check Out",desc:"Enjoy the full gym for 24 hours. Scan out when you leave. Rate your experience and earn rewards.",time:"Your pace"}].map(s=>`<div class="flex gap-4"><div class="w-10 h-10 bg-brand rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${s.step}</div><div class="flex-1 bg-slate-800 rounded-lg p-4"><div class="flex items-center justify-between"><p class="text-white font-bold"><span class="mr-2">${s.icon}</span>${s.title}</p><span class="text-brand text-xs font-medium">${s.time}</span></div><p class="text-slate-400 text-sm mt-1">${s.desc}</p></div></div>`).join("")}</div><div class="grid sm:grid-cols-3 gap-4 mb-8"><div class="bg-green-900/20 border border-green-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">✅</p><p class="text-white font-semibold text-sm">Free Cancellation</p><p class="text-slate-500 text-xs">Up to 2 hours before</p></div><div class="bg-blue-900/20 border border-blue-800/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">🔒</p><p class="text-white font-semibold text-sm">Secure Payment</p><p class="text-slate-500 text-xs">Stripe + Apple/Google Pay</p></div><div class="bg-brand/10 border border-brand/30 rounded-xl p-4 text-center"><p class="text-2xl mb-1">⚡</p><p class="text-white font-semibold text-sm">No Membership</p><p class="text-slate-500 text-xs">Pay per session only</p></div></div><div class="text-center"><a onclick="navigate('/explore')" class="bg-brand hover:bg-orange-600 text-white font-bold px-10 py-4 rounded-xl cursor-pointer transition inline-block shadow-lg shadow-brand/20 text-lg">Find a Gym Near You →</a><p class="text-slate-500 text-sm mt-3">From ${sgPrice('day').display} per session · No contracts · No sign-up required</p></div>`);
@@ -16870,6 +16881,18 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
   // ── App-style fixed viewport: all pages locked, content scrolls inside container ──
   // Reset scroll position of content container on navigation
   var _tc=document.querySelector('.sg-tab-content');if(_tc)_tc.scrollTop=0;
+  // ── Inline <script> blocks set through innerHTML never execute (HTML spec). ──
+  // Pages built as strings (Progress, Tutorials, Facility Science) carried their
+  // fetch in such a script and sat on "Loading..." forever. Re-create each one so
+  // the browser runs it. Core fix — do not patch these pages one by one.
+  try{
+    document.querySelectorAll('#app script').forEach(function(old){
+      var s=document.createElement('script');
+      if(old.src){s.src=old.src;}else{s.textContent=old.textContent;}
+      if(old.type)s.type=old.type;
+      old.parentNode.replaceChild(s,old);
+    });
+  }catch(e){console.warn('[Render] inline script hydration failed:',e);}
   initInteractive();
   // ── Initialize inline Book-tab map carousel scroll listeners ──
   if(typeof _initBookMapCarousel==='function')_initBookMapCarousel();
@@ -16894,6 +16917,13 @@ else if(path==='/compare')page=InfoPage('Creator Program Comparison',`<div class
         {enableHighAccuracy:false,timeout:8000,maximumAge:300000}
       );
     }
+  }
+  // Profile stats (sessions / gyms / streak) live on /api/auth/profile, which was
+  // only fetched on /more/profile — so the Profile tab showed 0·0·0 to members
+  // with real bookings. Load it once per session for the profile screens too.
+  if((path==='/more'||path==='/more/profile')&&state.user&&!window._sgProfileStatsLoaded){
+    window._sgProfileStatsLoaded=true;
+    if(typeof loadFullProfile==='function'){loadFullProfile().then(function(){render();}).catch(function(){});}
   }
   // Initialize staff QR scanner camera when on /staff/scan
   if(path==='/staff/scan'){setTimeout(sgInitScanner,200);}
@@ -21123,12 +21153,13 @@ window.sgFeedback = async function(elementId, vote, btn) {
       _creatorData.handle=_autoHandle;_creatorData.name=_usr.name||'';_creatorData.email=_usr.email||'';_creatorData.autoCreated=true;
       localStorage.setItem('sg_creator',JSON.stringify(_creatorData));
       if(state.user)state.user.referral_code=_autoHandle;
-      fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        first_name:(_usr.name||'').split(' ')[0]||'',last_name:(_usr.name||'').split(' ').slice(1).join(' ')||'',
-        email:_usr.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-auth-success'
-      })}).catch(function(){});
-    }
+      /* /api/v2/creator-apply never existed server-side (see server/routes/creators.js) —
+         the call 404'd on every Create tab load. Creator records are created by the
+         real creator routes; nothing here needs a network call. */
+      /* sync-handle moved inside the guard: outside it, _autoHandle is undefined on
+         every login that already had a handle, so the app POSTed {handle:undefined}. */
       fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:_autoHandle})}).catch(function(){});
+    }
     if(_sheetMode==='book'){
       /* After login, show saved cards picker (same style as Pay button).
          Users can select an existing card, add a new one, or skip. */
@@ -21149,14 +21180,12 @@ window.sgFeedback = async function(elementId, vote, btn) {
         creatorData.autoCreated=true;
         localStorage.setItem('sg_creator',JSON.stringify(creatorData));
         // Register with server (fire-and-forget)
-        fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          first_name:(_usr.name||'').split(' ')[0]||'',
-          last_name:(_usr.name||'').split(' ').slice(1).join(' ')||'',
-          email:_usr.email||'',
-          instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-reels-share'
-        })}).catch(function(){});
-      }
+        /* POST /api/v2/creator-apply has never existed server-side (server/routes/creators.js
+       documents it); it 404'd on every call. The /api/creators/sync-handle call beside it
+       is the one that persists the handle. */
+        /* same guard fix as above — do not POST an undefined handle */
         fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:_autoHandle})}).catch(function(){});
+      }
       // After login, affiliate code is auto-added to share link.
       // Earnings go to ScanGym wallet — no need for payment connect step.
       window._sgCloseAuthSheet();

@@ -38,8 +38,9 @@ async function submitCreatorApp(){
   }
   if(!d.email){sgToast('Please sign in with Google or enter your email','error');return;}
   try{
-    var res=await fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
-    var data=await res.json();
+    /* POST /api/v2/creator-apply has never existed server-side (server/routes/creators.js
+       documents it); it 404'd on every call. The /api/creators/sync-handle call beside it
+       is the one that persists the handle. */
     // Generate instant referral handle from email
     var handle=d.instagram||d.email.split('@')[0].replace(/[^a-z0-9]/gi,'').toLowerCase();
     localStorage.setItem('sg_creator',JSON.stringify({handle:handle,email:d.email,name:d.first_name}));
@@ -2437,10 +2438,9 @@ window._creatorGetLink=function(){
   if(!refCode){
     refCode=(u.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase()||(u.phone||'').replace(/[^0-9]/g,'').slice(-6)||('sg'+Date.now().toString(36));
     u.referral_code=refCode;
-    fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      first_name:(u.name||'').split(' ')[0]||'',last_name:(u.name||'').split(' ').slice(1).join(' ')||'',
-      email:u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-affiliate-link'
-    })}).catch(function(){});
+    /* POST /api/v2/creator-apply has never existed server-side (server/routes/creators.js
+       documents it); it 404'd on every call. The /api/creators/sync-handle call beside it
+       is the one that persists the handle. */
     var cd=JSON.parse(localStorage.getItem('sg_creator')||'{}');
     cd.handle=refCode;cd.name=u.name||'';cd.email=u.email||'';cd.autoCreated=true;
     localStorage.setItem('sg_creator',JSON.stringify(cd));
@@ -2484,10 +2484,9 @@ window._loadCreatorFullPage=async function(){
     if(_u)_u.referral_code=handle;
     var _cd=cd||{};_cd.handle=handle;_cd.name=_u.name||'';_cd.email=_u.email||'';_cd.autoCreated=true;
     localStorage.setItem('sg_creator',JSON.stringify(_cd));
-    fetch('/api/v2/creator-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      first_name:(_u.name||'').split(' ')[0]||'',last_name:(_u.name||'').split(' ').slice(1).join(' ')||'',
-      email:_u.email||'',instagram:'',tiktok:'',youtube:'',followers:'',why:'auto-creator-dashboard'
-    })}).catch(function(){});
+    /* POST /api/v2/creator-apply has never existed server-side (server/routes/creators.js
+       documents it); it 404'd on every call. The /api/creators/sync-handle call beside it
+       is the one that persists the handle. */
     fetch('/api/creators/sync-handle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:handle})}).catch(function(){});
   }
   var el=function(id){return document.getElementById(id);};
