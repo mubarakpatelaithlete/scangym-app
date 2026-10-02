@@ -295,7 +295,7 @@
        back to it, the red ✕ and a swipe down close it, and so does the phone's
        back button. Same shape as the chat sheet and sg-half-sheet.js. */
     '#sg-sv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9490;}',
-    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:linear-gradient(to top,rgba(8,10,18,.95) 0%,rgba(8,10,18,.82) 60%,rgba(8,10,18,.6) 100%);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));will-change:transform;transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
+    '#' + SHEET_ID + '{position:fixed;left:0;right:0;bottom:var(--sg-tab-height,56px);max-height:70vh;overflow-y:auto;background:linear-gradient(to top,rgba(8,10,18,.98) 0%,rgba(8,10,18,.95) 60%,rgba(8,10,18,.9) 100%);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:9491;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px));will-change:transform;transform:translateY(105%);transition:transform .2s cubic-bezier(.32,.72,0,1);scrollbar-width:none;box-sizing:border-box;}',
     '#' + SHEET_ID + '::-webkit-scrollbar{display:none;}',
     '#' + SHEET_ID + '.open{transform:translateY(0);}',
     '.sv-step-hidden{display:none !important;}',
@@ -687,10 +687,26 @@
     });
     var sty = el('div', 'sv-chip', '\uD83C\uDFA8 Style');
     sty.addEventListener('click', function () { styleBox.style.display = styleBox.style.display === 'flex' ? 'none' : 'flex'; });
-    tools.appendChild(enh); tools.appendChild(undo); tools.appendChild(rec);
-    if (mode.key === 'image' || mode.key === 'video') tools.appendChild(sty);
-    if ((mode.templates || []).length) tools.appendChild(dice);
+    /* Task 157 B2: five chips at once was the clutter. Enhance stays; Recent,
+       Style and Surprise me fold under one "More" chip (Higgsfield keeps one
+       primary tool visible and tucks the rest away). */
+    var extra = el('div', 'sv-row sv-ptools-more');
+    extra.style.cssText = 'display:none;gap:8px;margin:4px 0 2px;flex-wrap:wrap';
+    extra.appendChild(rec);
+    if (mode.key === 'image' || mode.key === 'video') extra.appendChild(sty);
+    if ((mode.templates || []).length) extra.appendChild(dice);
+    var moreT = el('div', 'sv-chip', '\u22EF More');
+    moreT.setAttribute('role', 'button');
+    moreT.addEventListener('click', function () {
+      var open = extra.style.display === 'flex';
+      extra.style.display = open ? 'none' : 'flex';
+      moreT.textContent = open ? '\u22EF More' : '\u2715 Less';
+      if (open) { recBox.style.display = 'none'; styleBox.style.display = 'none'; }
+    });
+    tools.appendChild(enh); tools.appendChild(undo);
+    if (extra.children.length) tools.appendChild(moreT);
     sh.appendChild(tools);
+    sh.appendChild(extra);
     sh.appendChild(recBox);
     sh.appendChild(styleBox);
     if (mode.key === 'video') {
