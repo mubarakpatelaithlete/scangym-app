@@ -27,6 +27,8 @@ COPY tests/ ./tests/
 COPY migrations/ ./migrations/
 # tests/docker-test-stage.test.js reads this file, to keep the two in step.
 COPY Dockerfile ./
+# tests/gemini-connect-page.test.js reads the Gemini CLI extension files at the repo root.
+COPY gemini-extension.json GEMINI.md ./
 
 RUN npm test && mkdir -p /verified && date -u +%FT%TZ > /verified/tests-passed
 
