@@ -89,6 +89,10 @@
 </script>
 
 <link rel="manifest" href="/manifest.json">
+<!-- Task 155: real favicon (orange S brand disc). Before this the site had no icon tag and /favicon.ico fell through to the SPA page. -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,7 +107,7 @@
 <link rel="dns-prefetch" href="https://places.googleapis.com">
 
 <link rel="preload" href="/styles.css?v=5.3.1" as="style">
-<link rel="preload" href="/app.ctr576.js?v=5.5.6" as="script" fetchpriority="high">
+<link rel="preload" href="/app.ctr576.js?v=5.5.7" as="script" fetchpriority="high">
 
 <link rel="stylesheet" href="/styles.css?v=5.3.1">
 
@@ -136,7 +140,7 @@ h1,h2,h3,.font-brand{font-family:'Sora',sans-serif}
   <!-- One definition of what a strip button looks like; loaded before the
        rows that read it. -->
   <link rel="stylesheet" href="/one-button.css?v=1.0">
-  <link rel="stylesheet" href="/one-cta.css?v=1.1">
+  <link rel="stylesheet" href="/one-cta.css?v=1.2">
   <link rel="stylesheet" href="/brand-mark.css?v=1.0">
   <link rel="stylesheet" href="/talk-bar.css?v=1.0">
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
@@ -214,12 +218,12 @@ if('serviceWorker' in navigator){
 <script src="/guest-checkout.js" defer></script>
 <!-- The icon table: before the patch chain, which must stay contiguous. -->
 <script src="/sg-icons.js?v=1.1" defer></script>
-<script src="/app.ctr576.js?v=5.5.6" defer></script>
+<script src="/app.ctr576.js?v=5.5.7" defer></script>
 <script src="/shop-extras.js?v=1.6" defer></script>
 <script src="/sg-signin-ask.js?v=1.1" defer></script>
 <script src="/app-patches.js?v=2.1" defer></script>
 <script src="/continue-cta-flow.js?v=1.3" defer></script>
-<script src="/sg-rail-ui.js?v=1.6" defer></script>
+<script src="/sg-rail-ui.js?v=1.7" defer></script>
 <script src="/phase2-improvements.js?v=1.1" defer></script>
 <!-- After the patch pile: rails.js only reads the DOM the rails leave behind.
      Kept OUT of PATCH_CHAIN (see tests/patch-chain.test.js) so the chain stays
@@ -253,7 +257,7 @@ if('serviceWorker' in navigator){
 <script src="/reels-chat.js?v=1.3" defer></script>
 <script src="/profile-chat.js?v=1.3" defer></script>
 <script src="/profile-rail.js?v=2.6" defer></script>
-<script src="/squad-create.js?v=4.3" defer></script>
+<script src="/squad-create.js?v=4.4" defer></script>
 <script src="/create-studio.js?v=1.7" defer></script>
 <!-- voice is the front door: arms itself, no dedicated tap.
      Must stay after every personality: it reads them at boot to decide which

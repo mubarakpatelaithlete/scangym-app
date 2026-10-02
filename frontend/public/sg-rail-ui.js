@@ -60,7 +60,7 @@ function initUspStrip(){
     /* Profile (/more): full-screen header sits at top:12px; the strip (z-index 100) covered the name + tier badge on mobile */
     +'body[data-route^="/more"] #sg-sps{display:none!important}'
     +'body[data-route^="/chats"] #sg-sps{display:none!important}');
-  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
+  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;/* Task 154: gym-booking promises do not belong on Shop/Create/Chats/Profile */if(/^\/(shop|creator|create|scansquad|chats|profile|more)/.test(location.pathname))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
 }
 
 var _done=false;

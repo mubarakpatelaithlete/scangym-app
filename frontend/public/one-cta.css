@@ -55,7 +55,9 @@ button[style*="background: #FF6D00"] {
    button), so a product sheet had no way to pay (found 2026-09-30, task 6).
    A sheet is one decision, and its orange button IS the one CTA. */
 .shs-body button[style*="background:#FF6D00"],
-#sg-shop-sheet button[style*="background:#FF6D00"] {
+#sg-shop-sheet button[style*="background:#FF6D00"],
+/* Task 154: a logged-out Profile with no way to log in was a dead end. */
+#sg-profile-login {
   display: block !important;
 }
 
