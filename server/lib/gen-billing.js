@@ -400,8 +400,25 @@ const ids = (inv, deps) => ((deps && deps._group) || [inv]).map((i) => Number(i.
  * into the next invoice, and a suspension for an uncollectable amount lifts.
  */
 async function chargeInvoices(list, db = pool, deps = {}) {
-  const invs = (list || []).filter(Boolean);
+  let invs = (list || []).filter(Boolean);
   if (!invs.length) return { ok: true, nothing: true };
+  /* A payment that went through but was not recorded (a DB error after the
+     charge) must never be taken twice: recover it from Stripe first. */
+  const client = deps.stripe !== undefined ? deps.stripe : stripe;
+  const pis = [...new Set(invs.map((i) => i.stripe_payment_intent_id).filter(Boolean))];
+  for (const pi of pis) {
+    try {
+      const it = client && client.paymentIntents.retrieve ? await client.paymentIntents.retrieve(pi) : null;
+      if (it && it.status === 'succeeded') {
+        const done = invs.filter((i) => i.stripe_payment_intent_id === pi).map((i) => Number(i.id));
+        await db.query(
+          `UPDATE squad_invoices SET status = 'paid', paid_at = COALESCE(paid_at, NOW()), last_error = NULL
+            WHERE id = ANY($1::bigint[])`, [done]);
+        invs = invs.filter((i) => done.indexOf(Number(i.id)) === -1);
+      }
+    } catch (e) { console.error('[SquadBilling] intent recovery failed:', e.message); }
+  }
+  if (!invs.length) { await liftSuspensionIfClear(list[0].user_id, db); return { ok: true, recovered: true }; }
   const total = invs.reduce((t, i) => t + Number(i.gross_pence || 0), 0);
   if (total < MIN_CHARGE_PENCE) {
     try {
@@ -473,7 +490,7 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
     );
     await db.query(
       `UPDATE squad_billing
-          SET paid_invoices = paid_invoices + 1,
+          SET paid_invoices = paid_invoices + $3,
               paid_gross_pence = paid_gross_pence + $2,
               updated_at = NOW()
         WHERE user_id = $1::text`,
@@ -487,7 +504,7 @@ async function chargeInvoice(inv, db = pool, deps = {}) {
       await db.query(
         `UPDATE squad_invoices SET status = 'failed', last_error = $2,
                 charge_attempts = charge_attempts + 1, last_attempt_at = NOW()
-          WHERE id = ANY($1::bigint[])`,
+          WHERE id = ANY($1::bigint[]) AND status <> 'paid'`,
         [ids(inv, deps), e.message.slice(0, 300)],
       );
     } catch (_) { /* the charge already failed; the log is what matters */ }
