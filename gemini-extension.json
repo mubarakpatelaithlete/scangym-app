@@ -1,0 +1,12 @@
+{
+  "name": "scangym",
+  "version": "1.0.0",
+  "description": "ScanGym in Gemini CLI: find gyms, see live day-pass prices, book and cancel, and create images, videos, voiceovers and music with ScanSquad.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "scangym": {
+      "httpUrl": "https://www.scangym.com/mcp/account",
+      "timeout": 60000
+    }
+  }
+}

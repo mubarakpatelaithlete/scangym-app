@@ -18,3 +18,13 @@ test('Gemini button, route and guide exist', () => {
   assert.match(g, /Connected Apps/);
   assert.ok(!/grok/i.test(g));
 });
+
+test('Gemini CLI extension manifest points at the signed-in MCP connector', () => {
+  const ext = JSON.parse(read('gemini-extension.json'));
+  assert.strictEqual(ext.name, 'scangym');
+  assert.strictEqual(ext.contextFileName, 'GEMINI.md');
+  assert.strictEqual(ext.mcpServers.scangym.httpUrl, 'https://www.scangym.com/mcp/account');
+  assert.match(read('GEMINI.md'), /\/mcp auth scangym/);
+  const g = read('frontend/public/gemini/index.html');
+  assert.match(g, /gemini extensions install https:\/\/github\.com\/mubarakpatelaithlete\/scangym-app/);
+});
