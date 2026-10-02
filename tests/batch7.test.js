@@ -10,7 +10,7 @@ test('Chats: contact info has private Notes', () => {
   assert.match(h, /data-i="note"/);
   assert.match(h, /if\(a==='note'\)noteSheet\(id\);/);
   assert.match(h, /function noteSheet\(id\)\{/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.\d+/);
+  assert.match((read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js')), /chats\/app\.html\?v=2\.\d+/);
 });
 test('Shop: Best sellers = sold items, most sold first', () => {
   global.window = { _sgShopRender: function () {} };

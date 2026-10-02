@@ -10,7 +10,7 @@ test('Chats: chat menu has Clear chat (hides messages on this phone)', () => {
   assert.match(h, /data-i="clear"/);
   assert.match(h, /if\(a==='clear'\)clearChat\(\);/);
   assert.match(h, /function clearChat\(\)\{/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.\d+/);
+  assert.match((read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js')), /chats\/app\.html\?v=2\.\d+/);
 });
 test('Shop: New arrivals = last 14 days, newest first', () => {
   global.window = { _sgShopRender: function () {} };

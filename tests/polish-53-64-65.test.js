@@ -35,7 +35,7 @@ test('Task 64 pass 2: TikTok filled rail icons + spinning sound disc', () => {
 });
 
 test('Task 65 pass 2: Amazon-style shop (white search first, price, Buy now)', () => {
-  const app = read('app.ctr576.js');
+  const app = (read('app.ctr576.js') + read('sg-shop.js'));
   const shop = app.slice(app.indexOf('function ShopPage()'), app.indexOf('// ─── More Hub Page'));
   assert.match(shop, /Search ScanGym Shop/);
   assert.match(app, /function _sgShopPrice/);
@@ -50,7 +50,7 @@ test('Task 64 bugs: tappable #tags/@handle/sound, tap-to-pause, scrub, long-pres
 });
 
 test('Task 65 bugs: search kept + clear, sort, count, skeleton, retry, no stale paint', () => {
-  const app = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  const app = (fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'sg-shop.js'), 'utf8'));
   for (const s of ['value="${_sgShopEsc(_sgShopState.q)}"', '_sgShopClear', '_sgShopSort', 'Price: low to high', 'function _sgShopSkeleton', 'Try again', 'mySeq!==_sgShopState.seq', 'No results for', 'loading="lazy"', 'data-shop-cat']) {
     assert.ok(app.includes(s), s);
   }
@@ -59,6 +59,6 @@ test('Task 65 bugs: search kept + clear, sort, count, skeleton, retry, no stale 
 test('Task 64/65 round 2: loop + auto-scroll, pull to refresh, hold 2x, clear display; product page details, share, deep link, recent searches', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'reels', 'index.html'), 'utf8');
   for (const s of ['sgAutoScroll', 'function refreshFeed', 'sg-fast', 'sg-clear', 'Report', 'sg-scrub-t']) assert.ok(html.includes(s), s);
-  const app = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8');
+  const app = (fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'app.ctr576.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'frontend', 'public', 'sg-shop.js'), 'utf8'));
   for (const s of ['Product details', '_sgShopShare', "get('p')", '_sgShopRecent', 'More from @', 'sg-shop-top']) assert.ok(app.includes(s), s);
 });

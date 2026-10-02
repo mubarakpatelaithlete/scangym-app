@@ -19,7 +19,7 @@ const ROOT = path.join(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 const SHOP = read('server', 'routes', 'shop.js');
 const SERVER = read('server', 'server.js');
-const APP = read('frontend', 'public', 'app.ctr576.js');
+const APP = (read('frontend', 'public', 'app.ctr576.js') + read('frontend', 'public', 'sg-shop.js'));
 const MIGRATION = read('migrations', '20260929b_shop_products.sql');
 const { splitEarnings, validatePrice, formatPence } = require('../server/lib/shop-earnings');
 

@@ -6,7 +6,7 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 test('Chats tab sits between Shop and Profile in the SPA bar', () => {
-  const app = read('frontend/public/app.ctr576.js');
+  const app = (read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js'));
   const shop = app.indexOf('aria-label="Shop" onclick="switchTab(\'shop\')"');
   const chats = app.indexOf('aria-label="Chats" onclick="switchTab(\'chats\')"');
   const prof = app.indexOf('aria-label="Profile and settings"');

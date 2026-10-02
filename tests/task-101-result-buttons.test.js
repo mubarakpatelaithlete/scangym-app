@@ -36,6 +36,6 @@ test('Sell lists the creation itself, only if it is the seller’s own finished 
   const shop = read('server/routes/shop.js');
   assert.match(shop, /fileFromCreation\(req\.user\.id/);
   assert.match(shop, /WHERE user_id = \$1 AND video_url = \$2 AND status = 'done'/);
-  const app = read('frontend/public/app.ctr576.js');
+  const app = (read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js'));
   assert.match(app, /form\.append\('sourceUrl',src\)/);
 });
