@@ -24,7 +24,7 @@ function ShopPage(){
   return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:10px 12px 110px;color:#fff">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 8px 44px;min-height:30px">
       <h1 style="margin:0;font-size:17px;font-weight:900;white-space:nowrap">ScanGym <span style="color:#FF6D00">Digital Shop</span></h1>
-      <span style="color:rgba(255,255,255,.55);font-size:11px;white-space:nowrap">PDF guides &amp; plans</span>
+      <button type="button" id="sg-shop-basket-btn" aria-label="Basket" onclick="window._sgShopOpenBasket()" style="margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDED2 <span id="sg-shop-basket-n">${_sgShopLS('sg_shop_basket').length}</span></button>
     </div>
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
@@ -342,7 +342,9 @@ window._sgShopOpen=function(productId){
     +'<div style="position:sticky;bottom:0;background:#12141d;padding:10px 0 4px;z-index:2">'
     +(owned
       ? '<a href="'+owned+'" style="display:block;text-align:center;border-radius:14px;padding:15px;background:#22c55e;color:#fff;font-weight:800;text-decoration:none">Download again</a>'
-      : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">\u26A1 Buy now \u00b7 '+_sgShopEsc(p.price)+' \u00b7 1 tap</button>')
+      : '<button type="button" id="sg-shop-buy-btn" onclick="window._sgShopBuy('+p.id+')" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">\u26A1 Buy now \u00b7 '+_sgShopEsc(p.price)+' \u00b7 1 tap</button>'
+        /* Task 158 B3: Amazon's second button. */
+        +'<button type="button" id="sg-shop-add-basket" onclick="window._sgShopAddBasket('+p.id+')" style="width:100%;margin-top:8px;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:12px;background:transparent;color:#fff;font-weight:700;font-size:14px;cursor:pointer">'+(_sgShopLS('sg_shop_basket').indexOf(p.id)>=0?'\u2713 In your basket':'\uD83D\uDED2 Add to basket')+'</button>')
     +'</div>'
     +'<p style="margin:10px 0 0;color:rgba(255,255,255,.4);font-size:11px;text-align:center">Instant download, and a copy by email. Digital product — no refunds once downloaded.</p>'
     +'</div>';
@@ -486,3 +488,55 @@ window._sgShopSubmitProduct=async function(){
 };
 
 // ─── More Hub Page (Everything Else) ───
+
+/* Task 158 B3: a basket (Amazon). Products are digital and each is bought
+   through the same one-tap /api/shop/checkout on the saved card, so "Buy all"
+   is that call per item — said plainly on the button's note, not hidden. */
+function _sgShopBasketSave(l){try{localStorage.setItem('sg_shop_basket',JSON.stringify(l.slice(0,30)));}catch(e){}var n=document.getElementById('sg-shop-basket-n');if(n)n.textContent=l.length;}
+function _sgShopNum(price){var n=parseFloat(String(price||'').replace(/[^0-9.]/g,''));return isNaN(n)?0:n;}
+window._sgShopAddBasket=function(id){
+  var l=_sgShopLS('sg_shop_basket');
+  if(l.indexOf(id)<0){l.push(id);_sgShopBasketSave(l);}
+  var b=document.getElementById('sg-shop-add-basket');if(b)b.textContent='\u2713 In your basket';
+  if(typeof sgToast==='function')sgToast('Added to basket \uD83D\uDED2 ('+l.length+')','success',2000);
+};
+window._sgShopRemoveBasket=function(id){_sgShopBasketSave(_sgShopLS('sg_shop_basket').filter(function(x){return x!==id;}));window._sgShopOpenBasket();};
+window._sgShopOpenBasket=function(){
+  var ids=_sgShopLS('sg_shop_basket');
+  var items=ids.map(function(id){return _sgShopState.products.filter(function(p){return p.id===id;})[0];}).filter(function(p){return p&&!_sgShopState.owned[p.id];});
+  if(items.length!==ids.length)_sgShopBasketSave(items.map(function(p){return p.id;}));
+  var cur=items.length?(String(items[0].price).match(/^\D*/)||[''])[0]:'';
+  var total=items.reduce(function(t,p){return t+_sgShopNum(p.price);},0);
+  var body=!items.length
+    ?'<p style="margin:16px 0;text-align:center;color:rgba(255,255,255,.6)">Your basket is empty. Tap \uD83D\uDED2 Add to basket on any product.</p>'
+    :items.map(function(p){return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)">'
+        +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover">':'<div style="width:48px;height:48px;border-radius:8px;background:#1f2937"></div>')
+        +'<div style="flex:1;min-width:0"><p style="margin:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_sgShopEsc(p.title)+'</p><p style="margin:2px 0 0;font-size:13px;color:rgba(255,255,255,.6)">'+_sgShopEsc(p.price)+'</p></div>'
+        +'<button type="button" aria-label="Remove" onclick="window._sgShopRemoveBasket('+p.id+')" style="border:0;background:none;color:#f87171;font-size:18px;cursor:pointer">\u2715</button></div>';}).join('')
+      +'<div style="display:flex;justify-content:space-between;margin:12px 0;font-size:16px;font-weight:900"><span>Total ('+items.length+')</span><span>'+_sgShopEsc(cur)+total.toFixed(2)+'</span></div>'
+      +'<div id="sg-shop-basket-out" style="font-size:13px;margin-bottom:8px"></div>'
+      +'<button type="button" id="sg-shop-buyall" onclick="window._sgShopBuyAll()" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">\u26A1 Buy all \u00b7 '+_sgShopEsc(cur)+total.toFixed(2)+'</button>'
+      +'<p style="margin:8px 0 0;color:rgba(255,255,255,.45);font-size:11px;text-align:center">Each item is charged to your saved card, one after another. Instant downloads.</p>';
+  window._sgShopSimpleSheet('<div style="padding:4px 2px 8px">'+body+'</div>',{title:'Your basket',sub:items.length+' item'+(items.length===1?'':'s'),icon:'\uD83D\uDED2'});
+};
+window._sgShopBuyAll=async function(){
+  if(!state.user){if(typeof window._sgShowAuthSheet==='function'){window._sgShowAuthSheet('book');return;}navigate('/login');return;}
+  var btn=document.getElementById('sg-shop-buyall'),out=document.getElementById('sg-shop-basket-out');
+  if(btn){btn.disabled=true;btn.textContent='Paying\u2026';}
+  var ids=_sgShopLS('sg_shop_basket'),done=[],failed=[];
+  for(var i=0;i<ids.length;i++){
+    var p=_sgShopState.products.filter(function(x){return x.id===ids[i];})[0];if(!p)continue;
+    try{
+      var r=await fetch('/api/shop/checkout',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:p.id})}).then(function(res){return res.json();});
+      if(r.success&&r.downloadUrl){_sgShopState.owned[p.id]=r.downloadUrl;done.push({p:p,url:r.downloadUrl});}
+      else{failed.push({p:p,why:r.code==='needs_card'?'add a card first':(r.error||'payment failed')});if(r.code==='needs_card')break;}
+    }catch(e){failed.push({p:p,why:'network error'});}
+  }
+  _sgShopBasketSave(ids.filter(function(id){return !_sgShopState.owned[id];}));
+  if(out)out.innerHTML=done.map(function(d){return '<p style="margin:0 0 6px;color:#86efac">\u2705 <a href="'+_sgShopEsc(d.url)+'" style="color:#86efac;font-weight:700">Download '+_sgShopEsc(d.p.title)+'</a></p>';}).join('')
+    +failed.map(function(f){return '<p style="margin:0 0 6px;color:#f87171">\u274C '+_sgShopEsc(f.p.title)+': '+_sgShopEsc(f.why)+'</p>';}).join('');
+  if(btn){btn.disabled=false;btn.textContent=failed.length?'Try the rest again':'Done \u2713';if(!failed.length)btn.onclick=function(){if(typeof window.sgCloseSheet==='function')window.sgCloseSheet();};}
+  if(failed.some(function(f){return f.why==='add a card first';})&&typeof window._sgShowAuthSheet==='function')window._sgShowAuthSheet('book');
+  if(done.length&&typeof window._sgShopRender==='function')window._sgShopRender();
+};
+

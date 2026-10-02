@@ -331,6 +331,24 @@
     '.sv-warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:10px 12px;color:#fbbf24;font-size:12px;margin-bottom:10px;line-height:1.45;}',
     '.sv-video{width:100%;border-radius:14px;margin-top:12px;background:#000;max-height:52vh;}',
     '.sv-prog{display:flex;align-items:center;gap:10px;margin-top:14px;color:#cbd5e1;font-size:12.5px;}',
+    /* ── Task 153 (owner approved mockup, 2026-10-02): clean neutral skin ──
+       Solid surface (nothing shows through), neutral greys instead of navy,
+       pill chips without borders, a big prompt card, a white "on" state, and
+       one orange thing on screen: Generate. */
+    '#' + SHEET_ID + '{background:#0b0d12 !important;}',
+    '.sv-chip{background:#222836;border:none;color:#e5e7eb;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:999px;}',
+    '.sv-mchip{background:#161a22;border:none;color:#e5e7eb;font-size:12.5px;border-radius:12px;}',
+    '.sv-prompt{background:#161a22;border:1px solid transparent;border-radius:18px;padding:14px;font-size:16px;line-height:1.4;min-height:88px;color:#f1f3f6;}',
+    '.sv-prompt:focus{border-color:rgba(255,255,255,.25);}',
+    '.sv-seg{background:#161a22;border-radius:12px;}',
+    '.sv-seg .on{background:#fff;color:#0b0d12;font-weight:800;}',
+    '.sv-back{background:#161a22;border:none;}',
+    '.sv-kind{background:#161a22;border:none;}',
+    '.sv-val{background:#222836;border:none;border-radius:10px;}',
+    '.sv-set{border-bottom-color:#1c212b;}',
+    '.sv-gen{height:54px;border-radius:16px;background:#FF6D00;box-shadow:none;font-size:16px;}',
+    '.sv-gen:disabled{background:#222836;}',
+    '.sv-head-t span i{color:#cbd5e1;}',
     '.sv-spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#FF6D00;border-radius:50%;animation:svspin .7s linear infinite;flex-shrink:0;}',
     '@keyframes svspin{to{transform:rotate(360deg)}}',
   ].join('');
@@ -1416,7 +1434,7 @@
       var cur = list.filter(function (m) { return m.id === state[mode.key].__model; })[0];
       var price = cur && cur.price && mode.key !== 'text' ? cur.price + (cur.unit === 'per image' ? '/image' : '') : '';
       pill.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (price ? '<b>Using ' + price + '</b> \u00b7 ' : '') + (cur ? (cur.role ? cur.role + ' \u00b7 ' : '') + cur.label : 'Pick a model') + '</span>' +
-        '<span style="color:#FF6D00;font-weight:700;white-space:nowrap;">All models \u203a</span>';
+        '<span style="color:#fff;font-weight:700;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;">All models \u203a</span>';
       /* The page header carries the same truth, Higgsfield-style. */
       var hn = sh.querySelector('#sv-head-name'), hs = sh.querySelector('#sv-head-sub');
       if (hn && cur) hn.textContent = cur.label;
@@ -1463,7 +1481,7 @@
       var paint = function () {
         var on = state[mode.key].__model === m.id;
         chip.style.cssText = on
-          ? 'background:linear-gradient(135deg,#FF6D00,#E66200);border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 11px;border-radius:10px;cursor:pointer;'
+          ? 'background:#222836;border:2px solid #fff;color:#fff;font-size:12px;font-weight:800;padding:7px 11px;border-radius:12px;cursor:pointer;'
           : (locked ? 'opacity:.45;' : '');
       };
       chip.addEventListener('click', function () {

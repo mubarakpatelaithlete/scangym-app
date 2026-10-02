@@ -16,3 +16,9 @@ test('Shop: zoom and About this item', () => {
   assert.match(s, /About this item/);
   assert.match(s, /_sgShopAbout\(desc\)/);
 });
+test('Shop B3: basket — add, open, buy all through the one-tap checkout', () => {
+  const s = r('frontend/public/sg-shop.js');
+  for (const f of ['_sgShopAddBasket', '_sgShopOpenBasket', '_sgShopBuyAll', '_sgShopRemoveBasket']) assert.match(s, new RegExp(`window\\.${f}=`));
+  assert.match(s, /id="sg-shop-basket-btn"/);
+  assert.match(s, /\/api\/shop\/checkout/);
+});
