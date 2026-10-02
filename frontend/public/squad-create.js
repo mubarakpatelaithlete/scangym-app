@@ -1099,6 +1099,7 @@
         if (res.status === 401 || (res.d && res.d.needsLogin)) {
           out.innerHTML = '<div class="sv-warn">🔐 ' + (res.d.error || 'Sign in to create.') +
             ' <a href="/login" style="color:#FF6D00;font-weight:700">Sign in</a></div>';
+          if (window.sgAskSignIn) window.sgAskSignIn('create');
           gen.disabled = false;
           return;
         }
@@ -1447,7 +1448,7 @@
           var msg = o.results.map(function (x) { return (x.status === 'posted' ? '\u2705 ' : x.status === 'skipped' ? '\u23ED\uFE0F ' : '\u274C ') + x.appName; }).join('  ');
           toast('Posted to ' + o.posted + '/' + o.results.length + ': ' + msg + (o.noSocials ? ' \u00b7 Link Instagram, YouTube, TikTok\u2026 once in Profile \u203a Connect to post everywhere' : ''), o.posted ? 'success' : 'error', 6500);
         })
-        .catch(function (e) { if (e === 401) toast('Sign in to post', 'info', 3000); else page(); });
+        .catch(function (e) { if (e === 401) { if (window.sgAskSignIn) window.sgAskSignIn('post'); else toast('Sign in to post', 'info', 3000); } else page(); });
     });
     chip('✏️ Edit', function () {
       if (isVid) { window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs }); return; }

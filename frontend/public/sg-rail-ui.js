@@ -349,6 +349,9 @@ function injectProfileCTA(){
    * space via body.sg-cb-active. */
   if(!isProfile){window.sgBottomBar.hide('profile');return;}
   var u=curUser();
+  /* Task 66 (C): no orange "Sign in" bar for logged-out visitors — the sign-in
+     half sheet opens when they tap Like, Post, Buy… (sg-signin-ask.js). */
+  if(!u){window.sgBottomBar.hide('profile');return;}
   window.sgBottomBar.show('profile',{
     label:u?'Book a Gym':'Continue',
     sub:u?'Your QR pass is ready after booking':'Sign in to unlock your QR pass',
