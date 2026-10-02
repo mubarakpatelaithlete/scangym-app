@@ -412,6 +412,51 @@
   /* The one place the model grid is opened from here: "Change model ›" on the
      page. create-studio.js owns the grid; we only ask for it, filtered to this
      type, with the creator's prompt kept in state[mode].__prompt. */
+  /* Task 103: upload a photo / clip from the phone → https URL every model can read. */
+  function uploadRef(accept, done) {
+    var f = document.createElement('input');
+    f.type = 'file'; f.accept = accept;
+    f.addEventListener('change', function () {
+      var file = f.files && f.files[0];
+      if (!file) return;
+      if (file.size > 25 * 1024 * 1024) { toast('Max 25 MB', 'info', 2500); return; }
+      toast('Uploading\u2026', 'info', 1500);
+      var fd = new FormData(); fd.append('file', file);
+      fetch('/api/squad-image/upload', { method: 'POST', credentials: 'include', body: fd })
+        .then(function (r) { return r.json().then(function (j) { if (r.status === 401) throw new Error('Sign in to upload'); if (!r.ok) throw new Error(j.error || 'Upload failed'); return j; }); })
+        .then(function (j) { done(j.url); })
+        .catch(function (e) { toast(e.message, 'info', 3000); });
+    });
+    f.click();
+  }
+
+  /* Higgsfield-style slots under the prompt: Reference (image), Start + End frame (video). */
+  function renderFrames(sh, mode) {
+    var box = sh.querySelector('#sv-frames');
+    if (!box) return;
+    var st = state[mode.key];
+    var slots = mode.key === 'image' ? [['__ref', '\uD83D\uDCCE Reference image']]
+      : mode.key === 'video' ? [['__start', '\uD83D\uDDBC\uFE0F Start frame'], ['__end', '\uD83C\uDFC1 End frame']] : [];
+    box.innerHTML = '';
+    Array.prototype.forEach.call(sh.querySelectorAll('.sv-ref'), function (n) { n.remove(); });
+    slots.forEach(function (sl) {
+      var key = sl[0], url = st[key];
+      var c = el('div', 'sv-chip');
+      c.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
+      if (url) {
+        c.innerHTML = '<img alt="" src="' + url + '" style="width:28px;height:28px;border-radius:6px;object-fit:cover"><span>' + sl[1].replace(/^\S+ /, '') + '</span><b style="margin-left:2px">\u2715</b>';
+        c.addEventListener('click', function () { st[key] = null; renderFrames(sh, mode); });
+      } else {
+        c.textContent = '+ ' + sl[1];
+        c.addEventListener('click', function () {
+          if (key === '__end' && !st.__start) { toast('Add a start frame first', 'info', 2500); return; }
+          uploadRef('image/*', function (u) { st[key] = u; renderFrames(sh, mode); toast(mode.key === 'video' ? 'Frame added \u00b7 renders with Veo 3.1 Fast' : 'Reference added \u00b7 your image follows it', 'info', 2500); });
+        });
+      }
+      box.appendChild(c);
+    });
+  }
+
   function openGrid(mode) {
     var sh = document.getElementById(SHEET_ID);
     var ta = sh && sh.querySelector('.sv-prompt');
@@ -492,19 +537,15 @@
     tools.appendChild(enh); tools.appendChild(undo);
     if ((mode.templates || []).length) tools.appendChild(dice);
     sh.appendChild(tools);
+    var frames = el('div', 'sv-row');
+    frames.id = 'sv-frames';
+    frames.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 2px';
+    sh.appendChild(frames);
+    renderFrames(sh, mode);
 
     /* Task 101: "Reference" under a result lands here — the old image rides
        along as the reference for the next one (Nano Banana /edit on the server). */
-    if (mode.key === 'image' && state.image.__ref) {
-      var refChip = el('div', 'sv-row sv-ref');
-      refChip.innerHTML = '<img alt="" src="' + state.image.__ref + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover">' +
-        '<span style="font-size:12px;color:#e2e8f0;flex:1">Reference attached \u00b7 your next image follows it</span>';
-      var rx = el('div', 'sv-mchip', '\u2715');
-      rx.setAttribute('role', 'button'); rx.setAttribute('aria-label', 'Remove reference');
-      rx.addEventListener('click', function () { state.image.__ref = null; refChip.remove(); });
-      refChip.appendChild(rx);
-      sh.appendChild(refChip);
-    }
+    /* (Task 103) The reference chip now lives in #sv-frames — see renderFrames(). */
 
     /* Edit needs a clip before it needs a prompt, so the source row sits
        above the prompt: a link box, plus one-tap chips for clips this creator
@@ -627,6 +668,12 @@
     chips.id = 'sv-source-chips';
     chips.style.marginTop = '6px';
     box.appendChild(chips);
+    /* Task 103: reference video straight from the phone. */
+    var up = el('div', 'sv-chip', '\uD83D\uDCE4 Upload a video');
+    up.addEventListener('click', function () {
+      uploadRef('video/*', function (u) { inp.value = u; state[mode.key].__sourceUrl = u; toast('Video uploaded \u2014 now say what to change.', 'info', 2500); });
+    });
+    chips.appendChild(up);
 
     fetch('/api/squad-create/library?kind=video&limit=8').then(function (r) {
       return r.status === 401 ? null : r.json();
@@ -966,6 +1013,10 @@
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
     if (state[mode.key].__model) body.model = state[mode.key].__model;
     if (mode.key === 'image' && state.image.__ref) body.referenceUrl = state.image.__ref;
+    if (mode.key === 'video' && state.video.__start) {
+      body.startFrameUrl = state.video.__start;
+      if (state.video.__end) body.endFrameUrl = state.video.__end;
+    }
 
     fetch(mode.api + '/generate', {
       method: 'POST',
