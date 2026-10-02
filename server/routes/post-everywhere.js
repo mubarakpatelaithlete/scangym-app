@@ -377,11 +377,12 @@ async function postToScanGym(user, p) {
   const r = await pool.query(
     `INSERT INTO video_catalog (name, category, source, url, cdn_key, orientation, dopamine_tier, active, shop_product_id)
      VALUES ($1, 'ScanGym creators', 'creation', $2, $3, 'vertical', 3, true, $4)
-     ON CONFLICT (cdn_key) DO UPDATE SET shop_product_id = COALESCE(EXCLUDED.shop_product_id, video_catalog.shop_product_id)
-     RETURNING id, (xmax = 0) AS inserted`, [name, p.mediaUrl, 'creation:' + job.id, productId]);
+     ON CONFLICT (cdn_key) DO UPDATE SET shop_product_id = COALESCE(EXCLUDED.shop_product_id, video_catalog.shop_product_id),
+       name = CASE WHEN $5 THEN EXCLUDED.name ELSE video_catalog.name END
+     RETURNING id, (xmax = 0) AS inserted`, [name, p.mediaUrl, 'creation:' + job.id, productId, !!p.title]);
   const row = r.rows[0];
   if (!row) return { status: 'skipped', note: 'Already on ScanGym' };
-  if (!row.inserted) return productId ? { status: 'posted', id: row.id, productId, note: 'Product added to your video' } : { status: 'skipped', note: 'Already on ScanGym' };
+  if (!row.inserted) return (productId || p.title) ? { status: 'posted', id: row.id, productId, note: productId ? 'Product added to your video' : 'Title updated' } : { status: 'skipped', note: 'Already on ScanGym' };
   return { status: 'posted', id: row.id, productId };
 }
 
