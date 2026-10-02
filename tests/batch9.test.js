@@ -10,7 +10,7 @@ test('Chats: Text size option cycles 4 sizes', () => {
   assert.match(h, /data-i="font"/);
   assert.match(h, /if\(a==='font'\)cycleFont\(\);/);
   assert.match(h, /var FONT_PX=\[13,15,18,21\]/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.4/);
+  assert.match((read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js')), /chats\/app\.html\?v=2\.4/);
 });
 test('Shop: Under £10 = £5.01–£10, cheapest first', () => {
   global.window = { _sgShopRender: function () {} };
@@ -30,5 +30,5 @@ test('Create: Save prompt + Saved row; cache bumped', () => {
   assert.match(s, /sg_saved_prompts/);
   assert.match(s, /sh\.appendChild\(savedRow\); drawSaved\(\);/);
   assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=4\.\d+/);
-  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.5/);
+  assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.\d+/);
 });

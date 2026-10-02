@@ -49,6 +49,8 @@
     else location.href = '/login';
   };
   function boot() { var a = wrapAuth(), b = wrapBuy(); return a && b; }
+  /* Task 158: _sgShopBuy is defined by the sg-shop chunk; wrap it when that loads. */
+  if (window.sgOnChunk) window.sgOnChunk('sg-shop', wrapBuy);
   if (!boot()) { var n = 0, t = setInterval(function () { if (boot() || ++n > 40) clearInterval(t); }, 250); }
   window._sgSignInAsk = { titleFor: titleFor };
 })();

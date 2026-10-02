@@ -6,7 +6,7 @@ const path = require('node:path');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 
 test('Shop: filter chips, Top rated sort and seller store', () => {
-  const app = read('frontend/public/app.ctr576.js');
+  const app = (read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js'));
   assert.match(app, /fchip\('under5','Under \\u00a35'\)/);
   assert.match(app, /opt\('rated','Top rated'\)/);
   assert.match(app, /window\._sgShopStore=async function\(handle\)/);

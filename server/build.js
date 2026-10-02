@@ -57,7 +57,7 @@ const PATCH_BUNDLE = 'sg-patches.js';
 // at runtime by name — so hashing them is not enough: the hashed URLs have to
 // reach the browser. Step 2 writes .chunk-manifest.json and server.js injects
 // it as window.__sgChunks.
-const LAZY_CHUNKS = ['sg-scansquad'];
+const LAZY_CHUNKS = ['sg-scansquad', 'sg-shop'];
 
 function bundlePatches() {
   console.log('🧩 Bundling the patch chain...\n');

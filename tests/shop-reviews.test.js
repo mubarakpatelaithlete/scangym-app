@@ -19,7 +19,7 @@ test('only paying buyers can post a review; listings carry the star average', ()
   assert.match(shop, /rating_avg, rv\.rating_n FROM shop_products \$\{RATING_JOIN\}/);
 });
 test('product sheet shows reviews and a rate box for owners; cards show stars', () => {
-  const app = read('frontend/public/app.ctr576.js');
+  const app = (read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js'));
   assert.match(app, /window\._sgShopReviews\(p\.id,!!owned\)/);
   assert.match(app, /id="sg-shop-reviews"/);
   assert.match(app, /Verified purchase/);

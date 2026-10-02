@@ -9,7 +9,7 @@ test('Chats: messages with a link get a preview card', () => {
   const h = read('frontend/public/chats/app.html');
   assert.match(h, /return linkify\(b\)\+linkPreview\(b\);/);
   assert.match(h, /function linkPreview\(b\)\{/);
-  assert.match(read('frontend/public/app.ctr576.js'), /chats\/app\.html\?v=2\.\d+/);
+  assert.match((read('frontend/public/app.ctr576.js') + read('frontend/public/sg-shop.js')), /chats\/app\.html\?v=2\.\d+/);
 });
 test('Shop: Free row = price 0 only, newest first', () => {
   global.window = { _sgShopRender: function () {} };

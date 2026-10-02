@@ -106,5 +106,7 @@
     return true;
   }
   if (!wrap()) { var n = 0, t = setInterval(function () { if (wrap() || ++n > 40) clearInterval(t); }, 250); }
+  /* Task 158: the Shop now lives in the sg-shop chunk; re-wrap the moment it lands. */
+  if (window.sgOnChunk) window.sgOnChunk('sg-shop', wrap);
   window._sgShopExtras = { topCreators: topCreators, deals: deals, arrivals: arrivals, bestSellers: bestSellers, freebies: freebies, under10: under10 };
 })();
