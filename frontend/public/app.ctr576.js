@@ -14231,7 +14231,10 @@ window._sgShopBuy=async function(productId){
 };
 
 /* ── Listing a product (creators) ── */
-window._sgShopOpenSell=function(){
+window._sgShopOpenSell=function(opts){
+  /* Task 101: "Sell" under a Create result passes that creation in; the file
+     box is replaced by it and the server copies the file across. */
+  window._sgShopSellSource=(opts&&opts.sourceUrl)||null;
   if(!state.user){
     if(typeof window._sgShowAuthSheet==='function')return window._sgShowAuthSheet('book');
     return navigate('/login');
@@ -14245,7 +14248,9 @@ window._sgShopOpenSell=function(){
     +'<textarea id="sg-shop-desc" placeholder="What the buyer gets" rows="3" style="'+field+'"></textarea>'
     +'<select id="sg-shop-cat" style="'+field+'">'+cats.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select>'
     +'<input id="sg-shop-price" type="number" min="1" max="500" step="0.01" placeholder="Price in £ (min £1)" style="'+field+'">'
-    +'<input id="sg-shop-file" type="file" accept=".pdf,.zip,.epub,image/*,audio/mpeg,video/mp4" style="'+field+'">'
+    +(window._sgShopSellSource
+      ?'<div id="sg-shop-src" style="'+field+'display:flex;align-items:center;gap:10px">'+(opts&&opts.kind==='image'?'<img alt="" src="'+window._sgShopSellSource+'" style="width:44px;height:44px;border-radius:8px;object-fit:cover">':'🎬')+'<span>Your creation is attached ✓</span></div>'
+      :'<input id="sg-shop-file" type="file" accept=".pdf,.zip,.epub,image/*,audio/mpeg,video/mp4" style="'+field+'">')
     +'<div id="sg-shop-sell-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
     +'<button type="button" id="sg-shop-sell-btn" onclick="window._sgShopSubmitProduct()" style="width:100%;border:0;border-radius:14px;padding:15px;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">List it</button>'
   );
@@ -14260,13 +14265,15 @@ window._sgShopSubmitProduct=async function(){
   function fail(message){ if(err){err.textContent=message;err.style.display='block';} }
   if(!title.trim())return fail('Give your product a title');
   if(!(parseFloat(price)>=1))return fail('Price must be at least £1.00');
-  if(!fileInput||!fileInput.files||!fileInput.files[0])return fail('Attach the file buyers will download');
+  var src=window._sgShopSellSource;
+  if(!src&&(!fileInput||!fileInput.files||!fileInput.files[0]))return fail('Attach the file buyers will download');
   var form=new FormData();
   form.append('title',title.trim());
   form.append('description',((document.getElementById('sg-shop-desc')||{}).value||'').trim());
   form.append('category',(document.getElementById('sg-shop-cat')||{}).value||'Prompt packs');
   form.append('price',price);
-  form.append('file',fileInput.files[0]);
+  if(src){form.append('sourceUrl',src);if(/\.(jpe?g|png)(\?|$)/i.test(src))form.append('coverImageUrl',src);}
+  else form.append('file',fileInput.files[0]);
   if(btn){btn.textContent='Uploading…';btn.disabled=true;}
   if(err)err.style.display='none';
   try{

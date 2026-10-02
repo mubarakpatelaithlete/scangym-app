@@ -319,6 +319,9 @@
     '.sv-prompt{width:100%;background:#0b1424;border:1px solid #24344f;border-radius:14px;padding:12px;color:#e2e8f0;font-size:13px;min-height:64px;resize:none;font-family:inherit;box-sizing:border-box;}',
     '.sv-prompt:focus{outline:none;border-color:rgba(255,109,0,.5);}',
     '.sv-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}',
+    '.sv-next{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}',
+    '.sv-next::-webkit-scrollbar{display:none;}',
+    '.sv-next .sv-mchip{flex:0 0 auto;white-space:nowrap;}',
     '.sv-mchip{background:#16233b;border:1px solid #24344f;color:#e2e8f0;font-size:11.5px;font-weight:600;padding:8px 11px;border-radius:10px;cursor:pointer;}',
     '.sv-set{display:flex;justify-content:space-between;align-items:center;padding:11px 2px;border-bottom:1px solid #1a2740;color:#e2e8f0;font-size:13px;}',
     '.sv-val{background:#16233b;border:1px solid #24344f;border-radius:9px;padding:5px 10px;font-size:11.5px;color:#cbd5e1;font-weight:600;cursor:pointer;}',
@@ -460,6 +463,19 @@
     ta.placeholder = mode.placeholder;
     if (state[mode.key].__prompt) { ta.value = state[mode.key].__prompt; state[mode.key].__prompt = ''; } // back from "Change model": the idea survives the trip
     sh.appendChild(ta);
+
+    /* Task 101: "Reference" under a result lands here — the old image rides
+       along as the reference for the next one (Nano Banana /edit on the server). */
+    if (mode.key === 'image' && state.image.__ref) {
+      var refChip = el('div', 'sv-row sv-ref');
+      refChip.innerHTML = '<img alt="" src="' + state.image.__ref + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover">' +
+        '<span style="font-size:12px;color:#e2e8f0;flex:1">Reference attached \u00b7 your next image follows it</span>';
+      var rx = el('div', 'sv-mchip', '\u2715');
+      rx.setAttribute('role', 'button'); rx.setAttribute('aria-label', 'Remove reference');
+      rx.addEventListener('click', function () { state.image.__ref = null; refChip.remove(); });
+      refChip.appendChild(rx);
+      sh.appendChild(refChip);
+    }
 
     /* Edit needs a clip before it needs a prompt, so the source row sits
        above the prompt: a link box, plus one-tap chips for clips this creator
@@ -920,6 +936,7 @@
     if (sourceUrl) body.videoUrl = sourceUrl;
     (mode.settings || []).forEach(function (st) { body[st.key] = state[mode.key][st.key]; });
     if (state[mode.key].__model) body.model = state[mode.key].__model;
+    if (mode.key === 'image' && state.image.__ref) body.referenceUrl = state.image.__ref;
 
     fetch(mode.api + '/generate', {
       method: 'POST',
@@ -1237,17 +1254,21 @@
       });
       row.appendChild(copyCap);
     }
+    /* Task 101: the actions sit straight under the result, before Share /
+       Download, so a phone shows them without scrolling (they were hidden
+       under the tab bar). */
+    out.appendChild(nextRow(url, mode, jobId));
     out.appendChild(row);
-    out.appendChild(nextRow(url, mode));
   }
 
   /* Task 20: what to do after a result lands, the way Higgsfield/CapCut do it:
      Post, Edit, Recreate, More versions, Extend. Every one reuses a path that
      already exists (the Edit mode, the Generate button, /post-everywhere). */
-  function nextRow(url, mode) {
+  function nextRow(url, mode, jobId) {
     var abs = url.indexOf('http') === 0 ? url : location.origin + url;
     var isVid = mode.resultKind === 'video';
     var row = el('div', 'sv-row sv-next');
+    row.setAttribute('aria-label', 'What next');
     function chip(label, fn) { var c = el('div', 'sv-mchip', label); c.setAttribute('role', 'button'); c.addEventListener('click', fn); row.appendChild(c); }
     function sheetBits() {
       var sh = document.getElementById(SHEET_ID);
@@ -1302,6 +1323,30 @@
     });
     if (isVid) chip('⏩ Extend', function () {
       window.sgSquadCreate.open('edit', '', null, { sourceUrl: abs, model: 'ltx-extend' });
+    });
+    /* Task 101 (owner, 2026-10-02): Different model, Reference, Tag, Sell. */
+    chip('🔀 Different model', function () { openGrid(mode); });
+    if (mode.resultKind === 'image' || isVid) chip('📎 Reference', function () {
+      var b = sheetBits(); var keep = b.ta ? b.ta.value : '';
+      if (isVid) { window.sgSquadCreate.open('edit', keep, null, { sourceUrl: abs }); toast('Your clip is the reference — say what should change.', 'info', 3000); return; }
+      state.image.__ref = abs;
+      window.sgSquadCreate.open('image', keep);
+      toast('Reference attached — describe the new image.', 'info', 3000);
+    });
+    chip('🏷️ Tag', function () {
+      var cur = (shareInfo && shareInfo.tags) || '';
+      var t = window.prompt('Tag people and topics (they go on your post):', cur || '@friend #gym #scangym');
+      if (t == null) return;
+      t = String(t).replace(/[<>]/g, '').trim().slice(0, 200);
+      shareInfo = shareInfo || {};
+      var base = (shareInfo.shareText || 'Made with ScanGym').replace(/\n\n[@#][^\n]*$/, '');
+      shareInfo.tags = t;
+      shareInfo.shareText = t ? base + '\n\n' + t : base;
+      toast(t ? 'Tagged — Post and Caption will include: ' + t : 'Tags removed.', 'success', 3000);
+    });
+    chip('💰 Sell', function () {
+      if (typeof window._sgShopOpenSell !== 'function') { location.href = '/shop'; return; }
+      window._sgShopOpenSell({ sourceUrl: abs, kind: isVid ? 'video' : mode.resultKind });
     });
     return row;
   }
