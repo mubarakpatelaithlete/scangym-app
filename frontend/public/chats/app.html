@@ -82,6 +82,9 @@ input{font:inherit;color:#e9edef}
 .toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:#e9edef;color:#0b0b14;padding:8px 14px;border-radius:18px;font-size:14px;font-weight:600;z-index:9}
 .menu{position:absolute;z-index:8;background:#232333;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.5);overflow:hidden}
 .menu button{display:block;padding:12px 18px;width:100%;text-align:left}
+.menu .rxbar{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid #33334a}.menu .rxbar button{padding:6px;width:auto;font-size:22px;border-radius:50%}.menu .rxbar button.on{background:#3a3a52}
+.rx{display:inline-flex;gap:4px;margin:-6px 0 4px;padding:2px 7px;border-radius:12px;background:#232333;border:1px solid #33334a;font-size:13px;cursor:pointer}.rxw{display:flex}.rxw.me{justify-content:flex-end}.rx.mine{border-color:#FF6D00}
+.edt{font-style:italic;margin-right:2px}
 /* Task 24: WhatsApp parity — top sections, list filters, attach sheet, media bubbles */
 /* Task 11: Chats / Calls / Tools live in the fixed bottom band (the ScanGym "second rectangle"
    above the main tab bar), exactly where WhatsApp keeps its Chats / Calls / Updates tabs. */
@@ -373,9 +376,20 @@ function poll(){
     var changed=false;
     j.messages.forEach(function(m){var i=S.msgs.findIndex(function(x){return x.id===m.id;});if(i<0){S.msgs=S.msgs.filter(function(x){return !(x.pending&&x.body===m.body&&m.mine);});S.msgs.push(m);changed=true;}if(m.id>S.lastId)S.lastId=m.id;});
     j.ticks.forEach(function(t){var m=S.msgs.find(function(x){return x.id===t.id;});if(m&&(m.read!==t.read||m.delivered!==t.delivered||m.deleted!==t.deleted)){m.read=t.read;m.delivered=t.delivered;if(t.deleted){m.deleted=true;m.body='';}changed=true;}});
+    (j.recent||[]).forEach(function(t){var m=S.msgs.find(function(x){return x.id===t.id;});if(!m)return;var rk=JSON.stringify(t.reactions||{})+t.myReaction;
+      if(m.body!==t.body||m.edited!==t.edited||m.deleted!==t.deleted||m._rk!==rk){m.body=t.body;m.edited=t.edited;m.deleted=t.deleted;m.reactions=t.reactions;m.myReaction=t.myReaction;m._rk=rk;changed=true;}});
     if(changed||!$('msgs').children.length)renderMsgs();
   }).catch(function(){});
 }
+/* Task 107/118: reactions + edit (WhatsApp, Telegram and Discord all have both). */
+var RX=['👍','❤️','😂','😮','😢','🙏'];
+function rxHtml(m){var r=m.reactions||{},k=Object.keys(r);if(!k.length||m.deleted)return '';
+  return '<div class="rxw'+(m.mine?' me':'')+'"><span class="rx'+(m.myReaction?' mine':'')+'" data-rx="'+m.id+'">'+k.map(function(e){return esc(e)+(r[e]>1?r[e]:'');}).join(' ')+'</span></div>';}
+function react(m,e){var em=m.myReaction===e?'':e;api('POST','/messages/'+m.id+'/react',{emoji:em}).then(function(j){m.reactions=j.reactions;m.myReaction=j.myReaction;m._rk=JSON.stringify(j.reactions||{})+j.myReaction;renderMsgs();}).catch(function(err){toast(err.message);});}
+function canEdit(m){return m.mine&&m.id>0&&!m.deleted&&(m.body||'').indexOf('📎 ')!==0&&Date.now()-new Date(m.at).getTime()<15*60*1000;}
+function editSheet(m){openSheet(sheetHead('Edit message')+'<textarea id="edT" style="width:100%;min-height:90px;background:#1b1b28;color:#fff;border:1px solid #33334a;border-radius:10px;padding:10px;font:inherit"></textarea><button class="cta" id="edS" style="width:100%;margin-top:8px">Save</button>');
+  var t=$('edT');t.value=m.body;t.focus();$('edS').onclick=function(){var v=t.value.trim();if(!v||v===m.body){closeSheet();return;}
+    api('PATCH','/messages/'+m.id,{body:v}).then(function(j){m.body=j.body;m.edited=true;closeSheet();renderMsgs();toast('Edited');}).catch(function(err){toast(err.message);});};}
 function renderMsgs(){
   var box=$('msgs'),atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80,h='',day='';
   if(!S.msgs.length)h='<div class="day"><span>🔒 Say hi 👋 — messages are private to you two</span></div>';
@@ -386,7 +400,7 @@ function renderMsgs(){
     if(d!==day){day=d;var w=when(m.at||Date.now());h+='<div class="day"><span>'+(/:/.test(w)?'Today':w)+'</span></div>';}
     if(LOC.hid[m.id])return; // deleted for me
     var big=!m.deleted&&/^(?:\p{Extended_Pictographic}|\uFE0F|\u200D|\s){1,12}$/u.test(m.body||'')&&((m.body||'').match(/\p{Extended_Pictographic}/gu)||[]).length<=3;
-    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+(big?' big':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':bodyHtml(m.body))+'<span class="meta">'+(LOC.star[m.id]?'<span class="star">★</span>':'')+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>';
+    h+='<div class="b '+(m.mine?'me':'them')+(m.deleted?' del':'')+(big?' big':'')+'" data-id="'+m.id+'">'+(m.deleted?'🚫 This message was deleted':bodyHtml(m.body))+'<span class="meta">'+(LOC.star[m.id]?'<span class="star">★</span>':'')+(m.edited&&!m.deleted?'<span class="edt">edited</span>':'')+hhmm(m.at||Date.now())+' '+ticks(m)+'</span></div>'+rxHtml(m);
   });
   var grew=S._lastN!=null&&S.msgs.length>S._lastN;S._lastN=S.msgs.length;
   /* A playing voice note keeps playing when a new message arrives. */
@@ -539,12 +553,13 @@ function menuFor(el,x,y){
   var id=+el.dataset.id,m=S.msgs.find(function(z){return z.id===id;});if(!m||m.deleted)return;
   document.querySelectorAll('.menu').forEach(function(n){n.remove();});
   var d=document.createElement('div');d.className='menu';d.style.left=Math.min(x,window.innerWidth-190)+'px';d.style.top=Math.min(y,window.innerHeight-300)+'px';
-  d.innerHTML='<button data-a="reply">↩️ Reply</button><button data-a="fwd">↪️ Forward</button><button data-a="star">'+(LOC.star[id]?'⭐ Unstar':'⭐ Star')+'</button><button data-a="copy">📋 Copy</button><button data-a="hide">🗑️ Delete for me</button>'+(m.mine&&id>0?'<button data-a="del">🗑️ Delete for everyone</button>':'');
-  d.onclick=function(e){var a=e.target.dataset.a;d.remove();if(a==='reply')startReply(m);if(a==='fwd')forwardSheet(m);
+  d.innerHTML=(id>0?'<div class="rxbar">'+RX.map(function(e){return '<button data-e="'+e+'"'+(m.myReaction===e?' class="on"':'')+'>'+e+'</button>';}).join('')+'</div>':'')+'<button data-a="reply">↩️ Reply</button><button data-a="fwd">↪️ Forward</button><button data-a="star">'+(LOC.star[id]?'⭐ Unstar':'⭐ Star')+'</button>'+(canEdit(m)?'<button data-a="edit">✏️ Edit</button>':'')+'<button data-a="copy">📋 Copy</button><button data-a="hide">🗑️ Delete for me</button>'+(m.mine&&id>0?'<button data-a="del">🗑️ Delete for everyone</button>':'');
+  d.onclick=function(e){var bt=e.target.closest('button');var a=bt&&bt.dataset.a;d.remove();if(bt&&bt.dataset.e){react(m,bt.dataset.e);return;}if(a==='edit')editSheet(m);if(a==='reply')startReply(m);if(a==='fwd')forwardSheet(m);
     if(a==='star'){if(LOC.star[id])delete LOC.star[id];else LOC.star[id]={id:id,th:S.open,body:m.body,at:m.at,name:m.mine?'You':$('cName').textContent};locSave();renderMsgs();toast(LOC.star[id]?'Starred':'Unstarred');}
     if(a==='hide'){LOC.hid[id]=1;locSave();renderMsgs();toast('Deleted for you');}if(a==='copy')navigator.clipboard&&navigator.clipboard.writeText(m.body).then(function(){toast('Copied');});if(a==='del')api('DELETE','/messages/'+id).then(function(){m.deleted=true;m.body='';renderMsgs();}).catch(function(err){toast(err.message);});};
   document.body.appendChild(d);setTimeout(function(){document.addEventListener('click',function c(){d.remove();document.removeEventListener('click',c);});},0);
 }
+$('msgs').addEventListener('click',function(e){var p=e.target.closest('[data-rx]');if(!p)return;var b=document.querySelector('#msgs .b[data-id="'+p.dataset.rx+'"]');if(b)menuFor(b,e.clientX,e.clientY);});
 $('msgs').addEventListener('contextmenu',function(e){var b=e.target.closest('.b[data-id]');if(b){e.preventDefault();menuFor(b,e.clientX,e.clientY);}});
 $('msgs').addEventListener('touchstart',function(e){var b=e.target.closest('.b[data-id]');if(!b)return;var t=e.touches[0];pressT=setTimeout(function(){menuFor(b,t.clientX,t.clientY);},500);},{passive:true});
 ['touchend','touchmove'].forEach(function(ev){$('msgs').addEventListener(ev,function(){clearTimeout(pressT);},{passive:true});});

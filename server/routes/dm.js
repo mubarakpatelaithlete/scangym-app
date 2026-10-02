@@ -8,6 +8,8 @@
  *   POST   /api/dm/threads/:id/messages {body}
  *   POST   /api/dm/threads/:id/typing       "typing…" for 5s
  *   DELETE /api/dm/messages/:id             delete for everyone (sender only)
+ *   PATCH  /api/dm/messages/:id {body}      edit (sender only, 15 min, text only)
+ *   POST   /api/dm/messages/:id/react {emoji}  react / change / remove ('' removes)
  *   GET    /api/dm/users?q=                 find people by name / email / phone
  *   POST   /api/dm/invite {phone}           SMS invite via Twilio
  *
@@ -44,6 +46,16 @@ function presence(lastSeen) {
   const t = new Date(lastSeen).getTime();
   return { online: Date.now() - t < ONLINE_MS, lastSeen: new Date(t).toISOString() };
 }
+
+// Reactions are stored {userId: emoji}; the client gets counts + my own pick.
+function extras(m, uid) {
+  const r = (m && m.reactions) || {};
+  const counts = {};
+  Object.keys(r).forEach((k) => { counts[r[k]] = (counts[r[k]] || 0) + 1; });
+  return { edited: !!(m && m.edited_at), reactions: counts, myReaction: r[uid] || '' };
+}
+const EMOJI_RE = /^(?:\p{Extended_Pictographic}|\uFE0F|\u200D|[\u{1F3FB}-\u{1F3FF}]){1,8}$/u;
+const EDIT_MS = 15 * 60 * 1000;
 
 async function threadFor(req, id) {
   const { rows: [t] } = await pool.query(
@@ -109,8 +121,12 @@ router.get('/threads/:id/messages', async (req, res) => {
       `UPDATE dm_messages SET read_at=NOW(), delivered_at=COALESCE(delivered_at, NOW())
        WHERE thread_id=$1 AND sender_id<>$2 AND read_at IS NULL`, [t.id, uid]);
     const { rows } = await pool.query(
-      `SELECT id, sender_id, body, created_at, delivered_at, read_at, deleted_at FROM dm_messages
+      `SELECT id, sender_id, body, created_at, delivered_at, read_at, deleted_at, edited_at, reactions FROM dm_messages
        WHERE thread_id=$1 AND id>$2 ORDER BY id DESC LIMIT 200`, [t.id, after]);
+    // Edits and reactions change older messages too: send the latest 50 of both people.
+    const { rows: recent } = await pool.query(
+      `SELECT id, sender_id, body, deleted_at, edited_at, reactions FROM dm_messages WHERE thread_id=$1
+       ORDER BY id DESC LIMIT 50`, [t.id]);
     // Ticks change on old messages too, so return the status of my recent sent ones.
     const { rows: ticks } = await pool.query(
       `SELECT id, delivered_at, read_at, deleted_at FROM dm_messages WHERE thread_id=$1 AND sender_id=$2
@@ -123,8 +139,9 @@ router.get('/threads/:id/messages', async (req, res) => {
                typing: (typing.get(`${t.id}:${otherId}`) || 0) > Date.now() },
       messages: rows.reverse().map((m) => ({
         id: Number(m.id), mine: m.sender_id === uid, body: m.deleted_at ? '' : m.body, deleted: !!m.deleted_at,
-        at: m.created_at, delivered: !!m.delivered_at, read: !!m.read_at,
+        at: m.created_at, delivered: !!m.delivered_at, read: !!m.read_at, ...extras(m, uid),
       })),
+      recent: recent.map((m) => ({ id: Number(m.id), deleted: !!m.deleted_at, body: m.deleted_at ? '' : m.body, ...extras(m, uid) })),
       ticks: ticks.map((m) => ({ id: Number(m.id), delivered: !!m.delivered_at, read: !!m.read_at, deleted: !!m.deleted_at })),
     });
   } catch (e) { console.error('[dm] messages', e.message); res.status(500).json({ error: 'Could not load messages' }); }
@@ -213,6 +230,36 @@ router.delete('/messages/:id', async (req, res) => {
     if (!r.rowCount) return res.status(404).json({ error: 'Message not found' });
     res.json({ deleted: true });
   } catch (e) { res.status(500).json({ error: 'Could not delete' }); }
+});
+
+router.patch('/messages/:id', async (req, res) => {
+  try {
+    const body = String((req.body || {}).body || '').trim().slice(0, 4000);
+    if (!body) return res.status(400).json({ error: 'Message is empty' });
+    const { rows: [m] } = await pool.query(
+      'SELECT id, body, created_at FROM dm_messages WHERE id=$1 AND sender_id=$2 AND deleted_at IS NULL',
+      [parseInt(req.params.id, 10) || 0, me(req)]);
+    if (!m) return res.status(404).json({ error: 'Message not found' });
+    if (Date.now() - new Date(m.created_at).getTime() > EDIT_MS) return res.status(403).json({ error: 'Messages can only be edited for 15 minutes' });
+    if (String(m.body).indexOf('📎 ') === 0) return res.status(400).json({ error: 'Files cannot be edited' });
+    await pool.query('UPDATE dm_messages SET body=$1, edited_at=NOW() WHERE id=$2', [body, m.id]);
+    res.json({ edited: true, body });
+  } catch (e) { res.status(500).json({ error: 'Could not edit' }); }
+});
+
+router.post('/messages/:id/react', async (req, res) => {
+  try {
+    const uid = me(req);
+    const emoji = String((req.body || {}).emoji || '').trim();
+    if (emoji && !EMOJI_RE.test(emoji)) return res.status(400).json({ error: 'Pick an emoji' });
+    const r = await pool.query(
+      `UPDATE dm_messages m SET reactions = CASE WHEN $3 = '' THEN m.reactions - $2::text
+                                               ELSE m.reactions || jsonb_build_object($2::text, $3::text) END
+       FROM dm_threads t WHERE m.id=$1 AND t.id=m.thread_id AND (t.user_a=$2 OR t.user_b=$2) AND m.deleted_at IS NULL
+       RETURNING m.reactions`, [parseInt(req.params.id, 10) || 0, uid, emoji]);
+    if (!r.rowCount) return res.status(404).json({ error: 'Message not found' });
+    res.json(extras(r.rows[0], uid));
+  } catch (e) { console.error('[dm] react', e.message); res.status(500).json({ error: 'Could not react' }); }
 });
 
 router.get('/users', async (req, res) => {

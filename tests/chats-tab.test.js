@@ -80,3 +80,19 @@ test('Task 66 round 2: search in chat, star, delete for me, drafts, / quick repl
   const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'frontend', 'public', 'chats', 'app.html'), 'utf8');
   for (const s of ['chatSearch', 'Starred messages', 'Delete for me', 'LOC.draft', 'function qpop', 'labelSheet', 'Mark as unread', 'Swipe a message right', 'b.big', 'vspd']) assert.ok(html.includes(s), s);
 });
+
+// Task 107/118 step 1: reactions + edit message (WhatsApp, Telegram, Discord).
+test('Chats: server has react + edit routes and syncs recent messages', () => {
+  const dm = read('server/routes/dm.js');
+  assert.match(dm, /router\.post\('\/messages\/:id\/react'/);
+  assert.match(dm, /router\.patch\('\/messages\/:id'/);
+  assert.match(dm, /recent: recent\.map/);
+  assert.ok(fs.existsSync(path.join(root, 'migrations/20261002_dm_react_edit.sql')));
+});
+test('Chats: long-press menu has emoji bar + Edit; bubbles show reactions + edited', () => {
+  const html = read('frontend/public/chats/app.html');
+  assert.match(html, /var RX=\['👍','❤️','😂','😮','😢','🙏'\]/);
+  assert.match(html, /data-a="edit">✏️ Edit/);
+  assert.match(html, /rxHtml\(m\)/);
+  assert.match(html, /class="edt">edited/);
+});
