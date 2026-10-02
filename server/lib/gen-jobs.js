@@ -213,7 +213,7 @@ async function modelSamples() {
       `SELECT DISTINCT ON (model) model, kind, video_url AS url
          FROM squad_video_jobs
         WHERE status = 'done' AND video_url IS NOT NULL AND model IS NOT NULL
-          AND kind IN ('image', 'video') AND COALESCE(share_count, 0) > 0
+          AND kind IN ('image', 'video', 'edit') AND COALESCE(share_count, 0) > 0
         ORDER BY model, created_at DESC
         LIMIT 80`,
     );
