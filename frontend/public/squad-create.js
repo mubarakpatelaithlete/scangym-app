@@ -1486,6 +1486,7 @@
 
     list.forEach(function (m) {
       var chip = el('div', 'sv-mchip');
+      chip.setAttribute('data-model', m.id);
       /* The price the creator pays, formatted by the server (VAT included), not
          our supplier cost converted at a hard-coded FX rate — which is what
          this line used to print. @see server/lib/gen-pricing.js */
@@ -1529,8 +1530,30 @@
       host.appendChild(chip);
     });
     paintPill();
+    addSamples(host);
     var on = host.children[list.map(function (m) { return m.id; }).indexOf(state[mode.key].__model)];
     if (on && on.scrollIntoView) setTimeout(function () { try { on.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }, 0);
+  }
+
+  /* Task 153 ("use real"): each model card shows a real shared creation made
+     with it, like Higgsfield's model cards. No sample = text chip as before. */
+  var samplesP = null;
+  function addSamples(host) {
+    if (!samplesP) samplesP = fetch('/api/squad-create/samples').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
+    samplesP.then(function (d) {
+      var sm = (d && d.samples) || {};
+      Array.prototype.forEach.call(host.querySelectorAll('.sv-mchip[data-model]'), function (chip) {
+        var x = sm[chip.getAttribute('data-model')];
+        if (!x || chip.querySelector('.sv-msample')) return;
+        var t = document.createElement(x.kind === 'video' ? 'video' : 'img');
+        t.className = 'sv-msample';
+        if (x.kind === 'video') { t.src = x.url + '#t=0.1'; t.muted = true; t.playsInline = true; t.preload = 'metadata'; }
+        else { t.src = x.url; t.alt = ''; t.loading = 'lazy'; }
+        t.style.cssText = 'width:28px;height:28px;border-radius:7px;object-fit:cover;vertical-align:middle;margin-right:6px;flex:none;';
+        t.onerror = function () { t.remove(); };
+        chip.insertBefore(t, chip.firstChild);
+      });
+    });
   }
 
   /** A caption is read, copied and pasted — not played. */

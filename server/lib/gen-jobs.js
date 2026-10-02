@@ -202,6 +202,28 @@ function screenPrompt(prompt) {
  * Text is included: a caption is a creation. It has no url, which is exactly
  * how the client tells the two apart.
  */
+/**
+ * Task 153 (owner: "use real"): one real sample per model for the model cards —
+ * the newest finished image/video a creator chose to share. Never private,
+ * unshared work.
+ */
+async function modelSamples() {
+  try {
+    const r = await pool.query(
+      `SELECT DISTINCT ON (model) model, kind, video_url AS url
+         FROM squad_video_jobs
+        WHERE status = 'done' AND video_url IS NOT NULL AND model IS NOT NULL
+          AND kind IN ('image', 'video') AND COALESCE(share_count, 0) > 0
+        ORDER BY model, created_at DESC
+        LIMIT 80`,
+    );
+    return r.rows;
+  } catch (e) {
+    console.error('[SquadGen] samples failed:', e.message);
+    return [];
+  }
+}
+
 async function libraryFor(userId, { limit = 40, kind = null } = {}) {
   try {
     const params = [String(userId), Math.min(100, Math.max(1, limit))];
@@ -283,7 +305,7 @@ async function eventSummaryFor(userId) {
   }
 }
 
-module.exports = {
+module.exports = { modelSamples,
   CAPS,
   capFor,
   userKey,
