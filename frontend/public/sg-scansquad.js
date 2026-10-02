@@ -2505,6 +2505,22 @@ window._loadCreatorFullPage=async function(){
     var earnPence=parseInt(earningsR.totalEarningsPence)||0;
     var earnDisp=sgSymbol()+(earnPence/100).toFixed(2);
     if(el('cf-reels'))el('cf-reels').textContent=earningsR.totalDownloads||0;
+    /* Owner 2026-10-02 ("posted but I can't see it"): the studio shows the
+       videos you posted, like TikTok Studio, newest first, and REELS counts them. */
+    fetch('/api/post-everywhere/mine',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+      var ps=(d&&d.posts)||[]; if(el('cf-reels'))el('cf-reels').textContent=ps.length;
+      var scr=document.querySelector('.creator-screen'); if(!scr||document.getElementById('cf-myposts'))return;
+      var box=document.createElement('div'); box.id='cf-myposts'; box.style.cssText='margin-bottom:12px';
+      var esc=function(x){return String(x||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+      box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:#fff;font-size:15px">Your posts ('+ps.length+')</b><a href="/create" onclick="if(window.sgSquadCreate){event.preventDefault();window.sgSquadCreate.open(\'video\',\'\');}" style="color:#FF6D00;font-size:13px;font-weight:700;text-decoration:none">+ Create</a></div>'
+        +(ps.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">'+ps.slice(0,12).map(function(p){
+          return '<a href="/reels?v='+p.id+'" style="position:relative;display:block;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#111">'
+            +'<video src="'+esc(p.url)+'#t=0.1" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>'
+            +'<span style="position:absolute;top:5px;left:6px;font-size:10px;font-weight:800;color:#fff;background:rgba(34,197,94,.85);border-radius:8px;padding:1px 6px">'+(p.live?'Live':'Hidden')+'</span>'
+            +'<span style="position:absolute;left:6px;right:6px;bottom:5px;font-size:10px;color:#fff;font-weight:600;text-shadow:0 1px 3px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc((p.title||'').split(' \u00b7 ')[0])+'</span></a>';
+        }).join('')+'</div>':'<div style="color:rgba(255,255,255,.5);font-size:13px">Nothing posted yet. Make something, then tap Post.</div>');
+      var anchor=scr.children[1]; scr.insertBefore(box,anchor||null);
+    }).catch(function(){});
     if(el('cf-clicks'))el('cf-clicks').textContent=clicks;
     if(el('cf-bookings'))el('cf-bookings').textContent=bookings;
     if(el('cf-earned'))el('cf-earned').textContent=earnDisp;
