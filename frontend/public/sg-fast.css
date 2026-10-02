@@ -1,0 +1,29 @@
+/* Owner 2026-10-02: "every tab, screen, button and half sheet is slow and ugly".
+   One app-wide layer of proven rules (Apple HIG, Material 3, web.dev):
+   - instant taps: no 300ms double-tap wait, no grey flash, press feedback now
+   - sheets slide on the GPU (transform only), 220ms, iOS curve
+   - no backdrop blur except the tab bar (blur is the costliest paint on phones)
+   - one button shape, one radius scale, calm secondary text */
+html { -webkit-text-size-adjust: 100%; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+a, button, [role="button"], .sv-chip, .sv-mchip, input, label, select, textarea { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button, [role="button"], .sv-chip, .sv-mchip, .sg-glass-chip, .creator-tab, [data-shop-cat] {
+  transition: transform .08s ease, background-color .12s ease, opacity .12s ease !important;
+}
+button:active, [role="button"]:active, .sv-chip:active, .sv-mchip:active, .sg-glass-chip:active, .creator-tab:active, [data-shop-cat]:active { transform: scale(.96); }
+button:disabled { transform: none !important; }
+:focus-visible { outline: 2px solid rgba(255, 138, 31, .9); outline-offset: 2px; }
+
+/* Half sheets: GPU slide, short and springy */
+#sg-sv-sheet, .sg-sheet-container, [id$="-sheet"] > .sg-cmt-panel {
+  will-change: transform;
+  transition: transform .22s cubic-bezier(.32, .72, 0, 1) !important;
+  border-top-left-radius: 22px; border-top-right-radius: 22px;
+}
+.sg-sheet-backdrop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* Speed: blur only where it earns its cost (tab bar + Home rail). Everything
+   else is see-through without the blur pass. */
+body *:not(.sg-tab-bar):not(.reel-actions):not(#sg-tab-bar) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* One look for secondary text and pill buttons */
+.sv-note, .shs-sub, .sg-muted { color: #8b93a1 !important; }
