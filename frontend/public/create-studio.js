@@ -177,12 +177,30 @@
     return null;
   }
 
+  var _samplesP = null;
+  function samples() {
+    if (!_samplesP) _samplesP = fetch('/api/squad-create/samples').then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (d) { return (d && d.samples) || {}; }).catch(function () { return {}; });
+    return _samplesP;
+  }
   function tile(t) {
     var d = el('div', 'cs-tile' + ((!t.available || t.locked) ? ' off' : ''));
     /* Task 53: every model card has its own animated GIF (img/model-gif/{id}.gif);
        a missing file falls back to the kind emoji. */
     var cover = el('div', 'cs-cover', '<img class="cs-gif" src="/img/model-gif/' + esc(t.id) + '.gif?v=1" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span>' + t.kind.icon + '</span>\'">');
     cover.style.background = t.kind.bg;
+    /* Task 153 ("use real") + Task 114: a real shared creation made with this
+       model replaces the GIF when there is one. */
+    if (t.id) samples().then(function (sm) {
+      var x = sm[t.id]; if (!x) return;
+      var g = cover.querySelector('.cs-gif'); if (!g) return;
+      var n = document.createElement(x.kind === 'video' ? 'video' : 'img');
+      n.className = 'cs-gif';
+      if (x.kind === 'video') { n.src = x.url; n.muted = true; n.loop = true; n.autoplay = true; n.playsInline = true; n.setAttribute('playsinline', ''); n.preload = 'metadata'; }
+      else { n.src = x.url; n.alt = ''; n.loading = 'lazy'; }
+      n.onerror = function () { if (n.parentNode) n.parentNode.replaceChild(g, n); };
+      g.parentNode.replaceChild(n, g);
+    });
     var b = badgeFor(t);
     if (b) cover.appendChild(el('span', 'cs-badge ' + b.cls, b.txt));
     cover.appendChild(el('span', 'cs-badge kind', esc(t.kind.chip)));

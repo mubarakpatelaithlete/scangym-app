@@ -203,6 +203,19 @@ router.get('/templates', (req, res) => {
    owned none of them — per-mode history existed but nothing showed the work in
    one place, carried the prompt that made it, or offered the share that earns.
    Requires a login, because a creation belongs to somebody. */
+// ─── GET /api/squad-create/samples — Task 153: a real sample per model ───
+let _samples = { at: 0, body: null };
+router.get('/samples', async (req, res) => {
+  if (!_samples.body || Date.now() - _samples.at > 10 * 60 * 1000) {
+    const rows = await jobs.modelSamples();
+    const samples = {};
+    rows.forEach((r) => { if (/^(https?:\/\/|\/)/.test(String(r.url))) samples[r.model] = { url: r.url, kind: r.kind }; });
+    _samples = { at: Date.now(), body: { samples } };
+  }
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json(_samples.body);
+});
+
 router.get('/library', requireCreator, async (req, res) => {
   const userId = req.user.id || req.user.userId;
   const [lib, refLink] = await Promise.all([
