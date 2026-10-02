@@ -159,6 +159,17 @@
   <div class="p" data-p="Show me the opening hours and photos for that gym."><span>“Show me the opening hours and photos for that gym.”</span><em>COPY</em></div>
   <div class="p" data-p="Hold me a slot at that gym for Saturday at 9am."><span>“Hold me a slot at that gym for Saturday at 9am.”</span><em>COPY</em></div>
 
+  <h2>Use ScanGym in Gemini CLI</h2>
+  <div class="step" id="gemini-cli">
+    <div class="n">⌘</div>
+    <h3>On a computer with a terminal? One command.</h3>
+    <p>Works with any Google account (free, or Google AI Pro / Ultra for higher limits). Install <a href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noopener">Gemini CLI</a>, then add ScanGym:</p>
+    <div class="urlbox"><span>gemini extensions install https://github.com/mubarakpatelaithlete/scangym-app</span></div>
+    <p>Start <span class="k">gemini</span>, type <span class="k">/mcp auth scangym</span> and sign in with your ScanGym account. Your bookings, saved card, memory and Create library all come with you. Then just ask, for example “Find me a gym in Bolton for tomorrow at 6pm and book it.”</p>
+    <p>Prefer to set it up by hand? Add this to <span class="k">~/.gemini/settings.json</span>:</p>
+    <div class="urlbox"><span>{"mcpServers": {"scangym": {"httpUrl": "https://www.scangym.com/mcp/account"}}}</span></div>
+  </div>
+
   <h2>Questions</h2>
   <details>
     <summary>Do I need to pay for anything to connect?</summary>
