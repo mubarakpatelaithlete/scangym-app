@@ -464,6 +464,35 @@
     if (state[mode.key].__prompt) { ta.value = state[mode.key].__prompt; state[mode.key].__prompt = ''; } // back from "Change model": the idea survives the trip
     sh.appendChild(ta);
 
+    /* Task 120 step 1: ✨ Enhance (Higgsfield / CapCut / ElevenLabs) + 🎲 Surprise me. */
+    var tools = el('div', 'sv-row sv-ptools');
+    tools.style.cssText = 'display:flex;gap:8px;margin:6px 0 2px';
+    var enh = el('div', 'sv-chip', '\u2728 Enhance prompt');
+    enh.setAttribute('role', 'button');
+    enh.addEventListener('click', function () {
+      var idea = ta.value.trim();
+      if (idea.length < 2) { ta.focus(); ta.placeholder = 'Type a short idea, then tap \u2728 Enhance'; return; }
+      if (enh.dataset.busy) return; enh.dataset.busy = '1'; enh.textContent = '\u2728 Enhancing\u2026';
+      fetch('/api/squad-image/enhance', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: idea, kind: mode.key === 'video' ? 'video' : (mode.key === 'image' ? 'image' : 'audio') }) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Could not enhance'); return j; }); })
+        .then(function (j) { ta.dataset.before = idea; ta.value = j.prompt; undo.style.display = ''; })
+        .catch(function (e) { enh.textContent = '\u26A0\uFE0F ' + e.message; setTimeout(function () { enh.textContent = '\u2728 Enhance prompt'; }, 2200); })
+        .then(function () { delete enh.dataset.busy; if (/Enhancing/.test(enh.textContent)) enh.textContent = '\u2728 Enhance prompt'; });
+    });
+    var undo = el('div', 'sv-chip', '\u21A9\uFE0F Undo');
+    undo.style.display = 'none';
+    undo.addEventListener('click', function () { if (ta.dataset.before != null) ta.value = ta.dataset.before; undo.style.display = 'none'; });
+    var dice = el('div', 'sv-chip', '\uD83C\uDFB2 Surprise me');
+    dice.addEventListener('click', function () {
+      var t = mode.templates || [];
+      if (!t.length) return;
+      ta.value = t[Math.floor(Math.random() * t.length)].prompt;
+    });
+    tools.appendChild(enh); tools.appendChild(undo);
+    if ((mode.templates || []).length) tools.appendChild(dice);
+    sh.appendChild(tools);
+
     /* Task 101: "Reference" under a result lands here — the old image rides
        along as the reference for the next one (Nano Banana /edit on the server). */
     if (mode.key === 'image' && state.image.__ref) {
