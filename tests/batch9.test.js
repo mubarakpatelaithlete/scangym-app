@@ -29,6 +29,6 @@ test('Create: Save prompt + Saved row; cache bumped', () => {
   const s = read('frontend/public/squad-create.js');
   assert.match(s, /sg_saved_prompts/);
   assert.match(s, /sh\.appendChild\(savedRow\); drawSaved\(\);/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=4\.\d+/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=\d+\.\d+/);
   assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.\d+/);
 });

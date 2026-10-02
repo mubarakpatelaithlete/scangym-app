@@ -293,6 +293,7 @@ router.post('/post', async (req, res) => {
     mediaUrl: /^https?:\/\//i.test(b.mediaUrl || '') ? String(b.mediaUrl) : '',
     mediaType: b.mediaType === 'video' ? 'video' : 'image',
     link: /^https?:\/\//i.test(b.link || '') ? String(b.link) : '',
+    productId: Number.parseInt(b.productId, 10) || null,
   };
   if (!p.text && !p.mediaUrl) return res.status(400).json({ error: 'Write something or add a photo/video link' });
   /* Task 160: 1-click Post — AI writes the title, caption and hashtags from
@@ -366,11 +367,22 @@ async function postToScanGym(user, p) {
     [String(user.id), p.mediaUrl]);
   if (!job) return { status: 'skipped', note: 'Only your own creations can go on ScanGym' };
   const name = (p.title || p.text || 'New creation').split('\n')[0].slice(0, 90) + ' \u00b7 by ' + displayName(user);
+  /* Task 161: sell one of your own active Shop products inside the video. */
+  let productId = null;
+  if (p.productId) {
+    const { rows: [pr] } = await pool.query(
+      "SELECT id FROM shop_products WHERE id = $1 AND creator_user_id::text = $2 AND status = 'active'", [p.productId, String(user.id)]);
+    productId = pr ? pr.id : null;
+  }
   const r = await pool.query(
-    `INSERT INTO video_catalog (name, category, source, url, cdn_key, orientation, dopamine_tier, active)
-     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, 'vertical', 3, true)
-     ON CONFLICT (cdn_key) DO NOTHING RETURNING id`, [name, p.mediaUrl, 'creation:' + job.id]);
-  return r.rowCount ? { status: 'posted', id: r.rows[0].id } : { status: 'skipped', note: 'Already on ScanGym' };
+    `INSERT INTO video_catalog (name, category, source, url, cdn_key, orientation, dopamine_tier, active, shop_product_id)
+     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, 'vertical', 3, true, $4)
+     ON CONFLICT (cdn_key) DO UPDATE SET shop_product_id = COALESCE(EXCLUDED.shop_product_id, video_catalog.shop_product_id)
+     RETURNING id, (xmax = 0) AS inserted`, [name, p.mediaUrl, 'creation:' + job.id, productId]);
+  const row = r.rows[0];
+  if (!row) return { status: 'skipped', note: 'Already on ScanGym' };
+  if (!row.inserted) return productId ? { status: 'posted', id: row.id, productId, note: 'Product added to your video' } : { status: 'skipped', note: 'Already on ScanGym' };
+  return { status: 'posted', id: row.id, productId };
 }
 
 /** One post to every connected account (or just `apps`). Shared by the
