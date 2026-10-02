@@ -413,19 +413,43 @@
      page. create-studio.js owns the grid; we only ask for it, filtered to this
      type, with the creator's prompt kept in state[mode].__prompt. */
   /* Task 103: upload a photo / clip from the phone → https URL every model can read. */
-  function uploadRef(accept, done) {
+  /* Task 152: the only feedback used to be a 1.5s toast behind the sheet, so a
+     failed upload looked like nothing happened. onState(state, msg) lets the
+     chip itself say Uploading… / the error, and photos are re-encoded to JPEG
+     first so a phone photo the server or <img> cannot show fails here, loudly. */
+  function toJpeg(file, cb) {
+    if (!/^image\//.test(file.type) || /gif$/.test(file.type) || !window.URL || !document.createElement('canvas').getContext) return cb(file);
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var max = 2048, w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { cb(b ? new File([b], 'reference.jpg', { type: 'image/jpeg' }) : file); }, 'image/jpeg', 0.9);
+      } catch (e) { URL.revokeObjectURL(url); cb(file); }
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+  function uploadRef(accept, done, onState) {
+    onState = onState || function (st, m) { if (st === 'error') toast(m, 'info', 4000); };
     var f = document.createElement('input');
     f.type = 'file'; f.accept = accept;
     f.addEventListener('change', function () {
       var file = f.files && f.files[0];
       if (!file) return;
-      if (file.size > 25 * 1024 * 1024) { toast('Max 25 MB', 'info', 2500); return; }
-      toast('Uploading\u2026', 'info', 1500);
-      var fd = new FormData(); fd.append('file', file);
-      fetch('/api/squad-image/upload', { method: 'POST', credentials: 'include', body: fd })
-        .then(function (r) { return r.json().then(function (j) { if (r.status === 401) throw new Error('Sign in to upload'); if (!r.ok) throw new Error(j.error || 'Upload failed'); return j; }); })
-        .then(function (j) { done(j.url); })
-        .catch(function (e) { toast(e.message, 'info', 3000); });
+      if (file.size > 25 * 1024 * 1024) { onState('error', 'That file is over 25 MB. Pick a smaller one.'); return; }
+      onState('uploading', 'Uploading\u2026');
+      toJpeg(file, function (ready) {
+        if (!ready) { onState('error', 'This phone can\u2019t open that photo format. Pick a JPG or PNG.'); return; }
+        var fd = new FormData(); fd.append('file', ready);
+        fetch('/api/squad-image/upload', { method: 'POST', credentials: 'include', body: fd })
+          .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (r.status === 401) throw new Error('Sign in to upload a reference'); if (!r.ok) throw new Error(j.error || 'Upload failed. Try again.'); return j; }); })
+          .then(function (j) { if (!j.url) throw new Error('Upload failed. Try again.'); onState('done'); done(j.url); })
+          .catch(function (e) { onState('error', e.message || 'Upload failed. Try again.'); });
+      });
     });
     f.click();
   }
@@ -443,17 +467,33 @@
       var key = sl[0], url = st[key];
       var c = el('div', 'sv-chip');
       c.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
-      if (url) {
-        c.innerHTML = '<img alt="" src="' + url + '" style="width:28px;height:28px;border-radius:6px;object-fit:cover"><span>' + sl[1].replace(/^\S+ /, '') + '</span><b style="margin-left:2px">\u2715</b>';
+      if (st[key + '__busy']) {
+        c.textContent = '\u23F3 Uploading ' + sl[1].replace(/^\S+ /, '').toLowerCase() + '\u2026';
+        c.style.opacity = '0.8';
+      } else if (url) {
+        c.innerHTML = '<img alt="" src="' + url + '" style="width:44px;height:44px;border-radius:8px;object-fit:cover"><span>' + sl[1].replace(/^\S+ /, '') + ' added \u2713</span><b style="margin-left:4px;color:#ef4444">\u2715</b>';
+        var im = c.querySelector('img');
+        if (im) im.onerror = function () { st[key] = null; st[key + '__err'] = 'That file uploaded but can\u2019t be shown. Pick a JPG or PNG.'; renderFrames(sh, mode); };
         c.addEventListener('click', function () { st[key] = null; renderFrames(sh, mode); });
       } else {
         c.textContent = '+ ' + sl[1];
         c.addEventListener('click', function () {
           if (key === '__end' && !st.__start) { toast('Add a start frame first', 'info', 2500); return; }
-          uploadRef('image/*', function (u) { st[key] = u; renderFrames(sh, mode); toast(mode.key === 'video' ? 'Frame added \u00b7 renders with Veo 3.1 Fast' : 'Reference added \u00b7 your image follows it', 'info', 2500); });
+          st[key + '__err'] = null;
+          uploadRef('image/*', function (u) { st[key] = u; st[key + '__busy'] = false; renderFrames(sh, mode); toast(mode.key === 'video' ? 'Frame added \u00b7 renders with Veo 3.1 Fast' : 'Reference added \u00b7 your image follows it', 'info', 2500); }, function (state2, msg) {
+            st[key + '__busy'] = state2 === 'uploading';
+            st[key + '__err'] = state2 === 'error' ? msg : null;
+            renderFrames(sh, mode);
+          });
         });
       }
       box.appendChild(c);
+      if (st[key + '__err']) {
+        var er = el('div', 'sv-ref-err');
+        er.style.cssText = 'width:100%;color:#fca5a5;font-size:12px;margin-top:4px;';
+        er.textContent = '\u26A0\uFE0F ' + st[key + '__err'];
+        box.appendChild(er);
+      }
     });
   }
 
@@ -1033,6 +1073,48 @@
     }).catch(function () { box.textContent = 'Could not load your invoices.'; });
   }
 
+  /* Task 157: never show a provider's raw text ("`generateAudio` isn't
+     supported by this model. Please refer to the Gemini API documentation"). */
+  function friendlyError(m) {
+    m = String(m || '');
+    if (/isn.t supported by this model|not supported|unsupported|invalid (argument|parameter)|documentation|api key|quota|rate.?limit|429|5\d\d|timeout|ECONN|fetch failed/i.test(m)) {
+      if (/rate.?limit|429|quota/i.test(m)) return 'This model is busy right now. Try again in a minute or pick another model. You were not charged.';
+      if (/timeout|ECONN|fetch failed|5\d\d/i.test(m)) return 'The model didn\u2019t answer in time. Try again. You were not charged.';
+      return 'This model can\u2019t do that with these settings. Try another model or change the settings. You were not charged.';
+    }
+    return m || 'Something went wrong. Try again.';
+  }
+
+  function showPayNow(out, d, sh, mode) {
+    out.innerHTML = '';
+    var w = el('div', 'sv-warn');
+    w.textContent = '\u23F8 ' + (d.error || 'Your last card payment was declined.');
+    var row = el('div'); row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;';
+    var pay = el('button', 'sv-gen', '\uD83D\uDCB3 Pay ' + (d.overdue || 'now'));
+    pay.style.cssText = 'flex:1;min-width:140px;';
+    var inv = el('a', null, 'See invoices'); inv.href = '#';
+    inv.style.cssText = 'color:#FF6D00;font-weight:700;align-self:center;';
+    inv.addEventListener('click', function (ev) { ev.preventDefault(); showInvoices(out); });
+    row.appendChild(pay); row.appendChild(inv); w.appendChild(row); out.appendChild(w);
+    pay.addEventListener('click', function () {
+      pay.disabled = true; pay.textContent = 'Trying your card\u2026';
+      fetch('/api/squad-billing/pay', { method: 'POST', credentials: 'include' })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, d: j }; }); })
+        .then(function (r) {
+          billing = null;
+          if (r.ok && r.d && !r.d.suspended) {
+            out.innerHTML = '<div class="sv-warn" style="border-color:#22c55e;color:#bbf7d0">\u2705 Paid. Create is unlocked. Tap Generate.</div>';
+            if (sh && mode) loadBilling(sh, mode);
+            return;
+          }
+          out.innerHTML = '';
+          if (r.d && r.d.needsCard) { out.appendChild(cardPrompt(r.d.error)); return; }
+          out.innerHTML = '<div class="sv-warn">\u274C ' + ((r.d && r.d.error) || 'Could not take the payment. Try again in a minute.') + '</div>';
+        })
+        .catch(function () { pay.disabled = false; pay.textContent = '\uD83D\uDCB3 Pay ' + (d.overdue || 'now'); });
+    });
+  }
+
   function refreshQuota(sh, mode) {
     var n = sh.querySelector('#sv-note');
     if (!n) return;
@@ -1061,9 +1143,19 @@
     }
     /* Every text model prices out at a penny a caption, so six chips reading
        "1p" made the price look like the thing to choose on. It is not. */
+    /* Task 157: the price belongs on the button you press, not only in the small print. */
+    var gb = sh.querySelector('.sv-gen');
+    if (gb && mode.gen && gb.textContent.indexOf(mode.gen) === 0) {
+      var tag = (mode.key === 'video' && typeof runPence === 'number') ? pence(runPence) : p;
+      gb.textContent = mode.gen + (tag ? ' \u00b7 ' + tag : '');
+    }
     if (mode.key === 'text' && p) bits.push('any model here costs about a penny a caption — pick on style, not price');
     if (billing && billing.suspended) {
-      bits.push('⏸ Creating is paused until your invoice is paid');
+      /* Task 151: no "allowance left" or "runs left" next to "paused" — the
+         allowance is not what is stopping them, the declined card is. */
+      bits.push('⏸ ' + (billing.overdue ? billing.overdue + ' card payment declined' : 'Card payment declined') + ' · tap Generate, then Pay now');
+      n.innerHTML = bits.join(' · ');
+      return;
     } else if (billing && billing.unpaid && billing.unpaidPence > 0) {
       bits.push('🧾 ' + billing.unpaid + ' on your next invoice');
     }
@@ -1169,10 +1261,7 @@
           return;
         }
         if (res.status === 403 && res.d && res.d.suspended) {
-          out.innerHTML = '<div class="sv-warn">⏸ ' + (res.d.error || 'Creating is paused until your invoice is paid.') +
-            ' <a href="#" class="sv-invoices-link" style="color:#FF6D00;font-weight:700">See invoices</a></div>';
-          var link = out.querySelector('.sv-invoices-link');
-          if (link) link.addEventListener('click', function (ev) { ev.preventDefault(); showInvoices(out); });
+          showPayNow(out, res.d, sh, mode);
           billing = null;
           gen.disabled = false;
           return;
@@ -1222,7 +1311,7 @@
               gen.disabled = false;
             } else if (st.status === 'error') {
               clearInterval(job.timer);
-              out.innerHTML = '<div class="sv-warn">❌ ' + (st.error || 'Generation failed.') + '</div>';
+              out.innerHTML = '<div class="sv-warn">❌ ' + friendlyError(st.error || 'Generation failed.') + '</div>';
               gen.disabled = false;
             } else {
               var t = document.getElementById('sv-prog-t');
@@ -1244,7 +1333,7 @@
         }, POLL_MS);
       })
       .catch(function (e) {
-        out.innerHTML = '<div class="sv-warn">❌ ' + e.message + '</div>';
+        out.innerHTML = '<div class="sv-warn">❌ ' + friendlyError(e.message) + '</div>';
         gen.disabled = false;
       });
   }

@@ -49,10 +49,13 @@ router.get('/status', requireCreator, async (req, res) => {
     }
     const tier = (member && member.tier) || 'starter';
     const cap = billing.capPenceFor(tier, (state && state.paid_invoices) || 0);
+    const overdue = state && state.suspended_at ? await billing.overdueFor(userId) : null;
     res.json({
       hasCard: !!(state && state.mandate_pm_id) || !!(await billing.mandateFor(userId)),
       suspended: !!(state && state.suspended_at),
       suspendReason: (state && state.suspend_reason) || null,
+      overduePence: overdue ? overdue.pence : 0,
+      overdue: overdue && overdue.pence > 0 ? pricing.money(overdue.pence) : null,
       unpaidPence: unpaid,
       unpaid: pricing.money(unpaid),
       capPence: cap,
@@ -71,6 +74,32 @@ router.get('/status', requireCreator, async (req, res) => {
   } catch (e) {
     console.error('[SquadBilling] status failed:', e.message);
     res.status(500).json({ error: 'Could not read your billing status.' });
+  }
+});
+
+/* Task 151: the suspended banner said "Pay it" but there was nothing to press.
+   One retry of the saved card per minute is plenty; Stripe sees every try. */
+const lastPay = new Map();
+router.post('/pay', requireCreator, async (req, res) => {
+  const userId = String(userIdOf(req));
+  const now = Date.now();
+  if (now - (lastPay.get(userId) || 0) < 60 * 1000) {
+    return res.status(429).json({ error: 'Give it a minute before trying your card again.' });
+  }
+  lastPay.set(userId, now);
+  try {
+    const r = await billing.payOverdue(userId);
+    if (r.failed > 0) {
+      return res.status(402).json({
+        ok: false, ...r,
+        error: 'Your card was declined again. Add a different card and Create unlocks straight away.',
+        needsCard: true,
+      });
+    }
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    console.error('[SquadBilling] pay now failed:', e.message);
+    res.status(500).json({ error: 'Could not take the payment just now. Try again in a minute.' });
   }
 });
 
