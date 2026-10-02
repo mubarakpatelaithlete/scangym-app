@@ -119,9 +119,32 @@ const IMAGE_PROFILES = {
 };
 
 /** Catalogue row → the payload that model expects. */
-function buildInput(model, prompt, settings) {
+function buildInput(model, prompt, settings, referenceUrl) {
   const profile = IMAGE_PROFILES[model?.inputProfile] || IMAGE_PROFILES['fal-image'];
-  return profile(prompt, settings);
+  const input = profile(prompt, settings);
+  // Task 101/103: "Reference" — fal's /edit endpoints take the same fields
+  // plus image_urls (schema checked 2026-10-02 for nano-banana and nano-banana-2).
+  if (referenceUrl) input.image_urls = [referenceUrl];
+  return input;
+}
+
+/** A reference must be a plain https link; fal fetches it, we never do. */
+function cleanReferenceUrl(u) {
+  const url = String(u || '').trim();
+  if (!url || url.length > 800 || !/^https:\/\/[^\s"'<>]+$/i.test(url)) return null;
+  return url;
+}
+
+/**
+ * Only Nano Banana 1 and 2 have an /edit endpoint that takes a reference
+ * image. Any other model falls back to Nano Banana (the cheapest), so a
+ * reference is never silently dropped. The queue app (first two path
+ * segments) is unchanged, so /status polls the same way.
+ */
+const REFERENCE_MODELS = new Set(['nano-banana', 'nano-banana-2']);
+function referenceModel(model) {
+  const base = model && REFERENCE_MODELS.has(model.id) ? model : models.resolve(KIND, 'nano-banana');
+  return { ...base, providerModel: `${base.providerModel}/edit` };
 }
 
 // ─── GET /health — can this box make an image right now? ──────────────────
@@ -169,7 +192,9 @@ router.post('/generate', requireBillable, express.json({ limit: '64kb' }), limit
   }
 
   const settings = cleanSettings(req.body);
-  const model = models.resolve(KIND, req.body?.model);
+  const referenceUrl = cleanReferenceUrl(req.body?.referenceUrl);
+  const picked = models.resolve(KIND, req.body?.model);
+  const model = referenceUrl ? referenceModel(picked) : picked;
   const costUsd = models.estimateUsd(model, { images: settings.count });
 
   /* Money, not clip count, is what needs guarding. @see lib/gen-budget.js */
@@ -177,9 +202,9 @@ router.post('/generate', requireBillable, express.json({ limit: '64kb' }), limit
   if (refused) return res.status(refused.status).json(refused.body);
 
   try {
-    const { op } = await provider.submit(model, buildInput(model, prompt, settings));
+    const { op } = await provider.submit(model, buildInput(model, prompt, settings, referenceUrl));
     const jobId = crypto.randomBytes(8).toString('hex');
-    await jobs.recordJob({ id: jobId, req, kind: KIND, prompt, params: { ...settings, op }, op, model, costUsd });
+    await jobs.recordJob({ id: jobId, req, kind: KIND, prompt, params: { ...settings, op, ...(referenceUrl ? { referenceUrl } : {}) }, op, model, costUsd });
     res.json({
       jobId,
       settings,
@@ -231,4 +256,4 @@ router.get('/history', optionalAuth, async (req, res) => {
 });
 
 module.exports = router;
-module.exports._internals = { buildInput, cleanSettings, IMAGE_PROFILES };
+module.exports._internals = { buildInput, cleanSettings, IMAGE_PROFILES, cleanReferenceUrl, referenceModel };

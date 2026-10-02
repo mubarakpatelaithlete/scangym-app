@@ -83,6 +83,42 @@ function publicProduct(row) {
 
 /** The creator handle of the signed-in user, or null. Handles are public, so
  *  one supplied by the client is never trusted. */
+const EXT_TYPES = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.mp3': 'audio/mpeg' };
+
+/**
+ * One of this user's finished Create results → the same shape multer gives,
+ * saved in SHOP_DIR. Our CDN files are read through the R2 API (the public
+ * CDN is not reachable from Railway); anything else is fetched over https.
+ */
+async function fileFromCreation(userId, sourceUrl) {
+  let u;
+  try { u = new URL(sourceUrl); } catch (e) { return null; }
+  if (u.protocol !== 'https:') return null;
+  const { rows } = await pool.query(
+    `SELECT id FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1`,
+    [userId, sourceUrl]
+  );
+  if (!rows[0]) return null;
+  const ext = (path.extname(u.pathname).toLowerCase() || '.mp4');
+  const mimetype = EXT_TYPES[ext];
+  if (!mimetype) return null;
+  if (!fs.existsSync(SHOP_DIR)) fs.mkdirSync(SHOP_DIR, { recursive: true });
+  const name = `scangym-creation${ext}`;
+  const dest = path.join(SHOP_DIR, `${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${name}`);
+  if (u.hostname === 'cdn.scangym.com') {
+    const { downloadFromR2 } = require('../lib/r2-download');
+    await downloadFromR2(decodeURIComponent(u.pathname.slice(1)), dest);
+  } else {
+    const r = await fetch(sourceUrl);
+    if (!r.ok) return null;
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > 50 * 1024 * 1024) return null;
+    fs.writeFileSync(dest, buf);
+  }
+  const size = fs.statSync(dest).size;
+  return { path: dest, originalname: name, size, mimetype };
+}
+
 async function ownHandle(userId) {
   const { rows } = await pool.query('SELECT referral_handle FROM public.users WHERE id = $1', [userId]);
   return (rows[0] && rows[0].referral_handle) || null;
@@ -168,6 +204,12 @@ router.post('/products', authenticateUser, upload.single('file'), async (req, re
     const handle = await ownHandle(req.user.id);
     if (!handle) {
       return res.status(403).json({ error: 'You need a ScanSquad creator handle before you can sell', code: 'no_creator_handle' });
+    }
+    // Task 101: "Sell" under a Create result lists that creation directly —
+    // no download-then-upload. Only a finished job of this user's own.
+    if (!req.file && (req.body || {}).sourceUrl) {
+      req.file = await fileFromCreation(req.user.id, String(req.body.sourceUrl));
+      if (!req.file) return res.status(400).json({ error: 'That creation could not be found on your account' });
     }
     if (!req.file) return res.status(400).json({ error: 'Attach the file customers will download' });
 
