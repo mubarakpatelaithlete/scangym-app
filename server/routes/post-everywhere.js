@@ -349,26 +349,40 @@ router.post('/post', async (req, res) => {
 /** Task 160: title + caption + hashtags for the creator's own creation, from its prompt. */
 async function writeMeta(userId, mediaUrl) {
   const llm = require('../lib/llm');
-  if (!llm.configured()) return null;
   const { rows: [job] } = await pool.query(
     "SELECT prompt, kind FROM squad_video_jobs WHERE user_id = $1 AND video_url = $2 AND status = 'done' LIMIT 1",
     [String(userId), mediaUrl]);
   if (!job || !job.prompt) return null;
-  const { completion } = await llm.chat('PostMeta', {
-    temperature: 0.8, max_tokens: 300,
+  /* Live check 2026-10-02: the AI sometimes returns nothing usable (reasoning
+     models spend small token budgets thinking), and the post went out with no
+     title or hashtags. Bigger budget, and a plain fallback built from the
+     prompt so every 1-click post still gets a title, caption and hashtags. */
+  const fallback = () => {
+    const words = String(job.prompt).replace(/[|].*$/, '').replace(/[^\p{L}\p{N} ]+/gu, ' ').split(/\s+/).filter((w) => w.length > 3);
+    const stop = new Set(['with', 'that', 'this', 'from', 'into', 'over', 'vertical', 'cinematic', 'dramatic']);
+    const tags = [...new Set(words.map((w) => w.toLowerCase()).filter((w) => !stop.has(w)))].slice(0, 5).map((w) => '#' + w);
+    const t = String(job.prompt).replace(/[|].*$/, '').split(/[,.]/)[0].trim().slice(0, 60);
+    return { title: t, caption: t + ' \uD83D\uDCAA Made with ScanGym', hashtags: [...tags, '#gym', '#ScanGym'] };
+  };
+  if (!llm.configured()) return fallback();
+  let completion;
+  try {
+    ({ completion } = await llm.chat('PostMeta', {
+    temperature: 0.8, max_tokens: 1200,
     messages: [
       { role: 'system', content: 'You write social posts for TikTok, Instagram Reels and YouTube Shorts for ScanGym, a "book any gym for £5 a day" fitness app. Reply with JSON only: {"title": max 60 chars, "caption": 1-2 punchy lines with 1-2 emoji, "hashtags": 5-8 relevant hashtags each starting with #, always include #ScanGym}. No quotes around the JSON, no markdown.' },
       { role: 'user', content: `This ${job.kind || 'video'} was made with the prompt: ${String(job.prompt).slice(0, 600)}` },
     ],
-  });
+  }));
+  } catch (e) { return fallback(); }
   const raw = String(completion?.choices?.[0]?.message?.content || '').replace(/^```(json)?|```$/g, '').trim();
-  let j; try { j = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); } catch (e) { return null; }
+  let j; try { j = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); } catch (e) { console.warn('[PostMeta] unusable AI reply, using fallback'); return fallback(); }
   const tags = (Array.isArray(j.hashtags) ? j.hashtags : String(j.hashtags || '').split(/\s+/))
     .map((t) => '#' + String(t).replace(/^#+/, '').replace(/[^\p{L}\p{N}_]/gu, '')).filter((t) => t.length > 1).slice(0, 8);
   if (!tags.some((t) => /^#scangym$/i.test(t))) tags.push('#ScanGym');
   const title = String(j.title || '').trim().slice(0, 60);
   const caption = String(j.caption || '').trim().slice(0, 300);
-  if (!title && !caption) return null;
+  if (!title && !caption) return fallback();
   return { title: title || caption.slice(0, 60), caption, hashtags: tags };
 }
 
