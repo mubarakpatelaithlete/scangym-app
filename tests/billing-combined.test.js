@@ -33,3 +33,23 @@ test('Task 151: under 30p nothing is charged or failed, and Create unlocks', asy
   assert.ok(db.calls.some((c) => /suspended_at = NULL/.test(c.sql)));
   assert.ok(!db.calls.some((c) => /status = 'failed'/.test(c.sql)));
 });
+
+test('Task 151: a charge that succeeded at Stripe is recovered, never taken twice', async () => {
+  const db = fakeDb(); let created = 0;
+  const stripe = { paymentIntents: {
+    retrieve: async () => ({ id: 'pi_ok', status: 'succeeded' }),
+    create: async () => { created++; return { status: 'succeeded' }; } } };
+  const a = Object.assign(inv(5, 16), { stripe_payment_intent_id: 'pi_ok' });
+  const b = Object.assign(inv(6, 16), { stripe_payment_intent_id: 'pi_ok' });
+  const r = await billing.chargeInvoices([a, b], db, { stripe, state: { mandate_pm_id: 'pm_1' } });
+  assert.equal(r.ok, true);
+  assert.equal(created, 0);
+});
+
+test('Task 151: paid billing counter gets all 3 params', async () => {
+  const db = fakeDb();
+  const stripe = { paymentIntents: { create: async () => ({ id: 'pi_2', status: 'succeeded' }) } };
+  await billing.chargeInvoices([inv(7, 20), inv(8, 20)], db, { stripe, state: { mandate_pm_id: 'pm_1' } });
+  const c = db.calls.find((x) => /paid_invoices = paid_invoices \+ \$3/.test(x.sql));
+  assert.ok(c); assert.equal(c.params.length, 3); assert.equal(c.params[2], 2);
+});
