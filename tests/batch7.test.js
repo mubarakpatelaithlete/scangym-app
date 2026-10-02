@@ -25,10 +25,11 @@ test('Home: reel menu has Watch from start before Copy link', () => {
   assert.match(r, /'Watch from start'\)\s*\+ window\.sgSheetOption\('\\uD83D\\uDD17', 'Copy link'\)/);
   assert.match(r, /o\[o\.length - 2\]\.addEventListener/);
 });
-test('Create: Recent prompts saved on Generate; cache bumped', () => {
+test('Create: voice prompt only when the browser supports speech; cache bumped', () => {
   const s = read('frontend/public/squad-create.js');
-  assert.match(s, /sg_recent_prompts/);
-  assert.match(s, /id = 'sv-recent'/);
-  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.8/);
+  assert.match(s, /window\.SpeechRecognition \|\| window\.webkitSpeechRecognition/);
+  assert.match(s, /if \(SR\) \{/);
+  assert.doesNotMatch(s, /sg_recent_prompts/);
+  assert.match(read('frontend/public/index.html'), /squad-create\.js\?v=3\.9/);
   assert.match(read('frontend/public/index.html'), /shop-extras\.js\?v=1\.3/);
 });
