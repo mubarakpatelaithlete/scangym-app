@@ -2521,6 +2521,19 @@ window._loadCreatorFullPage=async function(){
         }).join('')+'</div>':'<div style="color:rgba(255,255,255,.5);font-size:13px">Nothing posted yet. Make something, then tap Post.</div>');
       var anchor=scr.children[1]; scr.insertBefore(box,anchor||null);
     }).catch(function(){});
+    /* Owner 2026-10-02: "I repost but I don't know where it goes" — here. */
+    fetch('/api/reels/social/my-reposts',{credentials:'include'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+      var rs=(d&&d.reposts)||[]; var scr=document.querySelector('.creator-screen'); if(!scr||document.getElementById('cf-myreposts'))return;
+      var box=document.createElement('div'); box.id='cf-myreposts'; box.style.cssText='margin-bottom:12px';
+      var enc=function(x){return encodeURIComponent(String(x||''));};
+      box.innerHTML='<b style="display:block;color:#fff;font-size:15px;margin-bottom:8px">Your reposts ('+rs.length+')</b>'
+        +(rs.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">'+rs.slice(0,12).map(function(x){
+          return '<a href="/reels?v='+enc(x.id)+'" style="position:relative;display:block;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#1a1d27">'
+            +'<img alt="" loading="lazy" src="/api/reels/poster/'+enc(x.id)+'" onerror="this.style.display=\'none\'" style="width:100%;height:100%;object-fit:cover">'
+            +'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" stroke-width="2" style="position:absolute;top:6px;left:6px"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></a>';
+        }).join('')+'</div>':'<div style="color:rgba(255,255,255,.5);font-size:13px">Tap Repost on any Home video and it shows here.</div>');
+      var mp=document.getElementById('cf-myposts'); scr.insertBefore(box,mp?mp.nextSibling:(scr.children[1]||null));
+    }).catch(function(){});
     if(el('cf-clicks'))el('cf-clicks').textContent=clicks;
     if(el('cf-bookings'))el('cf-bookings').textContent=bookings;
     if(el('cf-earned'))el('cf-earned').textContent=earnDisp;

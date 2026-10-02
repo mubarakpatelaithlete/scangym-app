@@ -151,6 +151,18 @@ router.post('/follow', authenticateUser, async (req, res) => {
   }
 });
 
+/* Owner 2026-10-02: "I repost but I don't know where it goes" — the list of
+   what you reposted, shown in Create as "Your reposts". */
+router.get('/my-reposts', authenticateUser, async (req, res) => {
+  try {
+    const q = await pool.query('SELECT reel_id, created_at FROM reel_reposts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 60', [String(req.user.id)]);
+    res.json({ reposts: q.rows.map((r) => ({ id: r.reel_id, at: r.created_at })) });
+  } catch (e) {
+    console.error('[reel-social] my-reposts:', e.message);
+    res.json({ reposts: [], degraded: true });
+  }
+});
+
 /* Task 154 Profile 1: follower count for the Profile top section. */
 router.get('/me-stats', authenticateUser, async (req, res) => {
   try {
