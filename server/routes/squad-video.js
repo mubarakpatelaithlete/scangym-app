@@ -82,6 +82,8 @@ function cleanSettings(body) {
     durationSeconds: pick('durationSeconds', Number(b.durationSeconds)),
     resolution: pick('resolution', b.resolution),
     generateAudio: b.generateAudio === undefined ? DEFAULTS.generateAudio : b.generateAudio !== false,
+    // Task 112/120 batch 4: "avoid…" (negative prompt) — Veo on fal and on the Gemini API both accept it.
+    ...(String(b.negativePrompt || '').trim() ? { negativePrompt: String(b.negativePrompt).trim().slice(0, 300) } : {}),
   };
 }
 
@@ -412,6 +414,7 @@ const VIDEO_PROFILES = {
       aspect_ratio: s.aspectRatio,
       resolution: s.resolution,
       generate_audio: s.generateAudio,
+      ...(s.negativePrompt ? { negative_prompt: s.negativePrompt } : {}),
     }),
   },
   /** WAN 3.0: a real integer duration, and the audio flag is just `audio`. */

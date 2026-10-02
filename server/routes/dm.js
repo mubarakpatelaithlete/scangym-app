@@ -308,6 +308,22 @@ router.post('/messages/:id/react', async (req, res) => {
   } catch (e) { console.error('[dm] react', e.message); res.status(500).json({ error: 'Could not react' }); }
 });
 
+/* Task 107/118 batch 4: search messages in all my chats (WhatsApp "Search"). */
+router.get('/search', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim().slice(0, 60);
+    if (q.length < 2) return res.json({ hits: [] });
+    const uid = me(req);
+    const { rows } = await pool.query(
+      `SELECT m.id, m.thread_id, m.body, m.created_at, m.sender_id, t.user_a, t.user_b
+         FROM dm_messages m JOIN dm_threads t ON t.id = m.thread_id
+        WHERE (t.user_a = $1 OR t.user_b = $1) AND m.deleted_at IS NULL
+          AND m.body ILIKE '%' || $2 || '%' AND m.body NOT LIKE '📎 %'
+        ORDER BY m.id DESC LIMIT 20`, [uid, q.replace(/[%_\\]/g, (c) => '\\' + c)]);
+    res.json({ hits: rows.map((r) => ({ id: Number(r.id), threadId: r.thread_id, body: String(r.body).slice(0, 140), at: r.created_at, mine: r.sender_id === uid })) });
+  } catch (e) { console.error('[dm] search', e.message); res.json({ hits: [] }); }
+});
+
 router.get('/users', async (req, res) => {
   try {
     const q = String(req.query.q || '').trim().slice(0, 80);
