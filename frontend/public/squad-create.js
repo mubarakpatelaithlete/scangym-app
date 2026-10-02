@@ -351,6 +351,9 @@
     '.sv-head-t span i{color:#cbd5e1;}',
     '.sv-spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#FF6D00;border-radius:50%;animation:svspin .7s linear infinite;flex-shrink:0;}',
     '@keyframes svspin{to{transform:rotate(360deg)}}',
+    /* Task 154 Create 10: the What next buttons fit on screen without sideways scrolling. */
+    '.sv-next{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible !important;flex-wrap:wrap;}',
+    '.sv-next .sv-mchip{min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;padding:9px 4px;}',
   ].join('');
 
   function el(tag, cls, html) {
