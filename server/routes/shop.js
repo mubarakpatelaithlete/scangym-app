@@ -77,9 +77,15 @@ function publicProduct(row) {
     fileSizeKb: row.file_size ? Math.round(row.file_size / 1024) : null,
     contentType: row.content_type,
     salesCount: row.sales_count,
+    rating: row.rating_avg != null ? Math.round(Number(row.rating_avg) * 10) / 10 : null,
+    ratingCount: Number(row.rating_n) || 0,
     createdAt: row.created_at,
   };
 }
+
+// Star average per product, joined into every listing (Task 108/119).
+const RATING_JOIN = `LEFT JOIN (SELECT product_id, AVG(rating) AS rating_avg, COUNT(*) AS rating_n
+                     FROM shop_reviews GROUP BY product_id) rv ON rv.product_id = shop_products.id`;
 
 /** The creator handle of the signed-in user, or null. Handles are public, so
  *  one supplied by the client is never trusted. */
@@ -149,7 +155,7 @@ router.get('/products', async (req, res) => {
     params.push(limit);
 
     const { rows } = await pool.query(
-      `SELECT * FROM shop_products WHERE ${where.join(' AND ')}
+      `SELECT shop_products.*, rv.rating_avg, rv.rating_n FROM shop_products ${RATING_JOIN} WHERE ${where.join(' AND ')}
        ORDER BY sales_count DESC, created_at DESC LIMIT $${params.length}`,
       params
     );
@@ -186,7 +192,7 @@ router.get('/products/:id/also-bought', async (req, res) => {
 router.get('/products/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM shop_products WHERE id = $1 AND status = 'active'",
+      `SELECT shop_products.*, rv.rating_avg, rv.rating_n FROM shop_products ${RATING_JOIN} WHERE id = $1 AND status = 'active'`,
       [Number.parseInt(req.params.id, 10) || 0]
     );
     if (!rows.length) return res.status(404).json({ error: 'Product not found' });
@@ -194,6 +200,51 @@ router.get('/products/:id', async (req, res) => {
   } catch (err) {
     console.error('[Shop] read failed:', err.message);
     res.status(500).json({ error: 'Could not load that product' });
+  }
+});
+
+/* Task 108/119: reviews. Anyone can read; only a paying buyer can write
+   (one review per buyer, editable — Amazon "Verified Purchase"). */
+router.get('/products/:id/reviews', async (req, res) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10) || 0;
+    const { rows } = await pool.query(
+      `SELECT r.rating, r.body, r.created_at, u.first_name, u.last_name FROM shop_reviews r
+         LEFT JOIN public.users u ON u.id::text = r.user_id
+        WHERE r.product_id = $1 ORDER BY r.created_at DESC LIMIT 20`, [id]);
+    const { rows: [agg] } = await pool.query(
+      'SELECT AVG(rating) AS a, COUNT(*)::int AS n FROM shop_reviews WHERE product_id = $1', [id]);
+    res.json({
+      rating: agg && agg.n ? Math.round(Number(agg.a) * 10) / 10 : null, count: (agg && agg.n) || 0,
+      reviews: rows.map((r) => ({
+        name: [r.first_name, r.last_name ? String(r.last_name)[0] + '.' : ''].filter(Boolean).join(' ') || 'ScanGym customer',
+        rating: r.rating, body: r.body || '', at: r.created_at, verified: true,
+      })),
+    });
+  } catch (err) {
+    console.error('[Shop] reviews failed:', err.message);
+    res.json({ rating: null, count: 0, reviews: [] });
+  }
+});
+
+router.post('/products/:id/reviews', authenticateUser, express.json(), async (req, res) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10) || 0;
+    const rating = Number.parseInt((req.body || {}).rating, 10);
+    if (!(rating >= 1 && rating <= 5)) return res.status(400).json({ error: 'Pick 1 to 5 stars' });
+    const body = String((req.body || {}).body || '').trim().slice(0, 1000);
+    const { rows: bought } = await pool.query(
+      "SELECT 1 FROM shop_orders WHERE product_id = $1 AND buyer_user_id = $2 AND status = 'paid' LIMIT 1",
+      [id, String(req.user.id)]);
+    if (!bought.length) return res.status(403).json({ error: 'Only buyers can review this product' });
+    await pool.query(
+      `INSERT INTO shop_reviews (product_id, user_id, rating, body) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (product_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, body = EXCLUDED.body, updated_at = NOW()`,
+      [id, String(req.user.id), rating, body]);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    console.error('[Shop] review save failed:', err.message);
+    res.status(500).json({ error: 'Could not save your review' });
   }
 });
 

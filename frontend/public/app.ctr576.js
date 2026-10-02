@@ -14087,6 +14087,7 @@ window._sgShopRender=function(){
       +'<div style="padding:9px 10px 10px;display:flex;flex-direction:column;flex:1">'
       +'<p style="margin:0 0 4px;font-size:13px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px">'+_sgShopEsc(p.title)+'</p>'
       +'<p style="margin:0 0 6px;color:rgba(255,255,255,.45);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">by @'+_sgShopEsc(p.creatorHandle)+'</p>'
+      +_sgShopStars(p)
       +(owned?'<p style="margin:0;font-size:15px;font-weight:900;color:#22c55e">Owned</p>':_sgShopPrice(p.price))
       +'<p style="margin:3px 0 0;color:#86efac;font-size:11px;font-weight:600">\u26A1 Instant PDF download</p>'
       +(sold?'<p style="margin:2px 0 0;color:rgba(255,255,255,.5);font-size:11px">'+sold+' sold</p>':'')
@@ -14131,6 +14132,38 @@ window._sgShopAlso=async function(id){
   }catch(e){ el.innerHTML=''; }
 };
 
+/* Task 108/119: star ratings + verified-purchase reviews (Amazon, Fiverr, Upwork, Skool). */
+function _sgShopStarStr(r){var n=Math.round(r||0),o='';for(var i=1;i<=5;i++)o+=i<=n?'\u2605':'\u2606';return o;}
+function _sgShopStars(p){if(!p||!p.ratingCount)return '';return '<p style="margin:0 0 4px;font-size:12px;color:#FFB020;font-weight:700">'+_sgShopStarStr(p.rating)+' <span style="color:rgba(255,255,255,.6)">'+p.rating+' ('+p.ratingCount+')</span></p>';}
+window._sgShopReviews=async function(id,owned){
+  var el=document.getElementById('sg-shop-reviews');if(!el)return;
+  try{
+    var d=await fetch('/api/shop/products/'+id+'/reviews',{credentials:'include'}).then(function(r){return r.json();});
+    var h='<p style="margin:4px 0 6px;font-size:14px;font-weight:800">Customer reviews'+(d.count?' <span style="color:#FFB020">'+_sgShopStarStr(d.rating)+'</span> <span style="color:rgba(255,255,255,.6);font-weight:600">'+d.rating+' out of 5 · '+d.count+' rating'+(d.count>1?'s':'')+'</span>':'')+'</p>';
+    if(owned){
+      h+='<div style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin:0 0 10px"><p style="margin:0 0 6px;font-size:13px;font-weight:700">Rate this product</p>'
+        +'<div id="sg-rv-stars" data-v="0" style="font-size:28px;color:#FFB020;letter-spacing:4px;cursor:pointer">'
+        +[1,2,3,4,5].map(function(i){return '<span data-s="'+i+'" onclick="var w=this.parentNode;w.dataset.v='+i+';Array.prototype.forEach.call(w.children,function(c){c.textContent=+c.dataset.s<='+i+'?\'\u2605\':\'\u2606\';})">\u2606</span>';}).join('')+'</div>'
+        +'<textarea id="sg-rv-text" maxlength="1000" placeholder="What did you like? (optional)" style="width:100%;min-height:60px;margin:6px 0;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;padding:8px;font:inherit;font-size:13px"></textarea>'
+        +'<button type="button" onclick="window._sgShopSendReview('+id+')" style="width:100%;border:0;border-radius:12px;padding:10px;background:#FF6D00;color:#fff;font-weight:800;cursor:pointer">Post review</button></div>';
+    }
+    h+=(d.reviews||[]).map(function(r){return '<div style="padding:8px 0;border-top:1px solid rgba(255,255,255,.08)"><p style="margin:0;font-size:13px;font-weight:700">'+_sgShopEsc(r.name)+' <span style="color:#FFB020">'+_sgShopStarStr(r.rating)+'</span></p><p style="margin:2px 0;color:#FF9A4D;font-size:11px;font-weight:700">\u2705 Verified purchase</p>'+(r.body?'<p style="margin:2px 0 0;color:rgba(255,255,255,.75);font-size:13px;line-height:1.4">'+_sgShopEsc(r.body)+'</p>':'')+'</div>';}).join('');
+    if(!d.count&&!owned)h+='<p style="margin:0 0 10px;color:rgba(255,255,255,.5);font-size:13px">No reviews yet. Buyers can rate it after they download.</p>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='';}
+};
+window._sgShopSendReview=async function(id){
+  var v=+((document.getElementById('sg-rv-stars')||{}).dataset||{}).v||0;
+  if(!v){if(typeof sgToast==='function')sgToast('Tap the stars first','error',1800);return;}
+  try{
+    var r=await fetch('/api/shop/products/'+id+'/reviews',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({rating:v,body:(document.getElementById('sg-rv-text')||{}).value||''})});
+    var j=await r.json().catch(function(){return {};});
+    if(!r.ok)throw new Error(j.error||'Could not save');
+    if(typeof sgToast==='function')sgToast('Thanks for your review \u2B50','success',1800);
+    window._sgShopReviews(id,false);
+  }catch(e){if(typeof sgToast==='function')sgToast(e.message,'error',2200);}
+};
+
 function _sgShopEsc(text){
   return String(text==null?'':text).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
@@ -14143,7 +14176,7 @@ window._sgShopOpen=function(productId){
   var owned=_sgShopState.owned[p.id];
   var seen=_sgShopLS('sg_shop_seen').filter(function(x){return x!==p.id;});seen.unshift(p.id);
   try{localStorage.setItem('sg_shop_seen',JSON.stringify(seen.slice(0,12)));}catch(e){}
-  setTimeout(function(){window._sgShopAlso(p.id);},0);
+  setTimeout(function(){window._sgShopAlso(p.id);window._sgShopReviews(p.id,!!owned);},0);
   /* Task 65 round 2 (Amazon product page): big picture, price block, Save +
      Share, a details table, Read more, and More from this creator. */
   var saved=_sgShopLS('sg_shop_saved').indexOf(p.id)>=0;
@@ -14153,6 +14186,7 @@ window._sgShopOpen=function(productId){
   var dRow=function(k,v){return '<tr><td style="padding:6px 8px 6px 0;color:rgba(255,255,255,.5);font-size:13px;white-space:nowrap">'+k+'</td><td style="padding:6px 0;font-size:13px;font-weight:600">'+v+'</td></tr>';};
   var body='<div style="padding:4px 2px 8px">'
     +(p.coverImageUrl?'<img src="'+_sgShopEsc(p.coverImageUrl)+'" alt="'+_sgShopEsc(p.title)+'" style="display:block;width:100%;max-height:260px;object-fit:cover;border-radius:12px;margin:0 0 12px">':'')
+    +_sgShopStars(p)
     +(owned?'':'<div style="margin:0 0 4px">'+_sgShopPrice(p.price)+'</div>')
     +'<p style="margin:0 0 10px;color:#86efac;font-size:12px;font-weight:600">⚡ Instant PDF download · 🔒 Secure checkout</p>'
     +'<div style="display:flex;gap:8px;margin:0 0 12px">'
@@ -14166,6 +14200,7 @@ window._sgShopOpen=function(productId){
     +dRow('Format',fmt)+(p.fileSizeKb?dRow('File size',p.fileSizeKb+' KB'):'')+dRow('Category',_sgShopEsc(p.category))+dRow('Sold by','@'+_sgShopEsc(p.creatorHandle))+dRow('Delivery','Instant download + email copy')+'</table>'
     +(more.length?_sgShopRow('More from @'+_sgShopEsc(p.creatorHandle),more.map(_sgShopMini).join('')):'')
     +'<div id="sg-shop-buy-error" style="display:none;color:#f87171;font-size:13px;margin-bottom:10px"></div>'
+    +'<div id="sg-shop-reviews"></div>'
     +'<div id="sg-shop-also"></div>'
     +'<div style="position:sticky;bottom:0;background:#12141d;padding:10px 0 4px;z-index:2">'
     +(owned
