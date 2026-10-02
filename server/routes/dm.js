@@ -61,9 +61,13 @@ const EDIT_MS = 15 * 60 * 1000;
 
 async function threadFor(req, id) {
   const { rows: [t] } = await pool.query(
-    'SELECT * FROM dm_threads WHERE id=$1 AND (user_a=$2 OR user_b=$2)', [parseInt(id, 10) || 0, me(req)]);
+    `SELECT * FROM dm_threads t WHERE id=$1 AND (user_a=$2 OR user_b=$2 OR (user_a='grp' AND ${groups.MEMBER_SQL}))`, [parseInt(id, 10) || 0, me(req)]);
   return t || null;
 }
+
+// Task 154 Chats 4: groups (dm-groups.js).
+const groups = require('./dm-groups');
+groups.mount(router, { me });
 
 // Task 11 step 2: voice & video calls (WebRTC signalling).
 require('./dm-calls').mount(router, { me, threadFor, displayName });
@@ -88,12 +92,14 @@ router.get('/threads', async (req, res) => {
     // Anything I fetch in my list has reached my device: mark delivered.
     pool.query(`UPDATE dm_messages SET delivered_at=NOW() WHERE delivered_at IS NULL AND sender_id<>$1
                 AND thread_id IN (SELECT id FROM dm_threads WHERE user_a=$1 OR user_b=$1)`, [uid]).catch(() => {});
-    res.json({ threads: rows.map((r) => ({
+    let grp = [];
+    try { grp = await groups.listFor(uid); } catch (e) { console.error('[dm] groups list', e.message); }
+    res.json({ threads: grp.concat(rows.filter((r) => r.other_id && !/^grp/.test(String(r.other_id))).map((r) => ({
       id: r.id, otherId: r.other_id, name: displayName(r), ...presence(r.last_seen),
       lastMessage: r.last_deleted ? 'This message was deleted' : (r.last_body || ''),
       lastFromMe: r.last_sender === uid, lastRead: !!r.last_read,
       lastMessageAt: r.last_message_at, unread: r.unread,
-    })) });
+    }))).sort((x, y) => new Date(y.lastMessageAt) - new Date(x.lastMessageAt)) });
   } catch (e) { console.error('[dm] threads', e.message); res.status(500).json({ error: 'Could not load chats' }); }
 });
 
@@ -118,6 +124,11 @@ router.get('/threads/:id/messages', async (req, res) => {
     const t = await threadFor(req, req.params.id);
     if (!t) return res.status(404).json({ error: 'Chat not found' });
     const after = parseInt(req.query.after, 10) || 0;
+    if (t.user_a === 'grp') {
+      const g = await groups.groupForThread(t.id);
+      if (!g) return res.status(404).json({ error: 'Chat not found' });
+      return res.json(await groups.messagesFor(t, g, uid, after, displayName, extras));
+    }
     const otherId = t.user_a === uid ? t.user_b : t.user_a;
     await pool.query(
       `UPDATE dm_messages SET read_at=NOW(), delivered_at=COALESCE(delivered_at, NOW())
@@ -164,7 +175,7 @@ router.post('/threads/:id/messages', async (req, res) => {
     await pool.query('UPDATE dm_threads SET last_message_at=NOW() WHERE id=$1', [t.id]);
     typing.delete(`${t.id}:${uid}`);
     res.status(201).json({ id: Number(m.id), at: m.created_at });
-    autoReply(t.id, t.user_a === uid ? t.user_b : t.user_a).catch((e) => console.error('[dm] auto-reply', e.message));
+    if (t.user_a !== 'grp') autoReply(t.id, t.user_a === uid ? t.user_b : t.user_a).catch((e) => console.error('[dm] auto-reply', e.message));
   } catch (e) { console.error('[dm] send', e.message); res.status(500).json({ error: 'Could not send' }); }
 });
 
@@ -301,7 +312,7 @@ router.post('/messages/:id/react', async (req, res) => {
     const r = await pool.query(
       `UPDATE dm_messages m SET reactions = CASE WHEN $3 = '' THEN m.reactions - $2::text
                                                ELSE m.reactions || jsonb_build_object($2::text, $3::text) END
-       FROM dm_threads t WHERE m.id=$1 AND t.id=m.thread_id AND (t.user_a=$2 OR t.user_b=$2) AND m.deleted_at IS NULL
+       FROM dm_threads t WHERE m.id=$1 AND t.id=m.thread_id AND (t.user_a=$2 OR t.user_b=$2 OR (t.user_a='grp' AND ${groups.MEMBER_SQL})) AND m.deleted_at IS NULL
        RETURNING m.reactions`, [parseInt(req.params.id, 10) || 0, uid, emoji]);
     if (!r.rowCount) return res.status(404).json({ error: 'Message not found' });
     res.json(extras(r.rows[0], uid));

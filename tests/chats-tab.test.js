@@ -109,5 +109,5 @@ test('Chats: contact info has Wallpaper + Export chat; menu has Greeting & away'
   assert.match(html, /data-i="wall"/);
   assert.match(html, /data-i="export"/);
   assert.match(html, /data-a="biz">💼 Greeting & away messages/);
-  assert.match(html, /S\.open=id;applyWall\(\);/);
+  assert.match(html, /S\.open=id;[^\n]*applyWall\(\);/);
 });
