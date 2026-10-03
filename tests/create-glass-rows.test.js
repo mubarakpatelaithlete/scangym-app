@@ -31,3 +31,11 @@ test('every setting is a horizontal row of pills with all options visible', () =
   assert.doesNotMatch(js, /var setChip = el\('div', 'sv-mchip', '⚙ Settings ›'\)/, 'no separate Settings screen button');
   assert.match(js, /\.sv-opts \.sv-opt\.on\{background:rgba\(255,109,0,\.78\)/);
 });
+
+test('Create page: glass chips/tiles/rail and tiles in horizontal swipe rows', () => {
+  const cs = fs.readFileSync(path.join(__dirname, '..', 'frontend/public/create-studio.js'), 'utf8');
+  assert.match(cs, /'\.cs-chip\.on\{background:rgba\(255,109,0,\.78\)/);
+  assert.match(cs, /'\.cs-grid\{grid-template-columns:none !important;grid-auto-flow:column;/);
+  assert.match(cs, /'\.cs-tile\{scroll-snap-align:start;background:rgba\(255,255,255,\.05\)/);
+  assert.match(cs, /body:has\(#' \+ ID \+ '\) #sg-sv-rail\.sv-float\{z-index:8996 !important;background:rgba\(10,12,20,\.42\)/);
+});

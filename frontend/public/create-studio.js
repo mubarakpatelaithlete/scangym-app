@@ -91,6 +91,20 @@
     '.cs-empty{font-size:12.5px;color:#94a3b8;padding:14px 6px;line-height:1.5;}',
     '.cs-spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.2);border-top-color:#93c5fd;border-radius:50%;animation:csspin .7s linear infinite;vertical-align:-2px;margin-right:5px;}',
     '@keyframes csspin{to{transform:rotate(360deg)}}',
+    /* Owner 2026-10-03 (Tango screenshots): every button on Create is
+       see-through and sits in a horizontal row. The page now runs under the
+       Image/Video/Audio row, which becomes a glass bar the tiles scroll behind;
+       filter chips, tiles and close are glass; tiles are horizontal swipe rows. */
+    '#' + ID + '{bottom:var(--sg-tab-height,56px) !important;padding-bottom:calc(var(--sg-band-height,56px) + 16px) !important;}',
+    'body:has(#' + ID + ') #sg-sv-rail.sv-float{z-index:8996 !important;background:rgba(10,12,20,.42) !important;-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);border-top:1px solid rgba(255,255,255,.12);}',
+    '.cs-sticky{background:rgba(7,11,20,.72) !important;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);}',
+    '.cs-chip{background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,255,255,.18) !important;color:#f1f3f6 !important;}',
+    '.cs-chip.on{background:rgba(255,109,0,.78) !important;border-color:rgba(255,170,100,.9) !important;color:#fff !important;}',
+    '.cs-close{background:rgba(255,255,255,.07) !important;border-color:rgba(255,255,255,.18) !important;}',
+    '.cs-grid{grid-template-columns:none !important;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:46%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity;padding-bottom:4px;}',
+    '.cs-grid::-webkit-scrollbar{display:none;}',
+    '.cs-tile{scroll-snap-align:start;background:rgba(255,255,255,.05) !important;border:1px solid rgba(255,255,255,.14) !important;}',
+    '.cs-row:active{background:rgba(255,255,255,.07) !important;}',
   ].join('');
 
   function el(tag, cls, html) {
