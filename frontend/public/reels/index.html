@@ -1168,22 +1168,50 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         else st.fresh = false;
         return st;
       }
+      /* A photo story: full screen for 5 seconds (tap to close), like Instagram. */
+      function sgShowPhotoStory(x){
+        var o = document.createElement('div');
+        o.id = 'sg-photo-story';
+        o.style.cssText = 'position:fixed;inset:0;z-index:var(--sg-z-overlay,10000);background:#000;display:flex;align-items:center;justify-content:center;cursor:pointer';
+        o.innerHTML = '<div style="position:absolute;top:calc(env(safe-area-inset-top) + 8px);left:10px;right:10px;height:3px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden"><div id="sg-ps-bar" style="height:100%;width:0;background:#fff;transition:width 5s linear"></div></div>'
+          + '<div style="position:absolute;top:calc(env(safe-area-inset-top) + 20px);left:14px;color:#fff;font-weight:800;font-size:14px;text-shadow:0 1px 3px rgba(0,0,0,.6)">' + sgEscH(x.by) + '</div>'
+          + '<img src="' + sgEscH(x.url) + '" alt="" style="max-width:100%;max-height:100%;object-fit:contain">'
+          + '<div style="position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 24px);color:#fff;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.7)">' + sgEscH(String(x.name || '').split(' \u00b7 by ')[0]) + '</div>';
+        var done = function(){ clearTimeout(t); o.remove(); };
+        o.addEventListener('click', done);
+        document.body.appendChild(o);
+        requestAnimationFrame(function(){ var b = o.querySelector('#sg-ps-bar'); if(b) b.style.width = '100%'; });
+        var t = setTimeout(done, 5000);
+      }
       function openStories(){
         if(typeof window.sgOpenSheet !== 'function') return;
         var st = sgStreak();
         fetch('/api/reels/stories').then(function(r){ return r.json(); }).then(function(d){
           var l = d.stories || [];
           var html = '<p style="margin:0 0 10px;font-size:14px;font-weight:800">\uD83D\uDD25 ' + st.n + '-day streak <span style="font-weight:500;color:rgba(255,255,255,.6)">\u00b7 come back tomorrow to keep it</span></p>'
-            + (l.length ? '<div style="display:flex;gap:12px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none">' + l.map(function(x, i){
+            /* Instagram core (2026-10-03): "Your story" first — share a photo or video from your life. */
+            + '<div style="display:flex;gap:12px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none">'
+            + '<button type="button" id="sg-story-add" style="flex:none;width:68px;border:0;background:none;color:#fff;padding:0;cursor:pointer;text-align:center">'
+            + '<span style="display:flex;align-items:center;justify-content:center;width:62px;height:62px;margin:0 auto 4px;border-radius:50%;border:2px dashed rgba(255,255,255,.55);box-sizing:border-box;font-size:28px;font-weight:300">+</span>'
+            + '<span style="display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Your story</span></button>'
+            + (l.length ? l.map(function(x, i){
               return '<button type="button" class="sg-story" data-i="' + i + '" style="flex:none;width:68px;border:0;background:none;color:#fff;padding:0;cursor:pointer;text-align:center">'
                 + '<span style="display:block;width:62px;height:62px;margin:0 auto 4px;border-radius:50%;padding:3px;background:linear-gradient(45deg,#FF6D00,#ff2e7e,#8b5cf6)">'
                 + (x.thumb ? '<img src="' + sgEscH(x.thumb) + '" alt="" loading="lazy" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #0b0f1a;box-sizing:border-box">'
                   : '<span style="display:flex;width:100%;height:100%;border-radius:50%;border:2px solid #0b0f1a;box-sizing:border-box;background:#1f2937;align-items:center;justify-content:center;font-weight:900;font-size:22px">' + sgEscH(String(x.by).charAt(0).toUpperCase()) + '</span>')
                 + '</span><small style="display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + sgEscH(x.by) + '</small></button>';
-            }).join('') + '</div>' : '<p style="color:rgba(255,255,255,.6);font-size:13px">No stories yet \u2014 tap \uD83D\uDE80 Post under a creation to add yours.</p>');
+            }).join('') : '') + '</div>'
+            + (l.length ? '' : '<p style="color:rgba(255,255,255,.6);font-size:13px">No stories yet \u2014 tap + to add yours.</p>');
           var sh = window.sgOpenSheet(html, { title: 'Stories', sub: l.length + ' new', icon: '\u2B55' });
+          var add = sh.body.querySelector('#sg-story-add');
+          if(add) add.addEventListener('click', function(){
+            sh.close();
+            if(window.sgHomePost) window.sgHomePost.open();
+            else showToast('Posting is still loading \u2014 try again in a second');
+          });
           Array.prototype.forEach.call(sh.body.querySelectorAll('.sg-story'), function(b){ b.addEventListener('click', function(){
             var x = l[+b.dataset.i]; sh.close();
+            if(x.photo && x.url){ sgShowPhotoStory(x); return; }
             for(var k = 0; k < allVideos.length; k++){ if(String(allVideos[k].id) === String(x.id)){ snapTo(k, true); return; } }
             location.href = '/reels?v=' + encodeURIComponent(x.id);
           }); });
@@ -4604,7 +4632,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
     })();
     </script>
   <script src="/sg-tabbar.js?v=1.3" defer></script>
-  <script src="/sg-home-post.js?v=1.2" defer></script>
+  <script src="/sg-home-post.js?v=1.3" defer></script>
   <link rel="stylesheet" href="/sg-glass.css?v=1.4">
   <link rel="stylesheet" href="/sg-fast.css?v=1.0">
 

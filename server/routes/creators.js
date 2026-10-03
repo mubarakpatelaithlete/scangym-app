@@ -468,10 +468,43 @@ const upload = multer({
   storage: uploadStorage,
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('video/')) cb(null, true);
-    else cb(new Error('Only video files are allowed'));
+    /* Instagram core (owner, 2026-10-03): share your own life = photos too. */
+    if (file.mimetype.startsWith('video/') || file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only photos and videos are allowed'));
   }
 });
+
+/**
+ * Instagram core (owner, 2026-10-03, "kill Instagram"): your own photo or
+ * video goes live at once, like an Instagram post or story.
+ * Railway has no volume, so a file left in UPLOAD_DIR vanishes on the next
+ * deploy and the old review queue never reached the feed. With R2 configured
+ * the file goes to cdn.scangym.com and becomes a live video_catalog row
+ * (source 'creation', so Stories and Following pick it up). Photos get
+ * orientation 'photo': Stories show them, the video feed skips them.
+ * Returns null when R2 is not configured (caller keeps the old path).
+ */
+async function publishOwnUpload(user, file, caption) {
+  const { r2Configured, uploadToR2 } = require('../lib/r2-upload');
+  if (!r2Configured()) return null;
+  const isPhoto = String(file.mimetype || '').startsWith('image/');
+  const safe = String(file.originalname || 'post').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+  const key = `uploads/${String(user.id).replace(/[^a-zA-Z0-9_-]/g, '')}/${Date.now()}_${safe}`;
+  const up = await uploadToR2(file.path, key, { contentType: file.mimetype });
+  /* Same "Rahul J." form as one-tap Post (post-everywhere displayName), so
+     Stories, Following and follows see one name per person. */
+  const parts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+  const by = parts.length ? [parts[0], parts[1] ? parts[parts.length - 1][0] + '.' : ''].filter(Boolean).join(' ')
+    : (user.email ? String(user.email).split('@')[0] : 'ScanGym creator');
+  const title = String(caption || '').trim().split('\n')[0].slice(0, 90) || (isPhoto ? 'New photo' : 'New post');
+  const { rows: [row] } = await pool.query(
+    `INSERT INTO video_catalog (name, category, source, url, thumb, cdn_key, orientation, file_size, dopamine_tier, active)
+     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, $4, $5, $6, 3, true) RETURNING id`,
+    [title + ' \u00b7 by ' + by, up.url, isPhoto ? up.url : null, 'upload:' + key, isPhoto ? 'photo' : 'vertical', up.size]);
+  try { require('fs').unlinkSync(file.path); } catch (e) { /* temp file */ }
+  try { require('./reels').invalidateFeedCache(); } catch (e) { /* cache expires in 60s anyway */ }
+  return { id: row.id, url: up.url, isPhoto };
+}
 
 router.post('/upload', authenticateUser, upload.single('video'), async (req, res) => {
   try {
@@ -479,7 +512,22 @@ router.post('/upload', authenticateUser, upload.single('video'), async (req, res
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({ error: 'No video file provided' });
+      return res.status(400).json({ error: 'No photo or video provided' });
+    }
+
+    try {
+      const live = await publishOwnUpload(req.user, file, caption);
+      if (live) {
+        return res.json({
+          success: true, live: true, id: live.id, url: live.url,
+          message: live.isPhoto ? 'Posted! Your photo is in Stories now.' : 'Posted! Your video is live in Stories and the feed.',
+        });
+      }
+    } catch (e) {
+      console.error('[creators/upload] live publish failed, falling back to review:', e.message);
+    }
+    if (String(file.mimetype || '').startsWith('image/')) {
+      return res.status(503).json({ error: 'Photo posts need storage that is not set up yet. Try a video.' });
     }
 
     // Store upload metadata in DB (table created at startup)
@@ -751,3 +799,4 @@ router.get('/landing-pages', authenticateUser, async (req, res) => {
 });
 
 module.exports = router;
+module.exports._publishOwnUpload = publishOwnUpload;

@@ -153,7 +153,7 @@ async function loadCatalogFromDB() {
             file_size, blurhash, orientation, width, height, dopamine_tier, duration,
             has_faststart, variants_ready, prompt, shop_product_id
      FROM video_catalog
-     WHERE active = true
+     WHERE active = true AND COALESCE(orientation, '') <> 'photo'
      ORDER BY id ASC`
   );
   return result.rows.map(row => ({
@@ -675,21 +675,40 @@ router.get('/categories', async (req, res) => {
  */
 /* Task 104 step 1 (Instagram / Snapchat / Facebook): Stories — the newest
    creator posts (one-tap Post from Create, Task 110) as a circle row. */
-router.get('/stories', async (req, res) => {
+router.get('/stories', optionalAuth, async (req, res) => {
   try {
+    /* Instagram core (2026-10-03): real Stories = the last 24 hours of
+       people's own posts (photos and videos), people you follow first. */
     let { rows } = await pool.query(
-      `SELECT id, name, url, thumb, created_at FROM video_catalog
-        WHERE active = true AND source = 'creation' ORDER BY created_at DESC LIMIT 20`);
+      `SELECT id, name, url, thumb, orientation, created_at FROM video_catalog
+        WHERE active = true AND source = 'creation' AND created_at > NOW() - INTERVAL '24 hours'
+        ORDER BY created_at DESC LIMIT 40`);
+    if (req.user) {
+      try {
+        const f = await pool.query('SELECT creator FROM reel_follows WHERE user_id = $1 LIMIT 500', [String(req.user.id)]);
+        const set = new Set(f.rows.map((r) => String(r.creator)));
+        const byOf = (r) => (String(r.name || '').split(' \u00b7 by ')[1] || '').trim().toLowerCase();
+        rows = rows.filter((r) => set.has(byOf(r))).concat(rows.filter((r) => !set.has(byOf(r))));
+      } catch (e) { /* follows are a sort hint only */ }
+    }
+    if (rows.length < 6) {
+      const more = await pool.query(
+        `SELECT id, name, url, thumb, orientation, created_at FROM video_catalog
+          WHERE active = true AND source = 'creation' ORDER BY created_at DESC LIMIT 20`);
+      rows = rows.concat(more.rows.filter((m) => !rows.some((r) => r.id === m.id)));
+    }
     if (rows.length < 6) {
       const more = await pool.query(
         `SELECT id, name, url, thumb, created_at FROM video_catalog
-          WHERE active = true AND category NOT LIKE 'Tab: %' AND url IS NOT NULL ORDER BY created_at DESC LIMIT $1`, [20 - rows.length]);
+          WHERE active = true AND category NOT LIKE 'Tab: %' AND url IS NOT NULL ORDER BY created_at DESC LIMIT $1`, [Math.max(1, 20 - rows.length)]);
       rows = rows.concat(more.rows.filter((m) => !rows.some((r) => r.id === m.id)));
     }
-    res.set('Cache-Control', 'public, max-age=60');
+    res.set('Cache-Control', req.user ? 'private, max-age=30' : 'public, max-age=60');
     res.json({ stories: rows.map((r) => {
       const by = String(r.name || '').split(' \u00b7 by ')[1] || '';
-      return { id: r.id, name: r.name, by: by || 'ScanGym', thumb: r.thumb || null, at: r.created_at };
+      const photo = r.orientation === 'photo';
+      return { id: r.id, name: r.name, by: by || 'ScanGym', thumb: r.thumb || null, at: r.created_at,
+        photo, url: photo ? r.url : null };
     }) });
   } catch (e) {
     console.error('[reels] stories', e.message);
