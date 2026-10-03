@@ -728,6 +728,24 @@ html body #sg-reel-row-host .reel-actions.reel-actions .sg-creator .sg-plus{ wid
 html body .reel-info{ right:12px !important; }
 html body .reel-info .reel-title{ white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
 </style>
+<style id="sg-home-tabs-row">
+/* Owner 2026-10-03: every Home top button (Stories, Pulse, Ideas, For You,
+   Following, Near me, Trending, #topics, Live, categories) moves to the
+   bottom as ONE see-through horizontal row, just above the action row. */
+html body #reels-top-bar{background:none !important;}
+html body #reels-cat-rail{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 195px) !important;
+  z-index:26;gap:6px !important;padding:5px 6px !important;border-radius:999px !important;
+  background:rgba(20,20,26,.20) !important;border:1px solid rgba(255,255,255,.16) !important;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  -webkit-mask-image:none !important;mask-image:none !important;}
+html body #reels-cat-rail .reels-cat{padding:7px 12px !important;border-radius:999px !important;
+  background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,255,255,.16) !important;
+  color:#fff !important;font-size:13px !important;line-height:1 !important;}
+html body #reels-cat-rail .reels-cat[aria-selected="true"]{background:rgba(255,109,0,.78) !important;border-color:rgba(255,170,100,.9) !important;}
+html body #reels-cat-rail .reels-cat[aria-selected="true"]::after{display:none !important;}
+html body #reels-search-button{margin-left:auto !important;}
+</style>
 </head>
   <body>
     <!-- Shimmer skeleton loading -->
