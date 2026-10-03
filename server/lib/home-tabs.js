@@ -28,12 +28,13 @@ const TABS = [
   { key: 'following', label: 'Following' },
   { key: 'nearme', label: 'Near me' },
   { key: 'trending', label: 'Trending' },
-  { key: 'drama', label: 'Drama', queries: ['short drama series episode', 'mini drama shorts'] },
-  { key: 'movie', label: 'Movie', queries: ['official trailer', 'new movie trailer 2026'] },
-  { key: 'podcast', label: 'Podcast', queries: ['podcast clips shorts', 'fitness podcast clip'] },
+  // Owner 2026-10-03: #drama #movie #podcast were off-topic for a gym app.
+  { key: 'workout', label: 'Workout', queries: ['gym workout shorts', 'home workout routine shorts'] },
+  { key: 'nutrition', label: 'Nutrition', queries: ['high protein meal prep shorts', 'healthy recipe for gym shorts'] },
+  { key: 'motivation', label: 'Motivation', queries: ['gym motivation shorts', 'fitness podcast clip'] },
   // Live: three broad searches, worldwide — one word in one region found no
   // streams on the first live run (2026-10-02).
-  { key: 'live', label: 'Live', queries: ['live stream', 'live workout', 'live music'], live: true, worldwide: true },
+  { key: 'live', label: 'Live', queries: ['live workout', 'live gym', 'live fitness class'], live: true, worldwide: true },
 ];
 const TAB_BY_KEY = Object.fromEntries(TABS.map((t) => [t.key, t]));
 

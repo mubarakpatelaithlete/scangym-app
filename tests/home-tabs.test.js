@@ -1,5 +1,5 @@
 // Task 105 (owner, 2026-10-02): Home top tabs — For You, Following, Near me,
-// Trending, #drama, #movie, #podcast, Live — each a working feed.
+// Trending, #workout, #nutrition, #motivation, Live (fitness only, 2026-10-03) — each a working feed.
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
@@ -9,7 +9,7 @@ const tabs = require('../server/lib/home-tabs');
 
 test('all eight tabs exist in order', () => {
   assert.deepStrictEqual(tabs.TABS.map((t) => t.key),
-    ['foryou', 'following', 'nearme', 'trending', 'drama', 'movie', 'podcast', 'live']);
+    ['foryou', 'following', 'nearme', 'trending', 'workout', 'nutrition', 'motivation', 'live']);
 });
 
 test('Live searches streams on air; the others are Shorts only', () => {
@@ -49,6 +49,6 @@ test('tab videos never leak into For You, and the Home rail offers the tabs', ()
   assert.match(read('server/routes/reels.js'), /category NOT LIKE 'Tab: %'/);
   assert.match(read('server/routes/reels.js'), /router\.get\('\/tab\/:tab', optionalAuth/);
   const html = read('frontend/public/reels/index.html');
-  for (const k of ['following', 'nearme', 'trending', 'drama', 'movie', 'podcast', 'live']) assert.ok(html.includes("['" + k + "'"), k);
+  for (const k of ['following', 'nearme', 'trending', 'workout', 'nutrition', 'motivation', 'live']) assert.ok(html.includes("['" + k + "'"), k);
   assert.match(html, /'\/api\/reels\/tab\/' \+ key/);
 });

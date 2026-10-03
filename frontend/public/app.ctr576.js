@@ -379,14 +379,7 @@ function initDynamicPricing(){
   const hour=new Date().getHours();
   const min=new Date().getMinutes();
   
-  let label='';
-  if(hour<6){label='🟢 Off-peak · Late night';}
-  else if(hour<10){label='🟢 Off-peak · Early bird';}
-  else if(hour<12){label='🟡 Standard · Morning';}
-  else if(hour<16){label='🟢 Midday quiet';}
-  else if(hour<18){label='🟡 Standard · Afternoon';}
-  else if(hour<20){label='🔴 Rush hour · Peak demand';}
-  else{label='🟢 Off-peak · Evening';}
+  const label='🟢 Same price all day · '+String(hour).padStart(2,'0')+':'+String(min).padStart(2,'0');
   
   const dayPrice=sgPrice('day');
   const liveEl=document.getElementById('pricing-live-price');
@@ -16495,28 +16488,11 @@ function _renderInner(){
     </div>
   </div>
   
-  <!-- Surge indicator bar -->
-  <div class="relative mb-2">
-    <div class="flex justify-between text-xs text-slate-500 mb-1">
-      <span>6am</span><span>10am</span><span>2pm</span><span>6pm</span><span>10pm</span>
-    </div>
-    <div class="h-8 rounded-full overflow-hidden flex">
-      <div class="bg-emerald-500/80 flex-[4]" title="Off-peak"></div>
-      <div class="bg-yellow-500/80 flex-[2]" title="Standard"></div>
-      <div class="bg-emerald-500/60 flex-[4]" title="Off-peak"></div>
-      <div class="bg-orange-500/80 flex-[2]" title="Peak"></div>
-      <div class="bg-red-500/70 flex-[2]" title="Rush hour"></div>
-      <div class="bg-orange-500/60 flex-[2]" title="Peak"></div>
-    </div>
-    <!-- Current time marker -->
-    <div id="pricing-time-marker" class="absolute top-5 w-0.5 h-10 bg-white shadow-lg shadow-white/50 transition-all" style="left:50%">
-      <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-lg"></div>
-    </div>
-  </div>
-  <div class="flex justify-between text-xs mt-1">
-    <span class="text-emerald-400">🟢 Off-peak</span>
-    <span class="text-yellow-400">🟡 Standard</span>
-    <span class="text-red-400">🔴 Rush hour</span>
+  <!-- Owner 2026-10-03: the page said "never surge" but drew an off-peak/rush-hour bar.
+       One flat bar now: same price all day. -->
+  <div class="h-3 rounded-full bg-emerald-500/70"></div>
+  <div class="flex justify-between text-xs text-slate-500 mt-2">
+    <span>6am</span><span class="text-emerald-400">🟢 Same price all day</span><span>10pm</span>
   </div>
 </div>
 

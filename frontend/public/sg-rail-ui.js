@@ -56,11 +56,13 @@ var uspStrip=(function(){
 function injectStyle(id,css){if(document.getElementById(id))return;var s=document.createElement('style');s.id=id;s.textContent=css;document.head.appendChild(s);}
 
 function initUspStrip(){
-  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);padding:6px 12px 6px 52px;display:flex;align-items:center;gap:8px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.7);font-weight:600}'
+  injectStyle('sg-sps-s','#sg-sps{position:relative;z-index:100;background:rgba(255,109,0,.08);border-bottom:1px solid rgba(255,109,0,.15);min-height:56px;box-sizing:border-box;padding:6px 12px 6px 52px;display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;overflow:hidden;color:rgba(255,255,255,.7);font-weight:600}'
     /* Profile (/more): full-screen header sits at top:12px; the strip (z-index 100) covered the name + tier badge on mobile */
     +'body[data-route^="/more"] #sg-sps{display:none!important}'
-    +'body[data-route^="/chats"] #sg-sps{display:none!important}');
-  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;/* Task 154: gym-booking promises do not belong on Shop/Create/Chats/Profile */if(/^\/(shop|creator|create|scansquad|chats|profile|more)/.test(location.pathname))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='\u{1F525} <span id="sg-lvt">No membership needed</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
+    +'body[data-route^="/chats"] #sg-sps{display:none!important}'
+    /* Owner 2026-10-03: the floating Gyms button covered the form on Login/Pricing */
+    +'body[data-route^="/login"] #sg-continue-banner,body[data-route^="/signup"] #sg-continue-banner,body[data-route^="/register"] #sg-continue-banner,body[data-route^="/pricing"] #sg-continue-banner{display:none!important}');
+  setTimeout(function(){var bc=document.querySelector('.sg-tab-content');if(!bc||document.getElementById('sg-sps'))return;/* Task 154: gym-booking promises do not belong on Shop/Create/Chats/Profile */if(/^\/(shop|creator|create|scansquad|chats|profile|more)/.test(location.pathname))return;var s=document.createElement('div');s.id='sg-sps';s.innerHTML='<span id="sg-lvt">No membership</span> \u00b7 \u26A1 Instant QR \u00b7 \u2705 Free cancel';bc.insertBefore(s,bc.firstChild);},3000);
 }
 
 var _done=false;
