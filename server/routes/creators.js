@@ -484,7 +484,7 @@ const upload = multer({
  * orientation 'photo': Stories show them, the video feed skips them.
  * Returns null when R2 is not configured (caller keeps the old path).
  */
-async function publishOwnUpload(user, file, caption) {
+async function publishOwnUpload(user, file, caption, gymId) {
   const { r2Configured, uploadToR2 } = require('../lib/r2-upload');
   if (!r2Configured()) return null;
   const isPhoto = String(file.mimetype || '').startsWith('image/');
@@ -498,9 +498,11 @@ async function publishOwnUpload(user, file, caption) {
     : (user.email ? String(user.email).split('@')[0] : 'ScanGym creator');
   const title = String(caption || '').trim().split('\n')[0].slice(0, 90) || (isPhoto ? 'New photo' : 'New post');
   const { rows: [row] } = await pool.query(
-    `INSERT INTO video_catalog (name, category, source, url, thumb, cdn_key, orientation, file_size, dopamine_tier, active)
-     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, $4, $5, $6, 3, true) RETURNING id`,
-    [title + ' \u00b7 by ' + by, up.url, isPhoto ? up.url : null, 'upload:' + key, isPhoto ? 'photo' : 'vertical', up.size]);
+    `INSERT INTO video_catalog (name, category, source, url, thumb, cdn_key, orientation, file_size, dopamine_tier, active, gym_id)
+     VALUES ($1, 'ScanGym creators', 'creation', $2, $3, $4, $5, $6, 3, true, $7) RETURNING id`,
+    [title + ' \u00b7 by ' + by, up.url, isPhoto ? up.url : null, 'upload:' + key, isPhoto ? 'photo' : 'vertical', up.size,
+     /* Item 4: the gym the post was filmed at (optional) → "Book <gym>" on the reel. */
+     parseInt(gymId, 10) > 0 ? parseInt(gymId, 10) : null]);
   try { require('fs').unlinkSync(file.path); } catch (e) { /* temp file */ }
   try { require('./reels').invalidateFeedCache(); } catch (e) { /* cache expires in 60s anyway */ }
   return { id: row.id, url: up.url, isPhoto };
@@ -516,7 +518,7 @@ router.post('/upload', authenticateUser, upload.single('video'), async (req, res
     }
 
     try {
-      const live = await publishOwnUpload(req.user, file, caption);
+      const live = await publishOwnUpload(req.user, file, caption, req.body.gym_id);
       if (live) {
         return res.json({
           success: true, live: true, id: live.id, url: live.url,
