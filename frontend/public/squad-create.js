@@ -376,6 +376,22 @@
     '#' + SHEET_ID + ' .sv-gen:active{transform:scale(.98);}',
     '#' + SHEET_ID + ' .sv-gen:disabled{background:rgba(255,255,255,.08) !important;color:rgba(255,255,255,.55);box-shadow:none !important;}',
     '.sv-note{font-size:11.5px !important;color:#8b93a1 !important;line-height:1.45;text-align:center;}',
+    /* Owner 2026-10-03 (Tango screenshots): the Create sheet is see-through
+       and every group of buttons is ONE horizontal row you swipe sideways,
+       never wrapped onto 2-3 lines or stacked in a grid. */
+    '#sg-sv-overlay{background:rgba(0,0,0,.22) !important;}',
+    '#sg-sv-sheet{background:rgba(10,12,20,.78) !important;-webkit-backdrop-filter:blur(20px) saturate(140%);backdrop-filter:blur(20px) saturate(140%);border-top:1px solid rgba(255,255,255,.14);box-shadow:0 -8px 30px rgba(0,0,0,.3) !important;}',
+    '#sg-sv-sheet .sv-next{display:flex !important;grid-template-columns:none !important;}',
+    '#sg-sv-sheet .sv-row,#sg-sv-sheet .sv-next,#sg-sv-sheet .sv-ptools,#sg-sv-sheet .sv-ptools-more,#sg-sv-sheet .sv-chips,#sg-sv-sheet [style*="flex-wrap:wrap"],#sg-sv-sheet [style*="flex-wrap: wrap"]{flex-wrap:nowrap !important;overflow-x:auto !important;overflow-y:hidden !important;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:8px;}',
+    '#sg-sv-sheet .sv-row::-webkit-scrollbar,#sg-sv-sheet .sv-next::-webkit-scrollbar,#sg-sv-sheet [style*="flex-wrap"]::-webkit-scrollbar{display:none;}',
+    '#sg-sv-sheet .sv-row>button,#sg-sv-sheet .sv-row>a,#sg-sv-sheet .sv-row>label,#sg-sv-sheet .sv-row>.sv-mchip,#sg-sv-sheet .sv-row>.sv-chip,#sg-sv-sheet .sv-row>.sv-val,#sg-sv-sheet .sv-next>*,#sg-sv-sheet [style*="flex-wrap"]>button,#sg-sv-sheet [style*="flex-wrap"]>a,#sg-sv-sheet [style*="flex-wrap"]>label,#sg-sv-sheet [style*="flex-wrap"]>div{flex:0 0 auto !important;white-space:nowrap !important;}',
+    '#sg-sv-sheet .sv-next .sv-mchip{min-width:0 !important;overflow:visible !important;text-overflow:clip !important;padding:9px 14px !important;font-size:13px !important;}',
+    '#sg-sv-sheet button:not(.sv-gen):not(.sv-x):not(.sv-post-main),#sg-sv-sheet .sv-val,#sg-sv-sheet .sv-back{background:rgba(255,255,255,.07) !important;border-color:rgba(255,255,255,.18) !important;}',
+    '#sg-sv-sheet .sv-prompt,#sg-sv-sheet input,#sg-sv-sheet select,#sg-sv-sheet textarea{background:rgba(255,255,255,.06) !important;border-color:rgba(255,255,255,.16) !important;}',
+    '#sg-sv-sheet .sv-choice{margin-top:10px;}',
+    '#sg-sv-sheet .sv-choice-l{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#9aa3b2;margin:0 0 5px 2px;}',
+    '#sg-sv-sheet .sv-opts{margin-top:0 !important;}',
+    '#sg-sv-sheet .sv-opts .sv-opt.on{background:rgba(255,109,0,.78) !important;border-color:rgba(255,170,100,.9) !important;color:#fff !important;}',
   ].join('');
 
   /* Task 165/owner 2026-10-02 ("ugly Create", YouTube/Higgsfield screenshots):
@@ -941,28 +957,43 @@
     var summary = el('div', 'sv-mchip');
     summary.id = 'sv-summary';
     summary.style.cssText = 'background:transparent;border:none;color:#b6c2d6;padding-left:0;cursor:default;';
-    if (inline) {
-      /* Task 23: Higgsfield/CapCut show aspect ratio and style as pills right
-         under the prompt, one tap each. A separate Settings screen for two
-         values was an extra screen and a Done tap for nothing. */
-      row.style.flexWrap = 'wrap';
-      (mode.settings || []).forEach(function (st) {
-        var p = el('div', 'sv-mchip sv-pill');
-        p.setAttribute('role', 'button');
-        p.setAttribute('aria-label', st.label);
-        p.__paint = function () { p.textContent = shown(mode, st) + ' ▾'; p.title = st.label; };
-        p.__paint();
-        p.addEventListener('click', function () { cycle(mode, st); p.__paint(); repaintSettings(sh, mode); });
-        row.appendChild(p);
-      });
-      summary.style.display = 'none';
-    } else {
-      var setChip = el('div', 'sv-mchip', '⚙ Settings ›');
-      setChip.addEventListener('click', function () { enterSettings(sh, mode); });
-      row.appendChild(setChip);
-    }
+    /* Owner 2026-10-03 (Tango screenshots): no "Settings ›" screen and no
+       tap-to-cycle "▾" pills. Every setting (aspect ratio, duration,
+       resolution, audio, style, voice…) is its own horizontal row of
+       see-through pills with every option visible: one tap picks it.
+       #sv-settings below stays (hidden) as the canonical value rows. */
+    void inline;
+    summary.style.display = 'none';
     row.appendChild(summary);
     sh.appendChild(row);
+    var choices = el('div', 'sv-choices');
+    choices.id = 'sv-choices';
+    (mode.settings || []).forEach(function (st) {
+      var line = el('div', 'sv-choice');
+      line.appendChild(el('span', 'sv-choice-l', st.label));
+      var opts = el('div', 'sv-row sv-opts');
+      st.values.forEach(function (v) {
+        var o = el('div', 'sv-mchip sv-opt', st.fmt ? st.fmt(v) : String(v));
+        o.setAttribute('role', 'button');
+        o.__k = st.key; o.__v = v;
+        o.addEventListener('click', function () {
+          state[mode.key][st.key] = v;
+          repaintSettings(sh, mode);
+          refreshSummary(sh, mode);
+          if (mode.key === 'audio' && st.key === 'voice') stopPreview();
+        });
+        opts.appendChild(o);
+      });
+      if (mode.key === 'audio' && st.key === 'voice') {
+        var hear = el('div', 'sv-mchip', '\u25b6 Hear it');
+        hear.setAttribute('role', 'button');
+        hear.addEventListener('click', function () { playVoicePreview(hear, state.audio.voice); });
+        opts.appendChild(hear);
+      }
+      line.appendChild(opts);
+      choices.appendChild(line);
+    });
+    sh.appendChild(choices);
 
     var settings = el('div');
     settings.id = 'sv-settings';
@@ -1178,6 +1209,7 @@
       var val = row.querySelector('.sv-val');
       if (val) val.textContent = shown(mode, st);
     });
+    refreshSummary(sh, mode);
   }
 
   /* Task 14 (owner, 2026-09-30): "clicking button… is slow". The sheet
@@ -1248,6 +1280,10 @@
 
   function refreshSummary(sh, mode) {
     Array.prototype.forEach.call(sh.querySelectorAll('.sv-pill'), function (p) { if (p.__paint) p.__paint(); });
+    Array.prototype.forEach.call(sh.querySelectorAll('.sv-opt'), function (o) {
+      var on = state[mode.key][o.__k] === o.__v;
+      o.classList.toggle('on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
     var n = sh.querySelector('#sv-summary');
     if (!n) return;
     if (mode.summary) { n.textContent = mode.summary(state[mode.key]); return; }
