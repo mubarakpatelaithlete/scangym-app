@@ -1237,6 +1237,8 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
 
       function selectCategory(cat){
         if(cat.value === 'stories:'){ openStories(); return; }
+        /* Kill-X: Pulse = live public text posts (X-style), its own page. */
+        if(cat.value === 'pulse:'){ try { (window.top || window).location.href = '/pulse/'; } catch(e){ location.href = '/pulse/'; } return; }
         if(cat.value === (activeCategory || FEED_ALL)) return;
         activeCategory = cat.value === FEED_ALL ? null : cat.value;
         try { sessionStorage.setItem('sg_home_tab', cat.value); } catch(e){} // Task 154 Home 6
@@ -1267,7 +1269,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         /* Task 156 B4 (66): tabs the customer picked come straight after For You. */
         var _int = []; try { _int = JSON.parse(localStorage.getItem('sg_interests') || '[]'); } catch(e){}
         var _tabs = HOME_TABS.slice().sort(function(a, b){ var ia = _int.indexOf(a[0]), ib = _int.indexOf(b[0]); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
-        railCategories = [{label:'\u2B55 Stories', value:'stories:', count:0}, {label:'For You', value:FEED_ALL, count:0}].concat(_tabs.map(function(t){
+        railCategories = [{label:'\u2B55 Stories', value:'stories:', count:0}, {label:'\u26A1 Pulse', value:'pulse:', count:0}, {label:'For You', value:FEED_ALL, count:0}].concat(_tabs.map(function(t){
           return {label: t[1], value: 'tab:' + t[0], count: 0};
         }));
         renderCatRail();

@@ -24,9 +24,10 @@ test('cleanBody: trims and caps at 280', () => {
   assert.strictEqual(pulse._cleanBody('  hi  '), 'hi');
   assert.strictEqual(pulse._cleanBody('x'.repeat(400)).length, 280);
 });
-test('server mounts /api/pulse and the tab bar links it', () => {
+test('server mounts /api/pulse and Home links it', () => {
   const fs = require('fs'); const path = require('path');
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   assert.match(read('server/server.js'), /app\.use\('\/api\/pulse', pulseRouter\)/);
-  assert.match(read('frontend/public/sg-tabbar.js'), /href: '\/pulse\/'/);
+  assert.match(read('frontend/public/reels/index.html'), /value:'pulse:'/);
+  assert.match(read('frontend/public/reels/index.html'), /location\.href = '\/pulse\/'/);
 });

@@ -36,8 +36,6 @@
             '<line x1="2" y1="8" x2="22" y2="8"></line>' +
             '<line x1="10" y1="2" x2="10" y2="8"></line>' +
             '<polygon points="10 13 16 16 10 19" fill="rgba(255,255,255,.35)" stroke="none"></polygon>' },
-    { key: 'pulse', label: 'Pulse', href: '/pulse/', match: /^\/pulse(\/|$)/,
-      icon: '<path d="M2 12h4l3-8 4 16 3-8h6"></path>' },
     { key: 'creator', label: 'Create', href: '/creator', match: /^\/(scansquad|creator|create)/,
       icon: '<rect x="2" y="2" width="20" height="20" rx="4"></rect>' +
             '<circle cx="12" cy="12" r="3" fill="rgba(255,255,255,.3)"></circle>' +
