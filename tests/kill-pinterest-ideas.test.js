@@ -17,14 +17,18 @@ test('cleanName: trims, collapses spaces, caps at 40', () => {
   assert.strictEqual(ideas._cleanName('x'.repeat(90)).length, 40);
   assert.strictEqual(ideas._cleanName(null), '');
 });
-test('poster: CDN poster first, then thumb, else null', () => {
-  assert.strictEqual(ideas._poster({ cdn_key: 'a b' }), '/api/reels/poster/a%20b');
-  assert.strictEqual(ideas._poster({ thumb: 'https://x/t.jpg' }), 'https://x/t.jpg');
-  assert.strictEqual(ideas._poster({}), null);
+test('cleanId: feed ids only (catalog number or social_N)', () => {
+  assert.strictEqual(ideas._cleanId(12), '12');
+  assert.strictEqual(ideas._cleanId('social_54921'), 'social_54921');
+  assert.strictEqual(ideas._cleanId('1; DROP TABLE x'), null);
+  assert.strictEqual(ideas._cleanId(''), null);
 });
-test('toIdea: carries gym + shop so a pin can be acted on', () => {
-  const i = ideas._toIdea({ id: 7, name: 'Glutes', category: 'Workout', cdn_key: 'g', gym_id: 3, shop_product_id: 9 });
-  assert.deepStrictEqual(i, { id: 7, name: 'Glutes', category: 'Workout', poster: '/api/reels/poster/g', gymId: 3, shopProductId: 9 });
+test('toIdea: thumbnail first, own MP4 frame as fallback, keeps gym + shop', () => {
+  const a = ideas._toIdea({ id: 7, name: 'Glutes', category: 'Workout', thumb: null, url: 'https://cdn/x.mp4', kind: 'catalog', gym_id: 3, shop_product_id: 9 });
+  assert.deepStrictEqual(a, { id: '7', name: 'Glutes', category: 'Workout', poster: null, video: 'https://cdn/x.mp4', gymId: 3, shopProductId: 9 });
+  const b = ideas._toIdea({ id: 'social_1', name: 'Abs', thumb: 'https://i.ytimg.com/t.jpg', url: 'https://youtube.com/shorts/x', kind: 'social' });
+  assert.strictEqual(b.poster, 'https://i.ytimg.com/t.jpg');
+  assert.strictEqual(b.video, null);
 });
 test('server mounts /api/ideas, serves /ideas, and Home links it', () => {
   const fs = require('fs'); const path = require('path');
