@@ -24,6 +24,7 @@ const statsRouter = require('./routes/stats');
 const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
 const reelSocialRouter = require('./routes/reel-social');
+const pulseRouter = require('./routes/pulse'); // Kill-X: Pulse text posts
 const shopRouter = require('./routes/shop');
 const socialReelsRouter = require('./routes/social-reels');
 const ingestRouter = require('./routes/ingest');
@@ -555,6 +556,7 @@ app.use('/api/stats', statsRouter);
 app.use('/api/creators', creatorsRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/reels/social', reelSocialRouter); // Task 52: like / comment / repost
+app.use('/api/pulse', pulseRouter); // Kill-X: real-time public text posts
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
 app.use('/api/social-reels', socialReelsRouter);
