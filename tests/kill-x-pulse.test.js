@@ -28,6 +28,7 @@ test('server mounts /api/pulse and Home links it', () => {
   const fs = require('fs'); const path = require('path');
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   assert.match(read('server/server.js'), /app\.use\('\/api\/pulse', pulseRouter\)/);
+  assert.match(read('server/server.js'), /app\.get\(\['\/pulse', '\/pulse\/'\]/);
   assert.match(read('frontend/public/reels/index.html'), /value:'pulse:'/);
   assert.match(read('frontend/public/reels/index.html'), /location\.href = '\/pulse\/'/);
 });

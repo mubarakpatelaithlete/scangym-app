@@ -1055,6 +1055,13 @@ text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}</styl
     res.sendFile(path.join(FRONTEND_DIR, 'join', 'index.html'));
   });
 
+  // Kill-X: /pulse — live public text posts (frontend/public/pulse/index.html).
+  // Same reason as /join: static has index:false, so it needs its own handler.
+  app.get(['/pulse', '/pulse/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'pulse', 'index.html'));
+  });
+
   // /about page — static, SEO-friendly, crawlable by LLMs
   app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about', 'index.html'));
