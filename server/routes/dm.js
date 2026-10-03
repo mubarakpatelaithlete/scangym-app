@@ -92,13 +92,27 @@ router.get('/threads', async (req, res) => {
     // Anything I fetch in my list has reached my device: mark delivered.
     pool.query(`UPDATE dm_messages SET delivered_at=NOW() WHERE delivered_at IS NULL AND sender_id<>$1
                 AND thread_id IN (SELECT id FROM dm_threads WHERE user_a=$1 OR user_b=$1)`, [uid]).catch(() => {});
+    // Kill-Snapchat: 🔥 chat streak = days in a row on which both people sent something.
+    const streaks = {};
+    try {
+      const ids = rows.filter((r) => r.other_id && !/^grp/.test(String(r.other_id))).map((r) => r.id);
+      if (ids.length) {
+        const { rows: ds } = await pool.query(
+          `SELECT thread_id, to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS d FROM dm_messages
+           WHERE thread_id = ANY($1::int[]) AND deleted_at IS NULL AND created_at > NOW() - INTERVAL '120 days'
+           GROUP BY 1, 2 HAVING COUNT(DISTINCT sender_id) >= 2`, [ids]);
+        const by = {};
+        ds.forEach((x) => { (by[x.thread_id] = by[x.thread_id] || []).push(x.d); });
+        Object.keys(by).forEach((k) => { streaks[k] = streakDays(by[k]); });
+      }
+    } catch (e) { console.error('[dm] streaks', e.message); }
     let grp = [];
     try { grp = await groups.listFor(uid); } catch (e) { console.error('[dm] groups list', e.message); }
     res.json({ threads: grp.concat(rows.filter((r) => r.other_id && !/^grp/.test(String(r.other_id))).map((r) => ({
       id: r.id, otherId: r.other_id, name: displayName(r), ...presence(r.last_seen),
-      lastMessage: r.last_deleted ? 'This message was deleted' : (r.last_body || ''),
+      lastMessage: r.last_deleted ? 'This message was deleted' : (SNAP_RE.test(r.last_body || '') ? '👻 Snap' : (r.last_body || '')),
       lastFromMe: r.last_sender === uid, lastRead: !!r.last_read,
-      lastMessageAt: r.last_message_at, unread: r.unread,
+      lastMessageAt: r.last_message_at, unread: r.unread, streak: streaks[r.id] || 0,
     }))).sort((x, y) => new Date(y.lastMessageAt) - new Date(x.lastMessageAt)) });
   } catch (e) { console.error('[dm] threads', e.message); res.status(500).json({ error: 'Could not load chats' }); }
 });
@@ -165,6 +179,7 @@ router.post('/threads/:id/messages', async (req, res) => {
     const uid = me(req);
     const body = String((req.body || {}).body || '').trim().slice(0, 4000);
     if (!body) return res.status(400).json({ error: 'Message is empty' });
+    if (/^👻 snap:/.test(body)) return res.status(400).json({ error: 'Snaps cannot be forwarded' });
     const now = Date.now(); const b = sendBuckets.get(uid);
     if (!b || now - b.start > 60000) sendBuckets.set(uid, { start: now, count: 1 });
     else if (++b.count > 60) return res.status(429).json({ error: 'Slow down — too many messages' });
@@ -227,6 +242,72 @@ router.get('/file/:name', (req, res) => {
   if (!fs.existsSync(fp)) return res.status(404).json({ error: 'File not found' });
   res.set('Cache-Control', 'private, max-age=86400');
   res.sendFile(fp);
+});
+
+/* Kill-Snapchat: 👻 Snaps — a photo your friend can open once, for 10 seconds.
+   Stored in R2 (Railway has no volume), served only through this route to the
+   other person, then the object is deleted and the message becomes "👻 Opened". */
+const SNAP_RE = /^👻 snap:(snaps\/[a-f0-9]{24}\.(?:jpg|png|webp|gif|heic))$/;
+const SNAP_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic' };
+const SNAP_TYPE = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic' };
+const snapUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => { const ok = !!SNAP_EXT[String(file.mimetype || '').toLowerCase()]; cb(ok ? null : new Error('Snaps must be a photo'), ok); },
+});
+
+// Consecutive UTC days (YYYY-MM-DD list) ending today, or yesterday if today has no exchange yet.
+function streakDays(days, now = new Date()) {
+  const set = new Set(days);
+  const day = (n) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - n)).toISOString().slice(0, 10);
+  let i = set.has(day(0)) ? 0 : 1;
+  let n = 0;
+  while (set.has(day(i))) { n++; i++; }
+  return n;
+}
+
+router.post('/threads/:id/snap', (req, res) => {
+  snapUpload.single('file')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No photo' });
+      const t = await threadFor(req, req.params.id);
+      if (!t) return res.status(404).json({ error: 'Chat not found' });
+      if (t.user_a === 'grp') return res.status(400).json({ error: 'Snaps are for 1:1 chats' });
+      const r2 = require('../lib/r2-upload');
+      if (!r2.r2Configured()) return res.status(503).json({ error: 'Snaps are not available right now' });
+      const key = `snaps/${crypto.randomBytes(12).toString('hex')}.${SNAP_EXT[req.file.mimetype.toLowerCase()]}`;
+      await r2.uploadBufferToR2(req.file.buffer, key, { contentType: req.file.mimetype, cacheControl: 'private, no-store' });
+      const { rows: [m] } = await pool.query(
+        'INSERT INTO dm_messages (thread_id, sender_id, body) VALUES ($1,$2,$3) RETURNING id, created_at', [t.id, me(req), `👻 snap:${key}`]);
+      await pool.query('UPDATE dm_threads SET last_message_at=NOW() WHERE id=$1', [t.id]);
+      res.status(201).json({ id: Number(m.id), at: m.created_at });
+    } catch (e) { console.error('[dm] snap', e.message); res.status(500).json({ error: 'Could not send snap' }); }
+  });
+});
+
+router.get('/snap/:id', async (req, res) => {
+  const uid = me(req);
+  let tmp = '';
+  try {
+    const { rows: [m] } = await pool.query(
+      `SELECT m.id, m.body, m.sender_id FROM dm_messages m JOIN dm_threads t ON t.id=m.thread_id
+       WHERE m.id=$1 AND m.deleted_at IS NULL AND t.user_a<>'grp' AND (t.user_a=$2 OR t.user_b=$2)`, [parseInt(req.params.id, 10) || 0, uid]);
+    if (!m) return res.status(404).json({ error: 'Snap not found' });
+    const k = SNAP_RE.exec(m.body || '');
+    if (!k) return res.status(410).json({ error: 'Snap already opened' });
+    if (m.sender_id === uid) return res.status(403).json({ error: 'Only your friend can open this snap' });
+    tmp = path.join(require('os').tmpdir(), `snap_${m.id}_${crypto.randomBytes(4).toString('hex')}`);
+    await require('../lib/r2-download').downloadFromR2(k[1], tmp);
+    const claim = await pool.query(
+      "UPDATE dm_messages SET body='👻 Opened', read_at=COALESCE(read_at, NOW()) WHERE id=$1 AND body=$2", [m.id, m.body]);
+    if (!claim.rowCount) return res.status(410).json({ error: 'Snap already opened' });
+    res.set('Cache-Control', 'private, no-store');
+    res.type(SNAP_TYPE[k[1].split('.').pop()] || 'image/jpeg');
+    res.send(fs.readFileSync(tmp));
+    require('../lib/r2-upload').deleteFromR2(k[1]).catch((e) => console.error('[dm] snap delete', e.message));
+  } catch (e) { console.error('[dm] snap open', e.message); if (!res.headersSent) res.status(500).json({ error: 'Could not open snap' }); }
+  finally { if (tmp) fs.unlink(tmp, () => {}); }
 });
 
 router.post('/threads/:id/typing', async (req, res) => {
@@ -298,7 +379,7 @@ router.patch('/messages/:id', async (req, res) => {
       [parseInt(req.params.id, 10) || 0, me(req)]);
     if (!m) return res.status(404).json({ error: 'Message not found' });
     if (Date.now() - new Date(m.created_at).getTime() > EDIT_MS) return res.status(403).json({ error: 'Messages can only be edited for 15 minutes' });
-    if (String(m.body).indexOf('📎 ') === 0) return res.status(400).json({ error: 'Files cannot be edited' });
+    if (/^(📎|👻) /.test(String(m.body))) return res.status(400).json({ error: 'Files cannot be edited' });
     await pool.query('UPDATE dm_messages SET body=$1, edited_at=NOW() WHERE id=$2', [body, m.id]);
     res.json({ edited: true, body });
   } catch (e) { res.status(500).json({ error: 'Could not edit' }); }
@@ -377,4 +458,4 @@ router.post('/invite', async (req, res) => {
 });
 
 module.exports = router;
-module.exports._internals = { autoReply };
+module.exports._internals = { autoReply, streakDays, SNAP_RE };
