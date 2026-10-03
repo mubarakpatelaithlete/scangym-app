@@ -17,3 +17,13 @@ test('Home buttons are a see-through horizontal row above the name', () => {
   assert.match(css, /\.reel-info\{ right:12px !important; \}/, 'name should use the full width');
   assert.ok(html.indexOf('<style id="sg-home-row">') > html.lastIndexOf('flex-direction:column !important'), 'row rule must come after the old column rule');
 });
+
+test('Home top tabs/categories are a see-through row at the bottom, above the action row', () => {
+  const m = html.match(/<style id="sg-home-tabs-row">([\s\S]*?)<\/style>/);
+  assert.ok(m, 'tabs row style block missing');
+  const css = m[1];
+  assert.match(css, /#reels-cat-rail\{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;/);
+  assert.match(css, /bottom:calc\(var\(--sg-nav-h,56px\) \+ var\(--sg-safe-b,0px\) \+ 195px\)/, 'must sit above the action row (nav+132px, 55px tall)');
+  assert.match(css, /\.reels-cat\[aria-selected="true"\]\{background:rgba\(255,109,0,\.78\)/);
+  assert.match(css, /background:rgba\(20,20,26,\.20\)/);
+});
