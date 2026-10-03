@@ -39,3 +39,9 @@ test('Create page: glass chips/tiles/rail and tiles in horizontal swipe rows', (
   assert.match(cs, /'\.cs-tile\{scroll-snap-align:start;background:rgba\(255,255,255,\.05\)/);
   assert.match(cs, /body:has\(#' \+ ID \+ '\) #sg-sv-rail\.sv-float\{z-index:8996 !important;background:rgba\(10,12,20,\.42\)/);
 });
+
+test('Create filters (All/Images/Videos/…) are a see-through row at the bottom', () => {
+  const cs = fs.readFileSync(path.join(__dirname, '..', 'frontend/public/create-studio.js'), 'utf8');
+  assert.match(cs, /' \.cs-chips\{position:fixed;left:8px;right:8px;bottom:calc\(var\(--sg-tab-height,56px\) \+ var\(--sg-band-height,56px\) \+ 8px\);/);
+  assert.match(cs, /'\.cs-sticky\{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;\}'/, 'a blurred ancestor would trap the fixed row');
+});
