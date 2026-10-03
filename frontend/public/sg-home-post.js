@@ -26,6 +26,8 @@
   function drafts() { return tx('readonly', function (s) { return s.getAll(); }).catch(function () { return []; }); }
   function saveDraft(blob, caption) { return tx('readwrite', function (s) { s.put({ id: Date.now(), blob: blob, caption: caption || '', at: new Date().toISOString() }); }); }
   function delDraft(id) { return tx('readwrite', function (s) { s.delete(id); }); }
+  /* Instagram core (2026-10-03): photos post too. */
+  function isImg(b) { return !!(b && /^image\//.test(b.type || '')); }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
 
   function sheet(html) {
@@ -48,10 +50,10 @@
     drafts().then(function (ds) {
       var bg = sheet(
         '<button type="button" class="sg-glass-chip" id="sg-hp-ai" style="' + BTN + '"><span style="font-size:22px">\u2728</span><span>Create with AI<br><small style="font-weight:500;opacity:.65">Type an idea, get a video, tap Post</small></span></button>'
-        + '<button type="button" class="sg-glass-chip" id="sg-hp-up" style="' + BTN + '"><span style="font-size:22px">\uD83D\uDCE4</span><span>Upload a video<br><small style="font-weight:500;opacity:.65">From your phone, up to 100MB</small></span></button>'
+        + '<button type="button" class="sg-glass-chip" id="sg-hp-up" style="' + BTN + '"><span style="font-size:22px">\uD83D\uDCE4</span><span>Upload a photo or video<br><small style="font-weight:500;opacity:.65">From your phone, up to 100MB \u00b7 goes live in Stories</small></span></button>'
         + (ds.length ? '<div style="margin:8px 0 6px;font-size:12px;font-weight:800;opacity:.6">\uD83D\uDCDD Drafts (' + ds.length + ')</div><div style="display:flex;gap:8px;overflow-x:auto">'
           + ds.slice(-10).reverse().map(function (d) { return '<div data-d="' + d.id + '" style="flex:none;width:72px;cursor:pointer;text-align:center"><video muted playsinline preload="metadata" style="width:72px;height:96px;object-fit:cover;border-radius:10px;background:#111"></video><div style="font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(d.caption || 'Draft') + '</div></div>'; }).join('') + '</div>' : '')
-        + '<input type="file" id="sg-hp-file" accept="video/*" style="display:none">');
+        + '<input type="file" id="sg-hp-file" accept="image/*,video/*" style="display:none">');
       bg.querySelector('#sg-hp-ai').onclick = function () {
         close();
         if (window.parent !== window && window.parent.navigate) window.parent.navigate('/create');
@@ -64,7 +66,9 @@
       ds.forEach(function (d) {
         var t = bg.querySelector('[data-d="' + d.id + '"]');
         if (!t) return;
-        t.querySelector('video').src = URL.createObjectURL(d.blob) + '#t=0.1';
+        var tv = t.querySelector('video');
+        if (isImg(d.blob)) { var im = document.createElement('img'); im.style.cssText = tv.style.cssText; im.src = URL.createObjectURL(d.blob); tv.replaceWith(im); }
+        else tv.src = URL.createObjectURL(d.blob) + '#t=0.1';
         t.onclick = function () { compose(d.blob, d.caption, d.id); };
       });
     });
@@ -72,8 +76,11 @@
 
   function compose(blob, caption, draftId) {
     var url = URL.createObjectURL(blob);
+    var media = isImg(blob)
+      ? '<img src="' + url + '" alt="" style="display:block;width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#000;margin-bottom:10px">'
+      : '<video src="' + url + '" autoplay loop muted playsinline style="display:block;width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#000;margin-bottom:10px"></video>';
     var bg = sheet(
-      '<video src="' + url + '" autoplay loop muted playsinline style="display:block;width:100%;max-height:42vh;object-fit:contain;border-radius:14px;background:#000;margin-bottom:10px"></video>'
+      media
       + '<textarea id="sg-hp-cap" maxlength="300" placeholder="Caption + #hashtags" style="width:100%;box-sizing:border-box;height:64px;border-radius:12px;padding:10px;color:#fff;font-size:14px;resize:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)">' + esc(caption) + '</textarea>'
       + '<div id="sg-hp-prog" style="display:none;margin:10px 0 0"><div style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden"><div id="sg-hp-bar" style="height:100%;width:0;background:#FF6D00;transition:width .2s"></div></div><div id="sg-hp-pct" style="font-size:12px;opacity:.75;margin-top:4px">Uploading 0%</div></div>'
       + '<div id="sg-hp-err" style="display:none;color:#f87171;font-size:13px;margin-top:8px"></div>'
@@ -95,6 +102,7 @@
         if (draftId) delDraft(draftId);
         close();
         toast((r && r.message) || 'Posted! It shows in the feed after a quick review.');
+        try { window.dispatchEvent(new CustomEvent('sg-posted', { detail: r || {} })); } catch (e) {}
       }, function (e) {
         go.disabled = false; go.textContent = '\uD83D\uDE80 Try again';
         var er = bg.querySelector('#sg-hp-err'); er.style.display = 'block';
@@ -108,7 +116,7 @@
   function upload(blob, caption, onPct) {
     return new Promise(function (ok, no) {
       var fd = new FormData();
-      var name = blob.name || ('scangym-' + Date.now() + (/webm/.test(blob.type) ? '.webm' : '.mp4'));
+      var name = blob.name || ('scangym-' + Date.now() + (isImg(blob) ? '.jpg' : /webm/.test(blob.type) ? '.webm' : '.mp4'));
       fd.append('video', blob, name);
       fd.append('caption', caption || '');
       fd.append('category', 'ScanGym creators');
