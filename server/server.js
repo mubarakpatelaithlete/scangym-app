@@ -25,6 +25,7 @@ const creatorsRouter = require('./routes/creators');
 const reelsRouter = require('./routes/reels');
 const reelSocialRouter = require('./routes/reel-social');
 const pulseRouter = require('./routes/pulse'); // Kill-X: Pulse text posts
+const ideasRouter = require('./routes/ideas'); // Kill-Pinterest: Ideas boards
 const shopRouter = require('./routes/shop');
 const socialReelsRouter = require('./routes/social-reels');
 const ingestRouter = require('./routes/ingest');
@@ -557,6 +558,7 @@ app.use('/api/creators', creatorsRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/reels/social', reelSocialRouter); // Task 52: like / comment / repost
 app.use('/api/pulse', pulseRouter); // Kill-X: real-time public text posts
+app.use('/api/ideas', ideasRouter); // Kill-Pinterest: save ideas to boards
 app.use('/api/reels', reelsRouter);
 app.use('/api/reels/admin/ingest', ingestRouter);
 app.use('/api/social-reels', socialReelsRouter);
@@ -1060,6 +1062,12 @@ text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}</styl
   app.get(['/pulse', '/pulse/'], (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(FRONTEND_DIR, 'pulse', 'index.html'));
+  });
+
+  // Kill-Pinterest: /ideas — search ideas, save them to boards (frontend/public/ideas/index.html).
+  app.get(['/ideas', '/ideas/'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(FRONTEND_DIR, 'ideas', 'index.html'));
   });
 
   // /about page — static, SEO-friendly, crawlable by LLMs
