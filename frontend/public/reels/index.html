@@ -783,6 +783,14 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
 
       // ── Pricing: loaded from /pricing.js (shared across all pages) ──
       // sgPrice('day').display gives the current day-pass price
+      // pricing.js is deferred, so the feed can arrive before it runs; then every
+      // card threw "sgPrice is not defined" and Home showed "Failed to load reels".
+      var sgPrice = function (t) {
+        if (typeof window.sgPrice === 'function' && window.sgPrice !== sgPrice) {
+          try { return window.sgPrice(t); } catch (e) {}
+        }
+        return { display: 'day pass', amount: 0 };
+      };
 
       // ── SVG Icons ──
       var ICONS = {
