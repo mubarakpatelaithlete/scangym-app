@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Ideas · ScanGym — save workouts, recipes &amp; gyms to try</title>
+<meta name="description" content="A calm, searchable grid of workout, recipe, home-gym and gear ideas. Save them to boards, then book the gym or buy the gear.">
+<link rel="icon" href="/favicon.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:90px}
+header{position:sticky;top:0;z-index:5;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);border-bottom:1px solid #222;padding:12px 12px 8px}
+h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
+.wrap{max-width:900px;margin:0 auto}
+#q{width:100%;margin-top:8px;background:#111;border:1px solid #333;color:#fff;border-radius:999px;padding:10px 16px;font:inherit;outline:none}
+.tabs{display:flex;gap:16px;margin-top:8px}.tabs button{background:none;border:0;color:#888;font:inherit;font-weight:700;padding:4px 0;cursor:pointer}
+.tabs .on{color:#fff;border-bottom:2px solid #FF6D00}
+#chips{display:flex;gap:8px;overflow-x:auto;padding:10px 12px}
+.chip{flex:none;border:1px solid #333;border-radius:999px;padding:4px 12px;color:#ddd;background:none;font-size:13px;cursor:pointer}
+.chip.on{border-color:#FF6D00;color:#FF6D00}
+#grid{columns:2 160px;column-gap:10px;padding:0 12px}
+.pin{break-inside:avoid;margin:0 0 12px;position:relative}
+.pin img{width:100%;border-radius:16px;display:block;background:#161616;min-height:120px;cursor:pointer}
+.pin .t{font-size:13px;margin:6px 2px 2px;color:#ddd;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pin .save{position:absolute;top:8px;right:8px;background:#FF6D00;color:#000;border:0;border-radius:999px;padding:6px 12px;font-weight:700;cursor:pointer}
+.pin .save.done{background:#fff}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin:4px 2px}.acts a{color:#FF6D00;border:1px solid #333;border-radius:999px;padding:2px 9px;font-size:12px;text-decoration:none}
+.board{display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #222;cursor:pointer}
+.board .cv{width:64px;height:64px;border-radius:12px;background:#161616 center/cover}
+.board b{display:block}.board small{color:#888}
+#sheet{position:fixed;inset:auto 0 0 0;background:#111;border-radius:18px 18px 0 0;padding:16px;z-index:9;display:none;max-height:70vh;overflow:auto}
+#sheet h3{margin:0 0 8px}#sheet .row{display:flex;gap:8px;margin-top:10px}
+#sheet input{flex:1;background:#000;border:1px solid #333;color:#fff;border-radius:8px;padding:8px}
+.btn{background:#FF6D00;color:#000;border:0;border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer}
+.opt{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #222;color:#fff;padding:10px 4px;font:inherit;cursor:pointer}
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:8;display:none}
+#msg,#more{color:#888;text-align:center;padding:24px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#fff;color:#000;border-radius:999px;padding:8px 16px;font-weight:700;display:none;z-index:10}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Ideas <span>📌</span></h1>
+  <div class="sub">Find workouts, recipes &amp; gyms — save them to boards, then go do them.</div>
+  <input id="q" type="search" placeholder="Search ideas: glute workout, high-protein, home gym…" autocomplete="off">
+  <div class="tabs"><button id="tDisc" class="on">Discover</button><button id="tMine">My boards</button></div>
+</header>
+<div id="chips"></div>
+<div id="boardHead" class="sub" style="padding:0 12px" hidden></div>
+<div id="grid"></div>
+<div id="boards" hidden></div>
+<div id="msg" hidden></div>
+<div id="more" hidden>Loading…</div>
+</div>
+<div id="shade"></div>
+<div id="sheet"><h3>Save to board</h3><div id="opts"></div>
+  <div class="row"><input id="newb" maxlength="40" placeholder="New board, e.g. Leg day"><button class="btn" id="mk">Save</button></div></div>
+<div id="toast"></div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var CHIPS = ['All', 'Workout', 'Recipe', 'Home gym', 'Mobility', 'Gear', 'Gym tour', 'Motivation'];
+  var q = '', offset = 0, loading = false, more = true, picking = null, boards = null;
+  var params = new URLSearchParams(location.search);
+  var here = location.pathname + location.search;
+  var J = function (url, opt) {
+    opt = opt || {}; opt.credentials = 'same-origin';
+    if (opt.body) opt.headers = { 'Content-Type': 'application/json' };
+    return fetch(url, opt).then(function (r) {
+      if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(here); throw new Error('auth'); }
+      return r.json();
+    });
+  };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+  var toast = function (t) { var el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 1800); };
+
+  function card(i, boardId) {
+    var d = document.createElement('div'); d.className = 'pin';
+    var acts = '<a href="/reels?v=' + i.id + '">▶ Watch</a>';
+    if (i.gymId) acts += '<a href="/gym/' + i.gymId + '">📍 Book this gym</a>';
+    if (i.shopProductId) acts += '<a href="/reels?v=' + i.id + '">🛍 Shop</a>';
+    d.innerHTML = '<img loading="lazy" alt="' + esc(i.name) + '" src="' + esc(i.poster || '/icon-512.png') + '">'
+      + '<button class="save">' + (boardId ? 'Remove' : 'Save') + '</button>'
+      + '<div class="t">' + esc(i.name) + '</div><div class="acts">' + acts + '</div>';
+    d.querySelector('img').onclick = function () { location.href = '/reels?v=' + i.id; };
+    d.querySelector('img').onerror = function () { this.src = '/icon-512.png'; };
+    var b = d.querySelector('.save');
+    b.onclick = boardId ? function () {
+      J('/api/ideas/pin', { method: 'DELETE', body: JSON.stringify({ video_id: i.id, board_id: boardId }) })
+        .then(function () { d.remove(); toast('Removed'); });
+    } : function () { openSheet(i, b); };
+    return d;
+  }
+  function load(reset) {
+    if (loading || (!more && !reset)) return;
+    if (reset) { offset = 0; more = true; $('grid').innerHTML = ''; }
+    loading = true; $('more').hidden = false;
+    J('/api/ideas/search?q=' + encodeURIComponent(q) + '&offset=' + offset).then(function (r) {
+      (r.ideas || []).forEach(function (i) { $('grid').appendChild(card(i)); });
+      offset += (r.ideas || []).length; more = !!r.more;
+      $('msg').hidden = offset > 0; $('msg').textContent = 'No ideas for “' + q + '” yet — try another word.';
+    }).catch(function () {}).then(function () { loading = false; $('more').hidden = true; });
+  }
+  function getBoards() {
+    return J('/api/ideas/boards').then(function (r) { boards = r.boards || []; return boards; });
+  }
+  function openSheet(i, btn) {
+    picking = { idea: i, btn: btn };
+    getBoards().then(function (bs) {
+      var o = $('opts'); o.innerHTML = bs.length ? '' : '<div class="sub">No boards yet — name your first one.</div>';
+      bs.forEach(function (b) {
+        var x = document.createElement('button'); x.className = 'opt';
+        x.textContent = '📌 ' + b.name + '  ·  ' + b.pins; x.onclick = function () { pin({ board_id: b.id }); };
+        o.appendChild(x);
+      });
+      $('shade').style.display = $('sheet').style.display = 'block';
+    });
+  }
+  function closeSheet() { $('shade').style.display = $('sheet').style.display = 'none'; picking = null; }
+  function pin(where) {
+    if (!picking) return;
+    var p = picking; where.video_id = p.idea.id;
+    J('/api/ideas/pin', { method: 'POST', body: JSON.stringify(where) }).then(function (r) {
+      if (!r.ok) return toast(r.error || 'Could not save');
+      p.btn.textContent = 'Saved'; p.btn.className = 'save done'; boards = null;
+      toast('📌 Saved to ' + r.board.name); closeSheet();
+    });
+  }
+  $('shade').onclick = closeSheet;
+  $('mk').onclick = function () { var n = $('newb').value.trim(); if (n) { pin({ board_name: n }); $('newb').value = ''; } };
+
+  function showMine() {
+    $('tMine').className = 'on'; $('tDisc').className = ''; $('chips').hidden = true;
+    $('grid').innerHTML = ''; $('boards').hidden = false; $('msg').hidden = true; $('boardHead').hidden = true;
+    getBoards().then(function (bs) {
+      var w = $('boards'); w.innerHTML = '';
+      if (!bs.length) { $('msg').hidden = false; $('msg').textContent = 'No boards yet — tap Save on any idea.'; }
+      bs.forEach(function (b) {
+        var d = document.createElement('div'); d.className = 'board';
+        d.innerHTML = '<div class="cv" style="background-image:url(\'' + esc(b.cover || '') + '\')"></div><div><b>' + esc(b.name) + '</b><small>' + b.pins + ' ideas</small></div>';
+        d.onclick = function () { location.href = '/ideas/?board=' + b.id; };
+        w.appendChild(d);
+      });
+    });
+  }
+  function showBoard(id) {
+    $('chips').hidden = true;
+    J('/api/ideas/boards/' + encodeURIComponent(id)).then(function (r) {
+      if (!r.board) { $('msg').hidden = false; $('msg').textContent = 'Board not found.'; return; }
+      var h = $('boardHead'); h.hidden = false;
+      h.innerHTML = '<h2 style="color:#fff;margin:8px 0 2px">📌 ' + esc(r.board.name) + '</h2>' + r.ideas.length + ' ideas · <a href="#" id="share" style="color:#FF6D00">Share board</a>';
+      $('share').onclick = function (e) {
+        e.preventDefault(); var url = location.origin + '/ideas/?board=' + id;
+        if (navigator.share) navigator.share({ title: r.board.name + ' · ScanGym Ideas', url: url }).catch(function () {});
+        else { try { navigator.clipboard.writeText(url); toast('Link copied'); } catch (x) {} }
+      };
+      r.ideas.forEach(function (i) { $('grid').appendChild(card(i, r.board.mine ? id : null)); });
+      if (!r.ideas.length) { $('msg').hidden = false; $('msg').textContent = 'This board is empty.'; }
+    });
+  }
+
+  CHIPS.forEach(function (c, n) {
+    var b = document.createElement('button'); b.className = 'chip' + (n ? '' : ' on'); b.textContent = c;
+    b.onclick = function () {
+      [].forEach.call($('chips').children, function (x) { x.className = 'chip'; }); b.className = 'chip on';
+      q = n ? c : ''; $('q').value = q; load(true);
+    };
+    $('chips').appendChild(b);
+  });
+  var t; $('q').oninput = function () { clearTimeout(t); t = setTimeout(function () { q = $('q').value.trim(); load(true); }, 350); };
+  $('q').onfocus = function () { if ($('tMine').className) location.href = '/ideas/'; };
+  $('tDisc').onclick = function () { location.href = '/ideas/'; };
+  $('tMine').onclick = showMine;
+  window.addEventListener('scroll', function () {
+    if (!params.get('board') && !$('tMine').className && innerHeight + scrollY > document.body.offsetHeight - 800) load();
+  });
+  if (params.get('board')) showBoard(params.get('board'));
+  else if (params.get('tab') === 'boards') showMine();
+  else { q = params.get('q') || ''; $('q').value = q; load(true); }
+})();
+</script>
+</body>
+</html>
