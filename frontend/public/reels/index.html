@@ -750,7 +750,13 @@ html body #reels-cat-rail .reels-cat{padding:7px 12px !important;border-radius:9
   color:#fff !important;font-size:13px !important;line-height:1 !important;}
 html body #reels-cat-rail .reels-cat[aria-selected="true"]{background:rgba(255,109,0,.78) !important;border-color:rgba(255,170,100,.9) !important;}
 html body #reels-cat-rail .reels-cat[aria-selected="true"]::after{display:none !important;}
-html body #reels-search-button{margin-left:auto !important;}
+/* Owner 2026-10-03 "even search button": search joins the bottom row as a glass circle at its left */
+html body #reels-top-bar #reels-search-button{position:fixed !important;left:8px !important;top:auto !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 149px) !important;width:41px !important;height:41px !important;
+  margin:0 !important;border-radius:50% !important;background:rgba(20,20,26,.20) !important;border:1px solid rgba(255,255,255,.16) !important;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);z-index:26;}
+html body #reels-top-bar #reels-search-button svg{width:20px !important;height:20px !important;}
+html body #reels-cat-rail{left:56px !important;}
 </style>
 </head>
   <body>

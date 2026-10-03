@@ -45,3 +45,11 @@ test('Create filters (All/Images/Videos/…) are a see-through row at the bottom
   assert.match(cs, /' \.cs-chips\{position:fixed;left:8px;right:8px;bottom:calc\(var\(--sg-tab-height,56px\) \+ var\(--sg-band-height,56px\) \+ 8px\);/);
   assert.match(cs, /'\.cs-sticky\{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;\}'/, 'a blurred ancestor would trap the fixed row');
 });
+
+test('Library (See all) is a pill in the bottom row; tiles sit at the bottom', () => {
+  const cs = fs.readFileSync(path.join(__dirname, '..', 'frontend/public/create-studio.js'), 'utf8');
+  assert.match(cs, /el\('div', 'cs-chip cs-lib-chip'/);
+  assert.match(cs, /chips\.insertBefore\(libChip, chips\.firstChild\)/);
+  assert.match(cs, /'\.cs-lib \.cs-sec span\{display:none !important;\}'/);
+  assert.match(cs, /' \.cs-grid\{margin-top:auto !important;\}'/);
+});
