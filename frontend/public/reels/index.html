@@ -695,6 +695,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
        defines. Same file, same band: one place decides where rows live. -->
   <link rel="stylesheet" href="/rails.css?v=3.9">
   <script>if(window.top!==window.self){document.documentElement.classList.add('sg-framed');}</script>
+<script src="/sg-glass-sheets.js" defer></script>
 </head>
   <body>
     <!-- Shimmer skeleton loading -->
@@ -1128,7 +1129,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
           .catch(function(){ showToast('Could not refresh \u2014 check your connection'); });
       }
       var HOME_TABS = [['following','Following'],['nearme','Near me'],['trending','Trending'],
-        ['drama','#drama'],['movie','#movie'],['podcast','#podcast'],['live','\uD83D\uDD34 Live']];
+        ['workout','#workout'],['nutrition','#nutrition'],['motivation','#motivation'],['live','\uD83D\uDD34 Live']];
       /* Near me asks the phone once; no answer in 6s (or a no) still works —
          the server falls back to the visitor's country. */
       function withPlace(cb){

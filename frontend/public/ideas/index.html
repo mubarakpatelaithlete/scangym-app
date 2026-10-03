@@ -37,6 +37,7 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
 #msg,#more{color:#888;text-align:center;padding:24px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#fff;color:#000;border-radius:999px;padding:8px 16px;font-weight:700;display:none;z-index:10}
 </style>
+<script src="/sg-glass-sheets.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -72,6 +73,11 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
       return r.json();
     });
   };
+  /* Owner 2026-10-03: titles were full of #Shorts #gym — show clean words only. */
+  function cleanTitle(n) {
+    var t = String(n || '').replace(/#[\w\u00C0-\uFFFF]+/g, ' ').replace(/\s*[|·•\-–—:]+\s*$/, '').replace(/^\s*[|·•\-–—:]+\s*/, '').replace(/\s{2,}/g, ' ').trim();
+    return t || 'Gym idea';
+  }
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
   var toast = function (t) { var el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 1800); };
 
@@ -83,10 +89,10 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
     if (i.shopProductId) acts += '<a href="' + watch + '">🛍 Shop</a>';
     var media = (!i.poster && i.video)
       ? '<video class="m" muted playsinline preload="metadata" src="' + esc(i.video) + '#t=0.5"></video>'
-      : '<img class="m" loading="lazy" alt="' + esc(i.name) + '" src="' + esc(i.poster || '/icon-512.png') + '">';
+      : '<img class="m" loading="lazy" alt="' + esc(cleanTitle(i.name)) + '" src="' + esc(i.poster || '/icon-512.png') + '">';
     d.innerHTML = media
       + '<button class="save">' + (boardId ? 'Remove' : 'Save') + '</button>'
-      + '<div class="t">' + esc(i.name) + '</div><div class="acts">' + acts + '</div>';
+      + '<div class="t">' + esc(cleanTitle(i.name)) + '</div><div class="acts">' + acts + '</div>';
     var m = d.querySelector('.m');
     m.onclick = function () { location.href = watch; };
     if (m.tagName === 'IMG') m.onerror = function () { this.onerror = null; this.src = '/icon-512.png'; };

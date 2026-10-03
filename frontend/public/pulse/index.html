@@ -32,6 +32,7 @@ select{background:#111;color:#ddd;border:1px solid #333;border-radius:8px;paddin
 .replies input{width:70%;background:#111;border:1px solid #333;color:#fff;border-radius:8px;padding:6px}
 #empty,#more{color:#888;text-align:center;padding:24px}
 </style>
+<script src="/sg-glass-sheets.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -64,7 +65,7 @@ select{background:#111;color:#ddd;border:1px solid #333;border-radius:8px;paddin
     var s = Math.max(1, (Date.now() - new Date(t)) / 1000);
     return s < 60 ? Math.floor(s) + 's' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd';
   }
-  function linkify(b) { return esc(b).replace(/#([a-z0-9_]{2,30})/gi, '<a href="#" data-tag="$1">#$1</a>'); }
+  function linkify(b) { return esc(b).replace(/(^|[^&\w])#([a-z0-9_]{2,30})/gi, '$1<a href="#" data-tag="$2">#$2</a>'); }
   function card(p) {
     return '<div class="post" data-id="' + p.id + '">' +
       '<div class="meta"><b>' + esc(p.name) + '</b> · ' + ago(p.at) + (p.gym && p.gym.name ? ' · 📍 ' + esc(p.gym.name) : '') + '</div>' +
@@ -75,9 +76,24 @@ select{background:#111;color:#ddd;border:1px solid #333;border-radius:8px;paddin
       '<button data-a="like" class="' + (p.liked ? 'on' : '') + '">' + (p.liked ? '❤️' : '🤍') + ' ' + p.likes + '</button>' +
       '<button data-a="share">↗</button></div><div class="replies" hidden></div></div>';
   }
+  /* Owner 2026-10-03: an empty Pulse looked dead. Until real people post,
+     show ScanGym starter posts (read-only, clearly labelled). */
+  var STARTERS = [
+    ['Leg day tip: pause 1s at the bottom of every squat. Lighter weight, way more burn. #legday #tips', 3],
+    ['Quietest gym hours are usually 10am–3pm and after 8pm. Book a day pass then and get every machine to yourself. #crowd', 9],
+    ['New to a gym? Ask the front desk for a 2-minute tour of the machines. Nobody minds, everybody starts somewhere. #beginner', 20],
+    ['High-protein post-gym snack: Greek yogurt + oats + berries. 30g protein, 5 minutes. #nutrition', 31],
+    ['Hot take: 3 full-body sessions a week beat 6 random ones. Consistency beats intensity. #hottake', 44],
+    ['Travelling? No membership needed — any gym, one day pass, scan the QR at the door. #travel', 58]
+  ];
+  function starterCard(s) {
+    return '<div class="post starter"><div class="meta"><b>ScanGym</b> · ' + ago(Date.now() - s[1] * 60000) + ' · 📌 starter</div>' +
+      '<div class="body">' + linkify(s[0]) + '</div></div>';
+  }
   function render() {
-    $('feed').innerHTML = posts.map(card).join('');
+    $('feed').innerHTML = posts.length ? posts.map(card).join('') : STARTERS.filter(function (s) { return !tag || s[0].indexOf('#' + tag) >= 0; }).map(starterCard).join('');
     $('empty').hidden = posts.length > 0;
+    $('empty').textContent = 'Be the first real post — what\u2019s happening at your gym? 🔥';
   }
   function q(extra) { return '/api/pulse?' + (tag ? 'tag=' + tag + '&' : '') + (extra || ''); }
   function load(more) {
@@ -160,11 +176,27 @@ select{background:#111;color:#ddd;border:1px solid #333;border-radius:8px;paddin
       posts.unshift(d.post); render(); $('txt').value = ''; $('left').textContent = 280; sel.value = ''; trending();
     }).catch(function () { go.disabled = false; });
   };
-  fetch('/api/guest/gyms').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-    ((d && d.gyms) || []).forEach(function (g) {
-      var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.city ? ' · ' + g.city : ''); $('gym').appendChild(o);
-    });
-  }).catch(function () {});
+  /* Owner 2026-10-03: the list showed random gyms abroad. Only gyms near you:
+     ask for location the first time the picker is touched (25km radius). */
+  var gymsAsked = false;
+  function nearGyms() {
+    if (gymsAsked) return; gymsAsked = true;
+    var sel = $('gym'), first = sel.options[0];
+    first.textContent = '📍 Finding gyms near you…';
+    if (!navigator.geolocation) { first.textContent = '📍 Turn on location to tag a gym'; return; }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var c = pos.coords;
+      fetch('/api/guest/gyms?lat=' + c.latitude + '&lng=' + c.longitude + '&radius=25&limit=30').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        var gs = (d && d.gyms) || [];
+        first.textContent = gs.length ? '📍 Tag a gym near you (optional)' : '📍 No gyms found within 25km';
+        gs.forEach(function (g) {
+          var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.city ? ' · ' + g.city : ''); sel.appendChild(o);
+        });
+      }).catch(function () { first.textContent = '📍 Tag a gym (optional)'; });
+    }, function () { first.textContent = '📍 Turn on location to tag a gym'; gymsAsked = false; }, { timeout: 8000, maximumAge: 600000 });
+  }
+  $('gym').addEventListener('focus', nearGyms);
+  $('gym').addEventListener('pointerdown', nearGyms);
   addEventListener('scroll', function () { if (innerHeight + scrollY > document.body.offsetHeight - 400) load(true); });
   document.addEventListener('visibilitychange', poll);
   setInterval(poll, 15000);
