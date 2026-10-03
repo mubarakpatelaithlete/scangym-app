@@ -105,6 +105,13 @@
     '.cs-grid::-webkit-scrollbar{display:none;}',
     '.cs-tile{scroll-snap-align:start;background:rgba(255,255,255,.05) !important;border:1px solid rgba(255,255,255,.14) !important;}',
     '.cs-row:active{background:rgba(255,255,255,.07) !important;}',
+    /* Owner 2026-10-03 "remember: button row at bottom": the All / Images /
+       Videos / Edit / Audio / Music filters leave the top and sit as one
+       see-through row at the bottom, just above the Ask AI / Image / Video row.
+       .cs-sticky loses its blur because a backdrop-filter would trap the fixed row. */
+    '.cs-sticky{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}',
+    '#' + ID + '{padding-bottom:calc(var(--sg-band-height,56px) + 70px) !important;}',
+    '#' + ID + ' .cs-chips{position:fixed;left:8px;right:8px;bottom:calc(var(--sg-tab-height,56px) + var(--sg-band-height,56px) + 8px);z-index:3;margin:0 !important;padding:5px 6px !important;border-radius:999px;background:rgba(20,20,26,.30);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}',
   ].join('');
 
   function el(tag, cls, html) {
