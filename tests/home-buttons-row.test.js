@@ -33,3 +33,10 @@ test('"Make one like this" is a Make button in the action row', () => {
   assert.match(html, /else if\(action === 'make'\) usePrompt\(video\);/);
   assert.match(html, /html body \.reel-prompt\{ display:none !important; \}/);
 });
+
+test('the action row scrolls sideways with full-size buttons, never squeezes them', () => {
+  const css = html.match(/<style id="sg-home-row">([\s\S]*?)<\/style>/)[1];
+  assert.match(css, /justify-content:flex-start !important/);
+  assert.match(css, /flex:0 0 60px !important; width:60px !important; min-width:60px !important/);
+  assert.match(css, /overflow-x:auto !important/);
+});
