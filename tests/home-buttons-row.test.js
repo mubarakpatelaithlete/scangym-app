@@ -40,3 +40,9 @@ test('the action row scrolls sideways with full-size buttons, never squeezes the
   assert.match(css, /flex:0 0 60px !important; width:60px !important; min-width:60px !important/);
   assert.match(css, /overflow-x:auto !important/);
 });
+
+test('search sits in the bottom row too', () => {
+  const css = html.match(/<style id="sg-home-tabs-row">([\s\S]*?)<\/style>/)[1];
+  assert.match(css, /#reels-top-bar #reels-search-button\{position:fixed !important;left:8px !important;top:auto !important;/);
+  assert.match(css, /#reels-cat-rail\{left:56px !important;\}/);
+});

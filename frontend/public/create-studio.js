@@ -110,6 +110,12 @@
        see-through row at the bottom, just above the Ask AI / Image / Video row.
        .cs-sticky loses its blur because a backdrop-filter would trap the fixed row. */
     '.cs-sticky{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}',
+    '.cs-lib .cs-sec span{display:none !important;}',
+    '.cs-chip.cs-lib-chip.open{background:rgba(255,255,255,.22) !important;}',
+    /* everything sits at the bottom: the model tiles drop down onto the button rows */
+    '#' + ID + '{display:flex !important;flex-direction:column;}',
+    '#' + ID + '>*{flex-shrink:0;}',
+    '#' + ID + ' .cs-grid{margin-top:auto !important;}',
     '#' + ID + '{padding-bottom:calc(var(--sg-band-height,56px) + 70px) !important;}',
     '#' + ID + ' .cs-chips{position:fixed;left:8px;right:8px;bottom:calc(var(--sg-tab-height,56px) + var(--sg-band-height,56px) + 8px);z-index:3;margin:0 !important;padding:5px 6px !important;border-radius:999px;background:rgba(20,20,26,.30);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}',
   ].join('');
@@ -367,6 +373,18 @@
       });
       chips.appendChild(c);
     });
+    /* Owner 2026-10-03 "even See all": Library joins the bottom row as a pill
+       (the header link stays in the DOM, hidden) and opens/closes the dated feed. */
+    var libChip = el('div', 'cs-chip cs-lib-chip', '\ud83d\udcda Library \u203a');
+    libChip.setAttribute('role', 'button');
+    libChip.addEventListener('click', function () {
+      var open = libBox.classList.toggle('all');
+      libChip.classList.toggle('open', open);
+      libChip.textContent = open ? '\ud83d\udcda Less \u2039' : '\ud83d\udcda Library \u203a';
+      libHead.querySelector('span').textContent = open ? 'Less \u2039' : 'See all \u203a';
+      if (open) libBox.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+    chips.insertBefore(libChip, chips.firstChild);
     root.appendChild(chips);
 
     var grid = el('div', 'cs-grid');
