@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Pulse · ScanGym — what's happening at the gym, live</title>
+<meta name="description" content="Live, public, text-first posts from gym-goers: PRs, crowd levels, deals and hot takes — as they happen.">
+<link rel="icon" href="/favicon.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:90px}
+header{position:sticky;top:0;z-index:5;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);border-bottom:1px solid #222;padding:12px 16px}
+h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
+.wrap{max-width:620px;margin:0 auto}
+#tags{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid #222}
+.chip{flex:none;border:1px solid #333;border-radius:999px;padding:4px 12px;color:#ddd;background:none;font-size:13px;cursor:pointer}
+.chip.on{border-color:#FF6D00;color:#FF6D00}
+#compose{padding:12px 16px;border-bottom:1px solid #222}
+#compose textarea{width:100%;min-height:70px;background:none;border:0;color:#fff;font:inherit;font-size:17px;resize:vertical;outline:none}
+.row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+select{background:#111;color:#ddd;border:1px solid #333;border-radius:8px;padding:6px;max-width:55%}
+.btn{background:#FF6D00;color:#000;border:0;border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer}.btn:disabled{opacity:.4}
+#left{color:#888;font-size:13px}
+#newpill{display:none;position:sticky;top:64px;z-index:4;margin:8px auto;background:#FF6D00;color:#000;border:0;border-radius:999px;padding:6px 16px;font-weight:700;cursor:pointer}
+.post{padding:12px 16px;border-bottom:1px solid #222}
+.meta{color:#888;font-size:13px}.meta b{color:#fff}
+.body{white-space:pre-wrap;word-wrap:break-word;margin:4px 0 8px}.body a{color:#FF6D00;text-decoration:none}
+.acts{display:flex;gap:22px}.acts button{background:none;border:0;color:#888;cursor:pointer;font-size:14px;padding:0}
+.acts .on{color:#FF6D00}
+.book{display:inline-block;margin:0 0 8px;color:#FF6D00;border:1px solid #FF6D00;border-radius:999px;padding:3px 10px;font-size:13px;text-decoration:none}
+.replies{margin-top:8px;border-left:2px solid #222;padding-left:10px}.reply{font-size:14px;margin:4px 0}
+.replies input{width:70%;background:#111;border:1px solid #333;color:#fff;border-radius:8px;padding:6px}
+#empty,#more{color:#888;text-align:center;padding:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Pulse <span>●</span> live</h1><div class="sub">What's happening at the gym right now — PRs, crowds, deals, hot takes.</div></header>
+<div id="tags"></div>
+<div id="compose">
+  <textarea id="txt" maxlength="280" placeholder="What's happening at your gym? Use #tags"></textarea>
+  <div class="row"><select id="gym"><option value="">📍 Tag a gym (optional)</option></select>
+  <span id="left">280</span><button class="btn" id="go" disabled>Post</button></div>
+</div>
+<button id="newpill"></button>
+<div id="feed"></div>
+<div id="empty" hidden>No posts yet — be the first. 🔥</div>
+<div id="more" hidden></div>
+</div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var posts = [], pending = [], tag = '', loading = false, done = false;
+  var J = function (url, opt) {
+    opt = opt || {}; opt.credentials = 'same-origin';
+    if (opt.body) opt.headers = { 'Content-Type': 'application/json' };
+    return fetch(url, opt).then(function (r) {
+      if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent('/pulse/'); throw new Error('auth'); }
+      return r.json();
+    });
+  };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function ago(t) {
+    var s = Math.max(1, (Date.now() - new Date(t)) / 1000);
+    return s < 60 ? Math.floor(s) + 's' : s < 3600 ? Math.floor(s / 60) + 'm' : s < 86400 ? Math.floor(s / 3600) + 'h' : Math.floor(s / 86400) + 'd';
+  }
+  function linkify(b) { return esc(b).replace(/#([a-z0-9_]{2,30})/gi, '<a href="#" data-tag="$1">#$1</a>'); }
+  function card(p) {
+    return '<div class="post" data-id="' + p.id + '">' +
+      '<div class="meta"><b>' + esc(p.name) + '</b> · ' + ago(p.at) + (p.gym && p.gym.name ? ' · 📍 ' + esc(p.gym.name) : '') + '</div>' +
+      '<div class="body">' + linkify(p.body) + '</div>' +
+      (p.gym ? '<a class="book" href="/gym/' + p.gym.id + '">Book ' + esc(p.gym.name || 'this gym') + ' — day price</a>' : '') +
+      '<div class="acts"><button data-a="reply">💬 ' + p.replies + '</button>' +
+      '<button data-a="repost" class="' + (p.reposted ? 'on' : '') + '">🔁 ' + p.reposts + '</button>' +
+      '<button data-a="like" class="' + (p.liked ? 'on' : '') + '">' + (p.liked ? '❤️' : '🤍') + ' ' + p.likes + '</button>' +
+      '<button data-a="share">↗</button></div><div class="replies" hidden></div></div>';
+  }
+  function render() {
+    $('feed').innerHTML = posts.map(card).join('');
+    $('empty').hidden = posts.length > 0;
+  }
+  function q(extra) { return '/api/pulse?' + (tag ? 'tag=' + tag + '&' : '') + (extra || ''); }
+  function load(more) {
+    if (loading || (more && done)) return; loading = true;
+    var extra = more && posts.length ? 'before=' + posts[posts.length - 1].id : '';
+    J(q(extra)).then(function (d) {
+      var got = d.posts || [];
+      posts = more ? posts.concat(got) : got; done = got.length < 30;
+      if (!more) { pending = []; $('newpill').style.display = 'none'; }
+      render();
+    }).catch(function () {}).then(function () { loading = false; });
+  }
+  function poll() {
+    if (document.hidden) return;
+    var top = pending[0] || posts[0];
+    J(q(top ? 'since=' + top.id : '')).then(function (d) {
+      var got = d.posts || []; if (!got.length) return;
+      if (!posts.length) { posts = got; render(); return; }
+      pending = got.concat(pending);
+      $('newpill').textContent = '↑ ' + pending.length + ' new post' + (pending.length > 1 ? 's' : '');
+      $('newpill').style.display = 'block';
+    }).catch(function () {});
+  }
+  $('newpill').onclick = function () {
+    posts = pending.concat(posts); pending = []; this.style.display = 'none'; render(); scrollTo(0, 0);
+  };
+  function trending() {
+    fetch('/api/pulse/trending').then(function (r) { return r.json(); }).then(function (d) {
+      var t = d.trending || [];
+      $('tags').innerHTML = '<button class="chip' + (tag ? '' : ' on') + '" data-tag="">🔥 Latest</button>' +
+        t.map(function (x) { return '<button class="chip' + (tag === x.tag ? ' on' : '') + '" data-tag="' + x.tag + '">#' + x.tag + ' · ' + x.posts + '</button>'; }).join('');
+    }).catch(function () {});
+  }
+  function setTag(t) { tag = t; trending(); load(false); scrollTo(0, 0); }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-tag]');
+    if (a) { e.preventDefault(); return setTag(a.getAttribute('data-tag').toLowerCase()); }
+    var b = e.target.closest('[data-a]'); if (!b) return;
+    var el = b.closest('.post'), id = el.getAttribute('data-id');
+    var p = posts.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    var act = b.getAttribute('data-a');
+    if (act === 'like' || act === 'repost') {
+      var flag = act === 'like' ? 'liked' : 'reposted';
+      J('/api/reels/social/pulse:' + id + '/' + act, { method: 'POST', body: JSON.stringify({ on: !p[flag] }) }).then(function (d) {
+        if (!d.ok) return; p.likes = d.likes; p.reposts = d.reposts; p.liked = d.liked; p.reposted = d.reposted;
+        el.outerHTML = card(p);
+      }).catch(function () {});
+    } else if (act === 'share') {
+      var url = location.origin + '/pulse/#' + id;
+      if (navigator.share) navigator.share({ text: p.body, url: url }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url);
+    } else if (act === 'reply') {
+      var box = el.querySelector('.replies');
+      if (!box.hidden) { box.hidden = true; return; }
+      box.hidden = false; box.innerHTML = '…';
+      J('/api/reels/social/pulse:' + id + '/comments').then(function (d) {
+        box.innerHTML = (d.comments || []).slice().reverse().map(function (c) {
+          return '<div class="reply"><b>' + esc(c.name) + '</b> ' + esc(c.body) + '</div>';
+        }).join('') + '<div class="row"><input maxlength="280" placeholder="Post your reply"><button class="btn">Reply</button></div>';
+        var inp = box.querySelector('input');
+        box.querySelector('.btn').onclick = function () {
+          var v = inp.value.trim(); if (!v) return;
+          J('/api/reels/social/pulse:' + id + '/comments', { method: 'POST', body: JSON.stringify({ body: v }) }).then(function (r) {
+            if (!r.ok) return; p.replies++;
+            box.insertAdjacentHTML('afterbegin', '<div class="reply"><b>' + esc(r.comment.name) + '</b> ' + esc(r.comment.body) + '</div>');
+            inp.value = ''; b.textContent = '💬 ' + p.replies;
+          }).catch(function () {});
+        };
+      }).catch(function () { box.innerHTML = 'Could not load replies'; });
+    }
+  });
+  $('txt').oninput = function () {
+    var n = 280 - this.value.length; $('left').textContent = n; $('go').disabled = !this.value.trim();
+  };
+  $('go').onclick = function () {
+    var go = this; go.disabled = true;
+    J('/api/pulse', { method: 'POST', body: JSON.stringify({ body: $('txt').value, gym_id: $('gym').value || null }) }).then(function (d) {
+      if (!d.ok) { alert(d.error || 'Could not post'); go.disabled = false; return; }
+      var sel = $('gym'); if (d.post.gym) d.post.gym.name = sel.options[sel.selectedIndex].text.split(' · ')[0];
+      posts.unshift(d.post); render(); $('txt').value = ''; $('left').textContent = 280; sel.value = ''; trending();
+    }).catch(function () { go.disabled = false; });
+  };
+  fetch('/api/guest/gyms').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    ((d && d.gyms) || []).forEach(function (g) {
+      var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.city ? ' · ' + g.city : ''); $('gym').appendChild(o);
+    });
+  }).catch(function () {});
+  addEventListener('scroll', function () { if (innerHeight + scrollY > document.body.offsetHeight - 400) load(true); });
+  document.addEventListener('visibilitychange', poll);
+  setInterval(poll, 15000);
+  trending(); load(false);
+})();
+</script>
+<script src="/sg-tabbar.js?v=1.4" defer></script>
+</body>
+</html>
