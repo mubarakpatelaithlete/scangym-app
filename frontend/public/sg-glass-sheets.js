@@ -95,6 +95,7 @@
 
   function check(el) {
     if (!el || el.nodeType !== 1 || el.dataset[DONE]) return;
+    if (el.id === 'sg-sv-sheet') return;   // Create sheet styles its own glass (squad-create.js)
     var hint = HINT.test((el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '')) || /fixed/.test(el.getAttribute('style') || '');
     if (!hint) return;
     var s = getComputedStyle(el);
