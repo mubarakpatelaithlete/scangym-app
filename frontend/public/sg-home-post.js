@@ -82,11 +82,19 @@
     var bg = sheet(
       media
       + '<textarea id="sg-hp-cap" maxlength="300" placeholder="Caption + #hashtags" style="width:100%;box-sizing:border-box;height:64px;border-radius:12px;padding:10px;color:#fff;font-size:14px;resize:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)">' + esc(caption) + '</textarea>'
+      + '<select id="sg-hp-gym" aria-label="Tag a gym" style="width:100%;box-sizing:border-box;margin-top:8px;padding:10px;border-radius:12px;color:#fff;font-size:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)"><option value="">\uD83D\uDCCD Tag the gym (optional)</option></select>'
       + '<div id="sg-hp-prog" style="display:none;margin:10px 0 0"><div style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden"><div id="sg-hp-bar" style="height:100%;width:0;background:#FF6D00;transition:width .2s"></div></div><div id="sg-hp-pct" style="font-size:12px;opacity:.75;margin-top:4px">Uploading 0%</div></div>'
       + '<div id="sg-hp-err" style="display:none;color:#f87171;font-size:13px;margin-top:8px"></div>'
       + '<div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="sg-hp-draft" class="sg-glass-chip" style="flex:1;padding:14px;border-radius:14px;color:#fff;font-weight:700;font-size:15px;cursor:pointer">\uD83D\uDCDD Save draft</button>'
       + '<button type="button" id="sg-hp-go" style="flex:1.4;padding:14px;border-radius:14px;border:0;background:#FF6D00;color:#fff;font-weight:800;font-size:15px;cursor:pointer">\uD83D\uDE80 Post</button></div>');
     var cap = bg.querySelector('#sg-hp-cap');
+    /* Kill-Instagram item 4: tag the gym → the reel gets "Book <gym>". */
+    var gymSel = bg.querySelector('#sg-hp-gym');
+    fetch('/api/guest/gyms').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      ((d && d.gyms) || []).forEach(function (g) {
+        var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.city ? ' \u00b7 ' + g.city : ''); gymSel.appendChild(o);
+      });
+    }).catch(function () {});
     bg.querySelector('#sg-hp-draft').onclick = function () {
       var p = draftId ? delDraft(draftId) : Promise.resolve();
       p.then(function () { return saveDraft(blob, cap.value); }).then(function () { close(); toast('Saved to drafts \uD83D\uDCDD'); }, function () { toast('Could not save the draft on this phone'); });
@@ -94,7 +102,7 @@
     bg.querySelector('#sg-hp-go').onclick = function () {
       var go = this;
       go.disabled = true; go.textContent = 'Posting\u2026';
-      upload(blob, cap.value, function (pct) {
+      upload(blob, cap.value, gymSel.value, function (pct) {
         bg.querySelector('#sg-hp-prog').style.display = 'block';
         bg.querySelector('#sg-hp-bar').style.width = pct + '%';
         bg.querySelector('#sg-hp-pct').textContent = pct < 100 ? 'Uploading ' + pct + '%' : 'Processing\u2026';
@@ -113,13 +121,14 @@
   }
 
   /* 74: real progress from XHR upload events (fetch has none). */
-  function upload(blob, caption, onPct) {
+  function upload(blob, caption, gymId, onPct) {
     return new Promise(function (ok, no) {
       var fd = new FormData();
       var name = blob.name || ('scangym-' + Date.now() + (isImg(blob) ? '.jpg' : /webm/.test(blob.type) ? '.webm' : '.mp4'));
       fd.append('video', blob, name);
       fd.append('caption', caption || '');
       fd.append('category', 'ScanGym creators');
+      if (gymId) fd.append('gym_id', gymId);
       var x = new XMLHttpRequest();
       x.open('POST', '/api/creators/upload');
       x.withCredentials = true;

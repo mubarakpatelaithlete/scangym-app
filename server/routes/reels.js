@@ -151,7 +151,7 @@ async function loadCatalogFromDB() {
   const result = await pool.query(
     `SELECT id, name, category, source, url, thumb, cdn_key, drive_id,
             file_size, blurhash, orientation, width, height, dopamine_tier, duration,
-            has_faststart, variants_ready, prompt, shop_product_id
+            has_faststart, variants_ready, prompt, shop_product_id, gym_id, created_at
      FROM video_catalog
      WHERE active = true AND COALESCE(orientation, '') <> 'photo'
      ORDER BY id ASC`
@@ -170,6 +170,9 @@ async function loadCatalogFromDB() {
     prompt: row.prompt || null,
     /* Task 161: the creator's own product sold in this video. */
     shopProductId: row.shop_product_id || null,
+    /* Kill-Instagram item 4: the gym this video was filmed at. */
+    gymId: row.gym_id || null,
+    createdAt: row.created_at || null,
     fileSize: row.file_size,
     blurhash: row.blurhash,
     orientation: row.orientation,
@@ -291,7 +294,78 @@ function spaceAds(list, everyNth) {
     out.push(real[i]);
     if ((i + 1) % everyNth === 0 && a < ads.length) out.push(ads[a++]);
   }
-  while (a < ads.length) out.push(ads[a++]);
+  /* Kill-Instagram item 2: a hard cap. Ads that do not fit the 1-in-N rhythm
+     are dropped, never piled up at the end of the feed. */
+  return out;
+}
+
+
+/* ══ Kill-Instagram items 3-5 (owner, 2026-10-03) ══════════════════════════
+ * 3. Real people: people's own posts ('creation') carry their creator (the
+ *    "First L." name, the same key Stories and Follow use) and their newest
+ *    photo post as the circle photo.
+ * 4. Book this gym: a post tagged with a gym carries { id, name } so the reel
+ *    shows "Book <gym>" straight to /gym/:id.
+ * 5. Fair reach: every new post gets a guaranteed first audience (see fairReach).
+ */
+const FAIR_REACH_HOURS = 72;
+const FAIR_REACH_SLOTS = 5;
+
+function postedBy(name) {
+  return String(name || '').split(' \u00b7 by ')[1] ? String(name).split(' \u00b7 by ')[1].trim() : '';
+}
+
+async function decorateOwnPosts(feed) {
+  const own = feed.filter((v) => v.source === 'creation' && postedBy(v.name));
+  if (own.length) {
+    const photos = {};
+    try {
+      const { rows } = await pool.query(
+        `SELECT name, url FROM video_catalog WHERE active = true AND source = 'creation'
+          AND orientation = 'photo' AND url IS NOT NULL ORDER BY created_at DESC LIMIT 500`);
+      for (const r of rows) { const k = postedBy(r.name).toLowerCase(); if (k && !photos[k]) photos[k] = r.url; }
+    } catch (e) { /* the circle falls back to the initial */ }
+    for (const v of own) {
+      const by = postedBy(v.name);
+      v.creator = Object.assign({ handle: by, name: by }, photos[by.toLowerCase()] ? { avatar: photos[by.toLowerCase()] } : {}, v.creator || {});
+    }
+  }
+  const ids = [...new Set(feed.map((v) => v.gymId).filter(Boolean))];
+  if (ids.length) {
+    try {
+      const { rows } = await pool.query('SELECT id, name FROM gyms WHERE id = ANY($1::int[])', [ids]);
+      const byId = new Map(rows.map((g) => [g.id, { id: g.id, name: g.name }]));
+      for (const v of feed) if (v.gymId && byId.has(v.gymId)) v.gym = byId.get(v.gymId);
+    } catch (e) { /* no gym CTA beats no feed */ }
+  }
+  return feed;
+}
+
+/**
+ * Item 5, fair reach: Instagram's opaque ranking buries new creators. Here every
+ * post from the last FAIR_REACH_HOURS gets a guaranteed early slot: up to
+ * FAIR_REACH_SLOTS fresh posts go to positions 1, 3, 5, ... (never slot 0, which
+ * must paint instantly). Which fresh posts get the slots rotates with the seed,
+ * so with many new posts each one still reaches people. Deterministic per seed,
+ * so paging stays exact.
+ */
+function fairReach(list, seed, now) {
+  const cutoff = (now || Date.now()) - FAIR_REACH_HOURS * 3600 * 1000;
+  const isFresh = (v) => v && v.source === 'creation' && v.createdAt && new Date(v.createdAt).getTime() > cutoff;
+  const fresh = list.filter(isFresh);
+  if (!fresh.length) return list;
+  const start = Math.abs(parseInt(seed, 10) || 0) % fresh.length;
+  const rotated = fresh.slice(start).concat(fresh.slice(0, start));
+  const lifted = rotated.slice(0, FAIR_REACH_SLOTS);
+  const liftedSet = new Set(lifted);
+  const rest = list.filter((v) => !liftedSet.has(v));
+  const out = [];
+  let f = 0;
+  for (let i = 0; i < rest.length; i++) {
+    out.push(rest[i]);
+    if (out.length % 2 === 1 && f < lifted.length) out.push(lifted[f++]);
+  }
+  while (f < lifted.length) out.push(lifted[f++]);
   return out;
 }
 
@@ -449,6 +523,9 @@ router.get('/feed', async (req, res) => {
     // enrichment/variant/ranking stages built for our own videos. They are
     // interleaved at fixed positions after ranking instead.
 
+    // 2f. Kill-Instagram items 3 + 4: creator circle + Book this gym.
+    try { await decorateOwnPosts(feed); } catch (e) { console.warn('Feed: decorate own posts failed:', e.message); }
+
     // ── Store in cache (before category filter/ranking) ──
     _feedCache = feed.map(v => ({ ...v, variants: v.variants ? { ...v.variants } : undefined }));
     _feedCacheTime = now;
@@ -473,6 +550,8 @@ router.get('/feed', async (req, res) => {
     // consistent regardless of algorithm behaviour.
     if (shuffle) {
       feed = await rankFeed(feed, { seed, sessionId, offset });
+      // Kill-Instagram item 5: new posts get a guaranteed first audience.
+      if (!category) feed = fairReach(feed, seed);
     }
 
     // 4b. SOCIAL REELS: interleave at fixed positions, after ranking.
@@ -1194,6 +1273,8 @@ setTimeout(async () => {
 module.exports = router;
 module.exports.invalidateFeedCache = invalidateFeedCache;
 module.exports._spaceAds = spaceAds;
+module.exports._fairReach = fairReach;
+module.exports._postedBy = postedBy;
 
 // ═══ #5: AI Content Moderation ═══
 // Checks uploaded reel for inappropriate content, ensures human element + ScanGym branding

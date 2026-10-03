@@ -3486,7 +3486,15 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
         }
 
         var affiliateHtml = '';
-        if(hasAffiliate){
+        /* Kill-Instagram item 4: a post tagged with a gym books THAT gym, one tap
+           from the video. Instagram can show a gym; it cannot sell you a day pass. */
+        if(video.gym && video.gym.id){
+          var gymPath = '/gym/' + encodeURIComponent(video.gym.id);
+          affiliateHtml = '<a class="creator-cta sg-book-gym" href="' + gymPath + '" onclick="event.preventDefault();_ctaNavigate(\'' + gymPath + '\')">'
+            + '<span class="creator-cta-icon">\uD83C\uDFCB\uFE0F</span>'
+            + '<div><div class="creator-cta-text">Book ' + escHtml(video.gym.name || 'this gym') + ' \u2014 ' + sgPrice('day').display + '</div>'
+            + '<div class="creator-cta-sub">Day pass \u00b7 no membership</div></div></a>';
+        } else if(hasAffiliate){
           // G5 fix: use onclick + postMessage so CTA navigates the parent app, not the iframe
           var affLink = escHtml(video.creator.affiliateLink);
           affiliateHtml = '<a class="creator-cta" href="' + affLink + '" onclick="event.preventDefault();_ctaNavigate(\'' + affLink + '\')">'
@@ -4632,7 +4640,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
     })();
     </script>
   <script src="/sg-tabbar.js?v=1.3" defer></script>
-  <script src="/sg-home-post.js?v=1.3" defer></script>
+  <script src="/sg-home-post.js?v=1.4" defer></script>
   <link rel="stylesheet" href="/sg-glass.css?v=1.4">
   <link rel="stylesheet" href="/sg-fast.css?v=1.0">
 
