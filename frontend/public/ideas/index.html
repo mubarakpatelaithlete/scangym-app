@@ -20,7 +20,7 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
 .chip.on{border-color:#FF6D00;color:#FF6D00}
 #grid{columns:2 160px;column-gap:10px;padding:0 12px}
 .pin{break-inside:avoid;margin:0 0 12px;position:relative}
-.pin img{width:100%;border-radius:16px;display:block;background:#161616;min-height:120px;cursor:pointer}
+.pin .m{width:100%;border-radius:16px;display:block;background:#161616;min-height:120px;cursor:pointer}
 .pin .t{font-size:13px;margin:6px 2px 2px;color:#ddd;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .pin .save{position:absolute;top:8px;right:8px;background:#FF6D00;color:#000;border:0;border-radius:999px;padding:6px 12px;font-weight:700;cursor:pointer}
 .pin .save.done{background:#fff}
@@ -43,7 +43,7 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
 <header>
   <h1>Ideas <span>📌</span></h1>
   <div class="sub">Find workouts, recipes &amp; gyms — save them to boards, then go do them.</div>
-  <input id="q" type="search" placeholder="Search ideas: glute workout, high-protein, home gym…" autocomplete="off">
+  <input id="q" type="search" placeholder="Search ideas: abs, leg day, home workout, warm up…" autocomplete="off">
   <div class="tabs"><button id="tDisc" class="on">Discover</button><button id="tMine">My boards</button></div>
 </header>
 <div id="chips"></div>
@@ -60,7 +60,7 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var CHIPS = ['All', 'Workout', 'Recipe', 'Home gym', 'Mobility', 'Gear', 'Gym tour', 'Motivation'];
+  var CHIPS = ['All', 'Workout', 'Abs', 'Legs', 'Glutes', 'Arms', 'Home', 'Weight loss', 'Beginner', 'Price'];
   var q = '', offset = 0, loading = false, more = true, picking = null, boards = null;
   var params = new URLSearchParams(location.search);
   var here = location.pathname + location.search;
@@ -77,14 +77,19 @@ h1{margin:0;font-size:20px}h1 span{color:#FF6D00}.sub{color:#888;font-size:13px}
 
   function card(i, boardId) {
     var d = document.createElement('div'); d.className = 'pin';
-    var acts = '<a href="/reels?v=' + i.id + '">▶ Watch</a>';
+    var watch = '/reels?v=' + encodeURIComponent(i.id);
+    var acts = '<a href="' + watch + '">▶ Watch</a>';
     if (i.gymId) acts += '<a href="/gym/' + i.gymId + '">📍 Book this gym</a>';
-    if (i.shopProductId) acts += '<a href="/reels?v=' + i.id + '">🛍 Shop</a>';
-    d.innerHTML = '<img loading="lazy" alt="' + esc(i.name) + '" src="' + esc(i.poster || '/icon-512.png') + '">'
+    if (i.shopProductId) acts += '<a href="' + watch + '">🛍 Shop</a>';
+    var media = (!i.poster && i.video)
+      ? '<video class="m" muted playsinline preload="metadata" src="' + esc(i.video) + '#t=0.5"></video>'
+      : '<img class="m" loading="lazy" alt="' + esc(i.name) + '" src="' + esc(i.poster || '/icon-512.png') + '">';
+    d.innerHTML = media
       + '<button class="save">' + (boardId ? 'Remove' : 'Save') + '</button>'
       + '<div class="t">' + esc(i.name) + '</div><div class="acts">' + acts + '</div>';
-    d.querySelector('img').onclick = function () { location.href = '/reels?v=' + i.id; };
-    d.querySelector('img').onerror = function () { this.src = '/icon-512.png'; };
+    var m = d.querySelector('.m');
+    m.onclick = function () { location.href = watch; };
+    if (m.tagName === 'IMG') m.onerror = function () { this.onerror = null; this.src = '/icon-512.png'; };
     var b = d.querySelector('.save');
     b.onclick = boardId ? function () {
       J('/api/ideas/pin', { method: 'DELETE', body: JSON.stringify({ video_id: i.id, board_id: boardId }) })
