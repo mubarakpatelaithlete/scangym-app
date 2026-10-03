@@ -701,7 +701,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
    horizontal row at the bottom, just above the channel/profile name. */
 html body #sg-reel-row-host .reel-actions.reel-actions{
   left:8px !important; right:8px !important; width:auto !important; top:auto !important;
-  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 132px) !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 86px) !important;
   height:auto !important; max-height:none !important;
   flex-direction:row !important; align-items:center !important; justify-content:space-between !important;
   gap:0 !important; padding:6px 6px !important; margin:0 !important;
@@ -713,7 +713,7 @@ html body #sg-reel-row-host .reel-actions.reel-actions{
 html body #sg-reel-row-host .reel-actions.reel-actions::-webkit-scrollbar{display:none}
 html body #sg-reel-row-host .reel-actions.reel-actions .reel-action,
 html body #sg-reel-row-host .reel-actions.reel-actions .sg-row-slot .tt-action.sg-row-trio:not(.sg-row-hidden){
-  flex:1 0 46px !important; width:auto !important; min-width:46px !important; margin:0 !important; gap:1px !important;
+  flex:1 0 40px !important; width:auto !important; min-width:40px !important; margin:0 !important; gap:1px !important;
 }
 html body #sg-reel-row-host .reel-actions.reel-actions .icon,
 html body #sg-reel-row-host .reel-actions.reel-actions .tt-action-btn{ width:28px !important; height:28px !important; }
@@ -726,6 +726,9 @@ html body #sg-reel-row-host .reel-actions.reel-actions .sg-creator .sg-av{ width
 html body #sg-reel-row-host .reel-actions.reel-actions .sg-creator .sg-plus{ width:16px !important; height:16px !important; line-height:16px !important; font-size:12px !important; bottom:-6px !important; }
 /* the name/caption now use the full width under the row (no right column any more) */
 html body .reel-info{ right:12px !important; }
+/* Owner 2026-10-03: the "Make one like this" pill is now the Make button in the row */
+html body .reel-prompt{ display:none !important; }
+html body .reel-info{ bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 12px) !important; }
 html body .reel-info .reel-title{ white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
 </style>
 <style id="sg-home-tabs-row">
@@ -734,7 +737,7 @@ html body .reel-info .reel-title{ white-space:nowrap !important; overflow:hidden
    bottom as ONE see-through horizontal row, just above the action row. */
 html body #reels-top-bar{background:none !important;}
 html body #reels-cat-rail{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;
-  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 195px) !important;
+  bottom:calc(var(--sg-nav-h,56px) + var(--sg-safe-b,0px) + 149px) !important;
   z-index:26;gap:6px !important;padding:5px 6px !important;border-radius:999px !important;
   background:rgba(20,20,26,.20) !important;border:1px solid rgba(255,255,255,.16) !important;
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
@@ -3612,6 +3615,9 @@ html body #reels-search-button{margin-left:auto !important;}
           +   '<div class="icon">' + ICONS.save + '</div><span class="label">' + _saveLbl + _saveCheck + '</span></div>'
           + '<div class="reel-action" data-action="share"' + (_isShared?' style="color:#22c55e"':'') + '>'
           +   '<div class="icon">' + ICONS.share + '</div><span class="label">' + _shareLbl + _shareCheck + '</span></div>'
+          /* Owner 2026-10-03: "Make one like this" is a button in the row, next to Like/Comment. */
+          + '<div class="reel-action" data-action="make" aria-label="' + ((video.prompt || '').trim() ? 'Use this prompt' : 'Make a reel like this') + '">'
+          +   '<div class="icon"><svg class="tt-bold" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div><span class="label">Make</span></div>'
           + _sb.tail + SHOP_ACTION
           ; /* Earn action removed — moved to Profile tab */
         div.appendChild(actions);
@@ -3702,6 +3708,7 @@ html body #reels-search-button{margin-left:auto !important;}
             else if(action === 'shop') openReelShop(video);
             else if(action === 'share') handleShare(video);
             else if(action === 'save') handleSave(video, videoUrl);
+            else if(action === 'make') usePrompt(video);
             else if(action === 'more') window.location.href = '/more';
           });
         });

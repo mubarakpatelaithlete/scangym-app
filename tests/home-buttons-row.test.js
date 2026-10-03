@@ -23,7 +23,13 @@ test('Home top tabs/categories are a see-through row at the bottom, above the ac
   assert.ok(m, 'tabs row style block missing');
   const css = m[1];
   assert.match(css, /#reels-cat-rail\{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;/);
-  assert.match(css, /bottom:calc\(var\(--sg-nav-h,56px\) \+ var\(--sg-safe-b,0px\) \+ 195px\)/, 'must sit above the action row (nav+132px, 55px tall)');
+  assert.match(css, /bottom:calc\(var\(--sg-nav-h,56px\) \+ var\(--sg-safe-b,0px\) \+ 149px\)/, 'must sit above the action row (nav+86px, 55px tall)');
   assert.match(css, /\.reels-cat\[aria-selected="true"\]\{background:rgba\(255,109,0,\.78\)/);
   assert.match(css, /background:rgba\(20,20,26,\.20\)/);
+});
+
+test('"Make one like this" is a Make button in the action row', () => {
+  assert.match(html, /data-action="make"/);
+  assert.match(html, /else if\(action === 'make'\) usePrompt\(video\);/);
+  assert.match(html, /html body \.reel-prompt\{ display:none !important; \}/);
 });
