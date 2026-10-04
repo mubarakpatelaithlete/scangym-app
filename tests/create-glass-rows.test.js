@@ -48,8 +48,8 @@ test('Create filters (All/Images/Videos/…) are a see-through row at the bottom
 
 test('Library (See all) is a pill in the bottom row; tiles sit at the bottom', () => {
   const cs = fs.readFileSync(path.join(__dirname, '..', 'frontend/public/create-studio.js'), 'utf8');
-  assert.match(cs, /el\('div', 'cs-chip cs-lib-chip'/);
-  assert.match(cs, /chips\.insertBefore\(libChip, chips\.firstChild\)/);
+  assert.match(cs, /el\('div', 'cs-chip cs-lib-chip/);
+  assert.match(cs, /rail\.appendChild\(lib\)/); // 2026-10-04: one row, Library joins #sg-sv-rail
   assert.match(cs, /'\.cs-lib \.cs-sec span\{display:none !important;\}'/);
   assert.match(cs, /' \.cs-grid\{margin-top:auto !important;\}'/);
 });
