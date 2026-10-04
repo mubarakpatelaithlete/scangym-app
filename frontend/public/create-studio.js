@@ -114,6 +114,7 @@
     '.cs-chip.cs-lib-chip.open{background:rgba(255,255,255,.22) !important;}',
     /* everything sits at the bottom: the model tiles drop down onto the button rows */
     '#' + ID + '{display:flex !important;flex-direction:column;}',
+    '#sg-sv-rail .cs-row-chip{order:-1 !important;}',
     '#' + ID + '>*{flex-shrink:0;}',
     '#' + ID + ' .cs-grid{margin-top:auto !important;}',
     '#' + ID + '{padding-bottom:calc(var(--sg-band-height,56px) + 70px) !important;}',
@@ -368,31 +369,32 @@
     root.appendChild(libBox);
     loadLibrary(true).then(function (items) { renderLibrary(root, items); });
 
-    var chips = el('div', 'cs-chips');
-    var all = [{ key: 'all', chip: 'All' }].concat(KINDS);
-    all.forEach(function (k) {
-      var c = el('div', 'cs-chip' + (filter === k.key ? ' on' : ''), esc(k.chip));
-      c.addEventListener('click', function () {
-        filter = k.key;
-        Array.prototype.forEach.call(chips.children, function (x) { x.classList.remove('on'); });
-        c.classList.add('on');
-        paintGrid(grid);
-      });
-      chips.appendChild(c);
-    });
-    /* Owner 2026-10-03 "even See all": Library joins the bottom row as a pill
-       (the header link stays in the DOM, hidden) and opens/closes the dated feed. */
-    var libChip = el('div', 'cs-chip cs-lib-chip', '\ud83d\udcda Library \u203a');
+    /* Owner 2026-10-04: no second row. Images / Videos / Edit duplicated the
+       Image / Video / Edit buttons in the row below, so they are gone; Library
+       and All join that one sideways-scrolling row (#sg-sv-rail) as pills. */
+    var libChip = el('div', 'cs-chip cs-lib-chip sg-pill cs-row-chip', '\ud83d\udcda Library \u203a');
     libChip.setAttribute('role', 'button');
-    libChip.addEventListener('click', function () {
+    var allChip = el('div', 'cs-chip sg-pill sg-on cs-row-chip', 'All');
+    allChip.setAttribute('role', 'button');
+    libChip.addEventListener('click', function (e) {
+      e.stopPropagation();
       var open = libBox.classList.toggle('all');
       libChip.classList.toggle('open', open);
+      libChip.classList.toggle('sg-on', open);
+      allChip.classList.toggle('sg-on', !open);
       libChip.textContent = open ? '\ud83d\udcda Less \u2039' : '\ud83d\udcda Library \u203a';
       libHead.querySelector('span').textContent = open ? 'Less \u2039' : 'See all \u203a';
       if (open) libBox.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
-    chips.insertBefore(libChip, chips.firstChild);
-    root.appendChild(chips);
+    allChip.addEventListener('click', function (e) {
+      e.stopPropagation();
+      filter = 'all';
+      if (libBox.classList.contains('all')) libChip.click();
+      allChip.classList.add('sg-on');
+      paintGrid(grid);
+      grid.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    });
+    root._rowChips = [libChip, allChip];
 
     var grid = el('div', 'cs-grid');
     grid.appendChild(el('div', 'cs-empty', 'Loading models\u2026'));
@@ -421,6 +423,7 @@
     if (location.pathname !== lastPath) { dismissed = false; lastPath = location.pathname; }
     if (!on || dismissed) {
       if (root) root.remove();
+      Array.prototype.forEach.call(document.querySelectorAll('.cs-row-chip'), function (c) { c.remove(); });
       if (histTimer) { clearInterval(histTimer); histTimer = null; }
       return;
     }
@@ -435,6 +438,19 @@
       }, 8000);
     }
   }
+
+  /* Keep Library + All at the start of the bottom row (the rail can re-render). */
+  function placeRowChips() {
+    var root = document.getElementById(ID);
+    var rail = document.querySelector('#sg-sv-rail.sv-float');
+    if (!root || !rail || !root._rowChips) return;
+    var lib = root._rowChips[0], all = root._rowChips[1];
+    /* rails.js keeps its Ask AI slot as the first child, so the chips are
+       appended and shown first with CSS order instead. */
+    if (lib.parentNode !== rail) rail.appendChild(lib);
+    if (all.parentNode !== rail) rail.appendChild(all);
+  }
+  setInterval(placeRowChips, 400);
 
   /* When the sheet closes after a generation, the feed should already show it. */
   document.addEventListener('sg-squad-create:done', function () { var r = document.getElementById(ID); if (r) loadLibrary(true).then(function (items) { renderLibrary(r, items); }); });
