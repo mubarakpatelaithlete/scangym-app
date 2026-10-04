@@ -472,6 +472,7 @@
         animation:soundPulse 2s ease-in-out infinite;
       }
       #sound-hint.show{opacity:1;}
+      #sound-hint{display:none!important}
       #sound-hint svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
       @keyframes soundPulse{
         0%,100%{opacity:0.7;transform:scale(1);}
@@ -688,7 +689,7 @@ html body .reel-actions .reel-action.sg-creator{ order:-1 !important; position:r
   <!-- One definition of what a strip button looks like; loaded before the
        rows that read it. -->
   <link rel="stylesheet" href="/one-button.css?v=1.0">
-  <link rel="stylesheet" href="/brand-mark.css?v=1.0">
+  <link rel="stylesheet" href="/brand-mark.css?v=1.1">
   <link rel="stylesheet" href="/talk-bar.css?v=1.0">
   <link rel="stylesheet" href="/book-by-tap.css?v=1.1">
   <!-- The Reels feed is its own document, so it never got the row rails.css
@@ -783,11 +784,7 @@ html body #reels-cat-rail{left:56px !important;}
       </div>
     </div>
     <div id="mute-indicator"></div>
-    <!-- Tap-for-sound indicator -->
-    <div id="sound-hint">
-      <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      Tap for sound
-    </div>
+    <!-- Owner 2026-10-04: no "Tap for sound" pill. Sound plays like TikTok; Mute lives in the bottom row. -->
     <!-- Discovery header: category rail on the left, search on the right.
          Same shape as TikTok's: the rail scrolls sideways, the feed follows it. -->
     <header id="reels-top-bar">
@@ -935,11 +932,25 @@ html body #reels-cat-rail{left:56px !important;}
             if(typeof showToast === 'function') showToast(on ? 'Following ' + cr.name : 'Unfollowed ' + cr.name);
           }).catch(function(){ follows[cr.key] = !on; paintFollow(cr.key); });
       }
+      /* Owner 2026-10-04: Mute/Sound is a pill in the bottom row, next to Like/Comment. */
+      var MUTE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/>';
+      function muteInner(){
+        return '<div class="icon">' + MUTE_SVG + (isMuted ? '<line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>' : '<path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>') + '</svg></div><span class="label">' + (isMuted ? 'Unmute' : 'Mute') + '</span>';
+      }
+      function muteButton(){ return '<div class="reel-action sg-mute-btn" data-action="mute" aria-label="Mute or unmute">' + muteInner() + '</div>'; }
+      function paintMute(){ var b = document.querySelectorAll('.sg-mute-btn'); for(var i = 0; i < b.length; i++) b[i].innerHTML = muteInner(); }
+      document.addEventListener('click', function(e){
+        var b = e.target.closest && e.target.closest('.sg-mute-btn');
+        if(!b) return;
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        toggleMute();
+      }, true);
       function socialButtons(video){
         var k = escHtml(socialKey(video));
         return {
           lead: creatorButton(video) + '<div class="reel-action" data-action="like" data-sk="' + k + '"><div class="icon">' + ICONS.like + '</div><span class="label">Like</span></div>'
-              + '<div class="reel-action" data-action="comment" data-sk="' + k + '"><div class="icon">' + ICONS.comment + '</div><span class="label">Comment</span></div>',
+              + '<div class="reel-action" data-action="comment" data-sk="' + k + '"><div class="icon">' + ICONS.comment + '</div><span class="label">Comment</span></div>'
+              + muteButton(),
           tail: '<div class="reel-action" data-action="repost" data-sk="' + k + '"><div class="icon">' + ICONS.repost + '</div><span class="label">Repost</span></div>'
         };
       }
@@ -1516,7 +1527,18 @@ html body #reels-cat-rail{left:56px !important;}
       // ── State ──
       var allVideos      = [];
       var currentIndex   = 0;
-      var isMuted        = (function(){ try { var v = localStorage.getItem('sg_muted'); return v === null ? true : v === '1'; } catch(e){ return true; } })();
+      var isMuted        = (function(){ try { return localStorage.getItem('sg_muted') === '1'; } catch(e){ return false; } })();
+      /* Owner 2026-10-04: sound on like TikTok. Browsers block sound until the first
+         touch, so the first touch/swipe/key anywhere turns it on (unless muted). */
+      (function(){
+        function on(){
+          ['pointerdown','touchstart','keydown','wheel'].forEach(function(t){ document.removeEventListener(t, on, true); });
+          if(isMuted) return;
+          var vs = document.querySelectorAll('.reel video');
+          for(var i = 0; i < vs.length; i++){ vs[i].muted = false; vs[i].volume = 1; }
+        }
+        ['pointerdown','touchstart','keydown','wheel'].forEach(function(t){ document.addEventListener(t, on, {capture:true, passive:true}); });
+      })();
       var screenH        = window.innerHeight;
       var trackOffset    = 0;
       var renderedReels  = {};
@@ -4366,7 +4388,7 @@ html body #reels-cat-rail{left:56px !important;}
         showToast('\uD83D\uDC46 Long-press the video \u2192 Save to Photos');
       }
 
-      function showSoundHint(){
+      function showSoundHint(){ return; /* owner 2026-10-04: removed */
         var el = document.getElementById('sound-hint');
         if(!el) return;
         el.classList.add('show');
@@ -4444,6 +4466,7 @@ html body #reels-cat-rail{left:56px !important;}
           applySocialMute(renderedReels[mountedSocialIndex].querySelector('.reel-social-embed iframe'));
         }
         showMuteIndicator(isMuted);
+        paintMute();
         if(!isMuted){
           var sh = document.getElementById('sound-hint');
           if(sh){ sh.classList.remove('show'); sh.style.display = 'none'; }
