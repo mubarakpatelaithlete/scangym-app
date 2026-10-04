@@ -53,3 +53,9 @@ test('Library (See all) is a pill in the bottom row; tiles sit at the bottom', (
   assert.match(cs, /'\.cs-lib \.cs-sec span\{display:none !important;\}'/);
   assert.match(cs, /' \.cs-grid\{margin-top:auto !important;\}'/);
 });
+
+test('Create type buttons (Ask AI…Edit) are see-through pills in a sideways-scrolling bottom row', () => {
+  const cs = fs.readFileSync(path.join(__dirname, '..', 'frontend/public/create-studio.js'), 'utf8');
+  assert.match(cs, /#sg-sv-rail\.sv-float\{background:transparent !important;[^']*overflow-x:auto !important;/);
+  assert.match(cs, /\.sg-sv-btn,body:has\(#' \+ ID \+ '\) #sg-sv-rail\.sv-float \.sg-row-slot \.tt-action\.sg-row-trio\{flex:0 0 auto !important;flex-direction:row !important;/);
+});

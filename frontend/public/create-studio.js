@@ -118,6 +118,13 @@
     '#' + ID + ' .cs-grid{margin-top:auto !important;}',
     '#' + ID + '{padding-bottom:calc(var(--sg-band-height,56px) + 70px) !important;}',
     '#' + ID + ' .cs-chips{position:fixed;left:8px;right:8px;bottom:calc(var(--sg-tab-height,56px) + var(--sg-band-height,56px) + 8px);z-index:3;margin:0 !important;padding:5px 6px !important;border-radius:999px;background:rgba(20,20,26,.30);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}',
+    /* Owner 2026-10-04: Ask AI / Text / Image / Video / Audio / Music / Edit are
+       see-through pills in one row that scrolls sideways instead of squeezing,
+       same look as the filter pills above it. */
+    'body:has(#' + ID + ') #sg-sv-rail.sv-float{background:transparent !important;border-top:0 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;justify-content:flex-start !important;align-items:center !important;gap:8px !important;padding:0 10px !important;overflow-x:auto !important;overflow-y:hidden !important;scroll-snap-type:none !important;}',
+    'body:has(#' + ID + ') #sg-sv-rail.sv-float .sg-sv-btn,body:has(#' + ID + ') #sg-sv-rail.sv-float .sg-row-slot .tt-action.sg-row-trio{flex:0 0 auto !important;flex-direction:row !important;align-items:center !important;gap:6px !important;height:40px !important;min-width:0 !important;padding:0 14px 0 10px !important;border-radius:999px !important;background:rgba(255,255,255,.08) !important;border:1px solid rgba(255,255,255,.18) !important;-webkit-backdrop-filter:blur(14px) !important;backdrop-filter:blur(14px) !important;}',
+    'body:has(#' + ID + ') #sg-sv-rail.sv-float .sv-circle,body:has(#' + ID + ') #sg-sv-rail.sv-float .sg-row-trio>.tt-action-btn{width:22px !important;height:22px !important;background:transparent !important;border:0 !important;box-shadow:none !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;}',
+    'body:has(#' + ID + ') #sg-sv-rail.sv-float .sv-label,body:has(#' + ID + ') #sg-sv-rail.sv-float .sg-row-trio>.tt-action-label{font-size:13px !important;font-weight:600 !important;margin:0 !important;white-space:nowrap !important;}',
   ].join('');
 
   function el(tag, cls, html) {
