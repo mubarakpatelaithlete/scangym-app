@@ -13,7 +13,7 @@ function ShopPage(){
   var cats=['All','Prompt packs','Workout plans','Meal guides','Video programs','Templates'];
   var chips=cats.map(function(c){
     var on=_sgShopState.category===c;
-    return '<button type="button" data-shop-cat="'+c+'" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
+    return '<button type="button" class="sg-pill'+(on?' sg-on':'')+'" data-shop-cat="'+c+'" onclick="window._sgShopCategory('+JSON.stringify(c).replace(/"/g,'&quot;')+')" '
       +'style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.14)')+';border-radius:18px;padding:7px 12px;'
       +'background:'+(on?'rgba(255,109,0,.22)':'rgba(255,255,255,.06)')+';color:#fff;font-size:13px;font-weight:700;cursor:pointer">'+c+'</button>';
   }).join('');
@@ -24,8 +24,8 @@ function ShopPage(){
   return `<section style="width:100%;max-width:720px;min-width:0;box-sizing:border-box;overflow-x:hidden;margin:0 auto;padding:10px 12px 110px;color:#fff">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 8px 44px;min-height:30px">
       <h1 style="margin:0;font-size:17px;font-weight:900;white-space:nowrap">ScanGym <span style="color:#FF6D00">Digital Shop</span></h1>
-      <button type="button" id="sg-shop-orders-btn" aria-label="My orders" onclick="window._sgShopOpenOrders()" style="margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDCE6 Orders</button>
-      <button type="button" id="sg-shop-basket-btn" aria-label="Basket" onclick="window._sgShopOpenBasket()" style="flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDED2 <span id="sg-shop-basket-n">${_sgShopLS('sg_shop_basket').length}</span></button>
+      <button type="button" class="sg-pill" id="sg-shop-orders-btn" aria-label="My orders" onclick="window._sgShopOpenOrders()" style="margin-left:auto;flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDCE6 Orders</button>
+      <button type="button" class="sg-pill" id="sg-shop-basket-btn" aria-label="Basket" onclick="window._sgShopOpenBasket()" style="flex:none;border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:6px 10px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;font-size:13px;cursor:pointer">\uD83D\uDED2 <span id="sg-shop-basket-n">${_sgShopLS('sg_shop_basket').length}</span></button>
     </div>
     <div style="position:sticky;top:0;z-index:5;padding:4px 0 8px;background:#0f172a">
       <label style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:0 12px;height:44px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #FF6D00">
@@ -202,7 +202,7 @@ window._sgShopRender=function(){
   if(fl.under5)items=items.filter(function(x){return (x.pricePence||0)<500;});
   if(fl.stars4)items=items.filter(function(x){return (x.rating||0)>=4;});
   if(fl.fresh)items=items.filter(function(x){return Date.now()-new Date(x.createdAt||0).getTime()<30*864e5;});
-  var fchip=function(k,l){var on=!!fl[k];return '<button type="button" onclick="window._sgShopFlt(\''+k+'\')" style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.2)')+';border-radius:16px;padding:6px 12px;background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.05)')+';color:#fff;font-size:12px;font-weight:700;cursor:pointer">'+(on?'\u2713 ':'')+l+'</button>';};
+  var fchip=function(k,l){var on=!!fl[k];return '<button type="button" class="sg-pill'+(on?' sg-on':'')+'" onclick="window._sgShopFlt(\''+k+'\')" style="flex:none;border:1px solid '+(on?'#FF6D00':'rgba(255,255,255,.2)')+';border-radius:16px;padding:6px 12px;background:'+(on?'rgba(255,109,0,.18)':'rgba(255,255,255,.05)')+';color:#fff;font-size:12px;font-weight:700;cursor:pointer">'+(on?'\u2713 ':'')+l+'</button>';};
   var chipsRow='<div style="display:flex;gap:8px;overflow-x:auto;margin:0 0 10px;scrollbar-width:none">'+fchip('under5','Under \u00a35')+fchip('stars4','\u2605\u2605\u2605\u2605 & up')+fchip('fresh','New this month')+'</div>';
   var opt=function(v,l){return '<option value="'+v+'"'+(so===v?' selected':'')+'>'+l+'</option>';};
   var bar='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px">'
