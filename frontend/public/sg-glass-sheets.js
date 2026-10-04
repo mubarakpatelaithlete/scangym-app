@@ -133,3 +133,61 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', first); else first();
   window.sgGlassSheets = { scan: scan };
 })();
+
+/* Owner 2026-10-04: "I love the Create buttons (Ask AI, Text, Image, Video,
+   Audio, Music, Edit) — make all buttons in all tabs like these." One pill
+   look for every button row on every tab: 40px see-through glass pill, icon
+   left of a 13px label, rows scroll sideways (no snap, so the first pill
+   stays put). Selected = the app's orange. Loaded on every page via this file. */
+(function () {
+  if (window.__sgPills) return; window.__sgPills = 1;
+  var H = 'html body ';
+  var PILL = [
+    '#reels-cat-rail .reels-cat',
+    '#sg-reel-row-host .reel-actions.reel-actions.reel-actions .reel-action:not(.sg-creator)',
+    '#sg-reel-row-host .reel-actions.reel-actions.reel-actions .sg-row-slot .tt-action.sg-row-trio:not(.sg-row-hidden)',
+    '#sg-sv-rail.sv-float.sv-float .sg-sv-btn',
+    '#sg-sv-rail.sv-float.sv-float .sg-row-slot .tt-action.sg-row-trio:not(.sg-row-hidden)',
+    '#sg-profile-rail.sg-rail-scrollable .sg-pr-btn',
+    '#sg-profile-rail.sg-rail-scrollable .sg-row-slot .tt-action.sg-row-trio:not(.sg-row-hidden)',
+    '.cs-chips.cs-chips .cs-chip',
+    '#filters.tabs button', '.seg.seg button',
+    '.sg-pill.sg-pill'
+  ];
+  var ICON = ['.icon', '.tt-action-btn', '.sv-circle', '.sg-pr-circle'];
+  var LABEL = ['.label', '.tt-action-label', '.sv-label', '.sg-pr-label'];
+  var ROWS = ['#sg-reel-row-host .reel-actions.reel-actions.reel-actions', '#reels-cat-rail', '#sg-sv-rail.sv-float.sv-float', '#sg-profile-rail.sg-rail-scrollable', '.cs-chips.cs-chips', '#filters.tabs', '.seg.seg'];
+  function sel(list, tail) { return list.map(function (x) { return H + x + (tail || ''); }).join(','); }
+  function inside(rows, kids) { var o = []; PILL.forEach(function (r) { kids.forEach(function (k) { o.push(H + r + ' ' + k); }); }); return o.join(','); }
+  var css =
+    sel(PILL) + '{flex:0 0 auto!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:6px!important;' +
+      'height:40px!important;min-height:40px!important;max-height:40px!important;width:auto!important;min-width:0!important;max-width:none!important;padding:0 14px 0 12px!important;margin:0!important;' +
+      'border-radius:999px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:none!important;' +
+      '-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important;color:#fff!important;font-size:13px!important;font-weight:600!important;line-height:1!important;white-space:nowrap!important;scroll-snap-align:none!important}' +
+    /* display only where the element has no hide/show logic of its own */
+    sel(['#reels-cat-rail .reels-cat', '.cs-chips.cs-chips .cs-chip', '#filters.tabs button', '.seg.seg button', '.sg-pill.sg-pill']) + '{display:inline-flex!important}' +
+    sel(PILL, '::after') + '{display:none!important}' +
+    sel(['#reels-cat-rail .reels-cat[aria-selected="true"]', '.cs-chips.cs-chips .cs-chip.on', '#filters.tabs button.on', '.seg.seg button.on', '.sg-pill.sg-pill.sg-on']) +
+      '{background:rgba(255,109,0,.78)!important;border-color:rgba(255,170,100,.9)!important;color:#fff!important}' +
+    inside(PILL, ICON) + '{width:22px!important;height:22px!important;min-width:22px!important;min-height:0!important;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;filter:none!important;margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important}' +
+    inside(PILL, ICON.map(function (i) { return i + ' svg'; })) + '{width:20px!important;height:20px!important}' +
+    inside(PILL, LABEL) + '{font-size:13px!important;font-weight:600!important;line-height:1!important;margin:0!important;white-space:nowrap!important;color:#fff!important}' +
+    inside(PILL, ['.sg-pr-dot']) + '{top:4px!important;right:4px!important;width:8px!important;height:8px!important;border-width:0!important}' +
+    sel(ROWS) + '{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;' +
+      'overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:none!important;scrollbar-width:none;background:transparent!important;border:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;-webkit-mask-image:none!important;mask-image:none!important}' +
+    sel(ROWS, '::-webkit-scrollbar') + '{display:none!important}' +
+    sel(['#sg-reel-row-host .reel-actions.reel-actions.reel-actions', '#sg-sv-rail.sv-float.sv-float', '#sg-profile-rail.sg-rail-scrollable']) + '{padding:0 10px!important}' +
+    sel(['#reels-cat-rail', '.cs-chips.cs-chips']) + '{padding:0 2px!important}' +
+    /* Chats: Chats/Calls/Tools become a pill row too (no underline tabs) */
+    H + '.seg.seg{margin:10px 0 0!important;padding:4px 0!important}' +
+    H + '.seg.seg button{border-bottom:1px solid rgba(255,255,255,.18)!important}' +
+    H + '.seg.seg button.on{border-bottom-color:rgba(255,170,100,.9)!important}' +
+    /* Home: the creator photo keeps its circle; search sits level with the 40px pills */
+    H + '#reels-top-bar #reels-search-button{width:40px!important;height:40px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;-webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important}';
+  var st = document.createElement('style'); st.id = 'sg-pills-css'; st.textContent = css;
+  function put() { (document.head || document.documentElement).appendChild(st); }
+  put();
+  /* stay last so page/route styles added later cannot override the pill look */
+  document.addEventListener('DOMContentLoaded', put);
+  window.addEventListener('load', put);
+})();
